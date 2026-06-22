@@ -1,0 +1,95 @@
+plugins {
+    id 'java'
+    id 'war' // 기존 인프라(Tomcat) 배포를 위한 WAR 플러그인
+    id 'org.springframework.boot' version '2.3.12.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+}
+
+group = 'kr.co.kfs.aman' // 요청하신 베이스 패키지 반영
+version = '1.0.0'
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // 1. Spring Boot Core & Web
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // 2. Realtime Message (STOMP WebSocket)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    // 3. Data Access (Spring Data JPA)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    
+    // 4. SQLite3 Database & Dialect
+    implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
+    implementation 'com.github.gwenn:sqlite-dialect:0.1.2'
+    
+    // 5. JWT (jjwt 0.11.5 - Java 1.8 호환)
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    
+    // 6. Document & Parsing Utilities (매뉴얼 관리 필수 패키지)
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    implementation 'org.apache.pdfbox:pdfbox:2.0.29'
+    implementation 'com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10'
+    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'com.vladsch.flexmark:flexmark-all:0.60.2' // 백엔드 마크다운 파서 및 유틸
+    implementation 'com.opencsv:opencsv:5.7.1'
+    implementation 'com.ibm.icu:icu4j:73.2'
+    
+    // 7. Image Processing Utilities
+    implementation 'org.apache.commons:commons-imaging:1.0-alpha3'
+    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.9.4'
+    implementation 'com.twelvemonkeys.imageio:imageio-core:3.9.4'
+    
+    // 8. Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // 9. Tomcat (외장 WAS 배포를 위해 제공된 런타임으로 설정)
+    providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+    
+    // 10. Test Dependencies
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// 빌드 시 최종 배포 파일명을 'aman.war'로 일관되게 고정
+war {
+    archiveFileName = 'aman.war'
+}
+
+tasks.named('bootWar') {
+    archiveFileName = 'aman.war'
+}
+
+bootRun {
+    // 로컬 개발 환경(OMEN 노트북) 메모리 튜닝 및 active 프로필 세팅
+    def profile = findProperty('profile') ?: 'local'
+    jvmArgs = [
+        "-Dspring.profiles.active=${profile}",
+        '-Xms1024m',
+        '-Xmx4096m',
+        '-XX:MetaspaceSize=512m',
+        '-XX:MaxMetaspaceSize=1024m'
+    ]
+}
