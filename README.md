@@ -31,3 +31,10 @@
 - deploy.sh : war생성 및 서버에 배포
 
 
+## API
+
+  • 시큐리티 설정: SecurityConfig.java
+  • 리소스 라우팅 설정: WebMvcConfig.java
+  • 문서 관리 컨트롤러: ContentController.java
+  • 회원 관리 컨트롤러: UserController.java
+  • 인증 관리 컨트롤러: AuthController.java
