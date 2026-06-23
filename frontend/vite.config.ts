@@ -17,7 +17,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/aman/api': {
+      '/aman': {
         target: 'http://localhost:8686',
         changeOrigin: true,
       },
