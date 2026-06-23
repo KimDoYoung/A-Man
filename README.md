@@ -2,4 +2,32 @@
 
 ## 개요
 
-- 매뉴얼 시스템 
+- 프로젝트명 : A-Man
+- 개발시작 : 2026.06.22~
+- AssetERP를 위한 매뉴얼 시스템 
+- 일반 사용자들에게 AssetERP에 대한 매뉴얼을 웹페이지로 제공
+- 문서 사용자들(한국펀드서비스 직원)이 매뉴얼 작성 가능
+
+## 기술 스택
+
+- backend : springboot 2.x
+- frontend : react
+- db : sqlite
+- 최종 결과물 : aman.war로 tomcat8.5에 배포
+- docs/설계.md 참조
+
+## folder 구조
+
+- backend : 백엔드 소스
+- frontend : 프런트앤드 소스
+- docs : 문서
+- sqls : aman.sql(테이블 및 index DDL) 
+
+## 명령어들
+
+- bm.sh : backend run, lint 등 
+- fm.sh : frontend run, lint 등
+- db.sh : db조회 등
+- deploy.sh : war생성 및 서버에 배포
+
+
