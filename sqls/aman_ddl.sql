@@ -1,6 +1,7 @@
 -- 1. 3단계 메뉴 체계를 관리하는 Folders 테이블
 CREATE TABLE folders (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    nums        TEXT NOT NULL,                      -- 메뉴 번호 (예: "1", "1.1", "1.1.1")
     name        TEXT NOT NULL,                      -- 메뉴/폴더 이름
     parent_id   INTEGER DEFAULT NULL,               -- 상위 폴더 ID (최상위는 NULL)
     level       INTEGER NOT NULL CHECK(level BETWEEN 1 AND 3), -- 1:대, 2:중, 3:소 (3단계 제한)
@@ -35,10 +36,13 @@ CREATE TABLE users (
     password        TEXT NOT NULL,                      -- 암호화된 비밀번호 hash
     email           TEXT NOT NULL UNIQUE,               -- 이메일 (중복 불가)
     name            TEXT NOT NULL,                      -- 사용자 본명 또는 닉네임
+    role            TEXT NOT NULL DEFAULT 'user',       -- 사용자 역할 (예: 'admin', 'user')
     is_active       INTEGER DEFAULT 1,                  -- 활성화 여부 (1: 활성, 0: 비활성)
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+
 
 -- 2. JWT 토큰 재발급을 위한 Refresh Tokens 테이블
 CREATE TABLE refresh_tokens (

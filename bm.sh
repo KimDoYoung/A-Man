@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-VERSION="0.0.1"
+VERSION="0.0.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/backend"
 GRADLEW="$BACKEND_DIR/gradlew"
@@ -66,45 +66,8 @@ print_banner() {
 }
 
 resolve_mode() {
-    if [[ -n "${AMAN_MODE:-}" ]]; then
-        return
-    fi
-
-    # backend 설정 파일 기준으로 모출 추출 시도
-    local modes=()
-    for f in "$BACKEND_DIR"/src/main/resources/application-*.properties; do
-        [[ -f "$f" ]] || continue
-        local name="${f##*/application-}"
-        name="${name%.properties}"
-        modes+=("$name")
-    done
-
-    if [[ ${#modes[@]} -eq 0 ]]; then
-        # 프로퍼티 파일이 없으면 기본 설정값 제시
-        modes+=("local" "development" "production")
-    fi
-
-    echo -e "\n${BOLD}AMAN_MODE 환경변수가 설정되지 않았습니다.${NC}"
-    echo -e "사용할 모드를 선택하세요:\n"
-    local i=1
-    for m in "${modes[@]}"; do
-        echo -e "  ${GREEN}${i})${NC} ${m}"
-        ((i++))
-    done
-    echo ""
-    read -rp "번호 입력 (기본: 1): " choice
-    choice="${choice:-1}"
-
-    if [[ "$choice" -lt 1 || "$choice" -gt ${#modes[@]} ]] 2>/dev/null; then
-        error "잘못된 선택입니다."
-        exit 1
-    fi
-
-    export AMAN_MODE="${modes[$((choice-1))]}"
-    info "모드 설정: ${AMAN_MODE}"
-    echo -e "${YELLOW}[TIP]${NC}  다음부터 자동 적용하려면: ${BOLD}export AMAN_MODE=${AMAN_MODE}${NC}"
-    echo -e "       ~/.bashrc 또는 ~/.zshrc 에 추가하면 영구 적용됩니다."
-    echo ""
+    export AMAN_MODE="${AMAN_MODE:-local}"
+    info "개발 모드 자동 설정: ${AMAN_MODE}"
 }
 
 check_java() {
@@ -137,6 +100,27 @@ do_run() {
     info "Health check: curl http://localhost:8686/aman/health"
     echo ""
     "$GRADLEW" -p "$BACKEND_DIR" bootRun --args="--spring.profiles.active=${AMAN_MODE}"
+}
+
+do_stop() {
+    header "Stop - 개발 서버 종료"
+    local pid
+    pid=$(lsof -t -i:8686 || true)
+    if [[ -n "$pid" ]]; then
+        info "포트 8686을 점유 중인 프로세스(PID: $pid)를 종료합니다."
+        kill "$pid"
+        sleep 2
+        
+        # 프로세스 종료 재확인
+        if lsof -i:8686 &>/dev/null; then
+            warn "프로세스가 아직 포트를 반환하지 않아 강제 종료(kill -9)를 진행합니다."
+            kill -9 "$pid"
+            sleep 1
+        fi
+        info "서버가 성공적으로 종료되었습니다."
+    else
+        warn "포트 8686을 사용하는 활성 프로세스가 없습니다."
+    fi
 }
 
 do_compile() {
@@ -249,6 +233,7 @@ do_status() {
 print_menu() {
     local items=(
         "run:개발 서버 실행"
+        "stop:개발 서버 종료"
         "compile:소스 컴파일"
         "build:전체 빌드"
         "war:WAR 파일 생성"
@@ -293,7 +278,7 @@ main() {
         print_banner
         print_menu
 
-        local cmds=("run" "compile" "build" "war" "test" "clean" "log" "status" "checkstyle" "spotbugs" "lint")
+        local cmds=("run" "stop" "compile" "build" "war" "test" "clean" "log" "status" "checkstyle" "spotbugs" "lint")
 
         read -rp "  번호를 입력하세요: " choice
         echo ""
@@ -316,6 +301,7 @@ main() {
 
     case "$cmd" in
         run)        do_run ;;
+        stop)       do_stop ;;
         compile)    do_compile ;;
         build)      do_build ;;
         war)        do_war ;;

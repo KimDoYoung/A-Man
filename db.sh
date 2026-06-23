@@ -4,21 +4,22 @@
 # 1. 환경 설정 및 DB 경로 설정
 #----------------------------------------------------
 PROFILE=${AMAN_MODE:-local}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 백엔드 Properties 설정 파일에서 BASE_DIR 추출 시도
 BASE_DIR=""
-PROP_FILE="backend/src/main/resources/application-${PROFILE}.properties"
+PROP_FILE="$SCRIPT_DIR/backend/src/main/resources/application-${PROFILE}.properties"
 if [ -f "$PROP_FILE" ]; then
     BASE_DIR=$(grep '^aman.base-dir=' "$PROP_FILE" | cut -d '=' -f2- | sed "s/['\"]//g" || true)
 fi
 
 # application-*.properties가 없거나 정의되지 않은 경우 기본 application.properties 탐색
-if [ -z "$BASE_DIR" ] && [ -f "backend/src/main/resources/application.properties" ]; then
-    BASE_DIR=$(grep '^aman.base-dir=' "backend/src/main/resources/application.properties" | cut -d '=' -f2- | sed "s/['\"]//g" || true)
+if [ -z "$BASE_DIR" ] && [ -f "$SCRIPT_DIR/backend/src/main/resources/application.properties" ]; then
+    BASE_DIR=$(grep '^aman.base-dir=' "$SCRIPT_DIR/backend/src/main/resources/application.properties" | cut -d '=' -f2- | sed "s/['\"]//g" || true)
 fi
 
 # 여전히 정의되지 않은 경우 기본값 설정
-BASE_DIR=${BASE_DIR:-$(pwd)/aman-base-dir}
+BASE_DIR=${BASE_DIR:-$SCRIPT_DIR/aman-base-dir}
 DB_FILE="$BASE_DIR/db/aman.db"
 
 #----------------------------------------------------
@@ -147,6 +148,72 @@ delete_db() {
     fi
 }
 
+backup_db() {
+    if [ ! -f "$DB_FILE" ]; then
+        echo "오류: 백업할 데이터베이스 파일이 존재하지 않습니다 ($DB_FILE)"
+        return 1
+    fi
+
+    local db_dir
+    db_dir=$(dirname "$DB_FILE")
+    local timestamp
+    timestamp=$(date +"%Y%m%d_%H%M%S")
+    local backup_file="$db_dir/aman_${timestamp}.db"
+
+    echo "데이터베이스 백업 중..."
+    cp "$DB_FILE" "$backup_file"
+
+    if [ $? -eq 0 ] && [ -f "$backup_file" ]; then
+        echo "백업 완료: $backup_file ($(ls -lh "$backup_file" | awk '{print $5}'))"
+        return 0
+    else
+        echo "오류: 백업 복사에 실패했습니다."
+        return 1
+    fi
+}
+
+init_db() {
+    local ddl_script="$SCRIPT_DIR/sqls/aman_ddl.sql"
+    if [ ! -f "$ddl_script" ]; then
+        echo "오류: DDL 스크립트 파일이 존재하지 않습니다 ($ddl_script)"
+        return
+    fi
+
+    echo "!!! 경고: 기존 데이터베이스 파일($DB_FILE)을 백업한 후 삭제하고 새로 초기화합니다 !!!"
+    read -p "진행하시겠습니까? (y/N): " confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "초기화 작업이 취소되었습니다."
+        return
+    fi
+
+    # 1. 기존 DB 백업 후 제거
+    if [ -f "$DB_FILE" ]; then
+        backup_db
+        if [ $? -ne 0 ]; then
+            echo "오류: 데이터베이스 백업에 실패하여 초기화 프로세스를 중단합니다."
+            return
+        fi
+        rm -f "$DB_FILE"
+        echo "기존 DB 파일 삭제 완료."
+    fi
+
+    # 2. 상위 폴더 존재 여부 확인 및 생성
+    local db_dir
+    db_dir=$(dirname "$DB_FILE")
+    mkdir -p "$db_dir"
+
+    # 3. DDL 스크립트를 SQLite3를 사용해 주입
+    echo "DDL 실행 중... ($ddl_script)"
+    sqlite3 "$DB_FILE" < "$ddl_script"
+
+    if [ $? -eq 0 ] && [ -f "$DB_FILE" ]; then
+        echo "데이터베이스가 성공적으로 생성 및 스키마 초기화 완료되었습니다."
+        ls -lh "$DB_FILE"
+    else
+        echo "오류: 데이터베이스 파일 생성 또는 스키마 생성에 실패했습니다."
+    fi
+}
+
 fetch_server_db() {
     local remote_host="aview.k-fs.co.kr"
     local remote_db="/data/docker/apps/aman/db/aman.db"
@@ -210,9 +277,11 @@ if [ $# -gt 0 ]; then
         select) select_table "$2" ;;
         run)    run_sql "$2" ;;
         delete) delete_db ;;
+        backup) backup_db ;;
+        init)   init_db ;;
         fetch)  fetch_server_db ;;
         logs)   fetch_server_logs ;;
-        *)      echo "사용법: $0 {list|desc|select|run|delete|fetch|logs}" ;;
+        *)      echo "사용법: $0 {list|desc|select|run|delete|backup|init|fetch|logs}" ;;
     esac
     exit 0
 fi
@@ -225,6 +294,8 @@ echo "3. 테이블 select (db.sh select)"
 echo "4. sql 실행 (db.sh run)"
 echo "5. 서버 DB 가져오기 (db.sh fetch)"
 echo "6. 서버 logs 가져오기 (db.sh logs)"
+echo "7. 데이터베이스 초기화 및 생성 (db.sh init)"
+echo "8. 데이터베이스 백업 (db.sh backup)"
 echo "---------------------------------------------"
 echo "99. db 삭제"
 echo "q. 종료"
@@ -238,6 +309,8 @@ case "$choice" in
     4) run_sql ;;
     5) fetch_server_db ;;
     6) fetch_server_logs ;;
+    7) init_db ;;
+    8) backup_db ;;
     99) delete_db ;;
     q|Q) exit 0 ;;
     *) echo "잘못된 선택입니다." ;;
