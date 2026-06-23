@@ -174,6 +174,8 @@ backup_db() {
 
 init_db() {
     local ddl_script="$SCRIPT_DIR/sqls/aman_ddl.sql"
+    local test_data_script="$SCRIPT_DIR/sqls/aman_test_data.sql"
+    
     if [ ! -f "$ddl_script" ]; then
         echo "오류: DDL 스크립트 파일이 존재하지 않습니다 ($ddl_script)"
         return
@@ -206,12 +208,27 @@ init_db() {
     echo "DDL 실행 중... ($ddl_script)"
     sqlite3 "$DB_FILE" < "$ddl_script"
 
-    if [ $? -eq 0 ] && [ -f "$DB_FILE" ]; then
-        echo "데이터베이스가 성공적으로 생성 및 스키마 초기화 완료되었습니다."
-        ls -lh "$DB_FILE"
-    else
+    if [ $? -ne 0 ] || [ ! -f "$DB_FILE" ]; then
         echo "오류: 데이터베이스 파일 생성 또는 스키마 생성에 실패했습니다."
+        return
     fi
+    echo "스키마 DDL 적용 완료."
+
+    # 4. 테스트 데이터 스크립트가 존재하면 실행
+    if [ -f "$test_data_script" ]; then
+        echo "테스트 데이터 주입 중... ($test_data_script)"
+        sqlite3 "$DB_FILE" < "$test_data_script"
+        if [ $? -eq 0 ]; then
+            echo "테스트 데이터가 성공적으로 적재되었습니다."
+        else
+            echo "경고: 테스트 데이터 적재 도중 오류가 발생했습니다."
+        fi
+    else
+        echo "참고: 테스트 데이터 스크립트가 없어 스키마만 생성되었습니다."
+    fi
+
+    echo "데이터베이스 초기화 및 생성이 성공적으로 완료되었습니다."
+    ls -lh "$DB_FILE"
 }
 
 fetch_server_db() {

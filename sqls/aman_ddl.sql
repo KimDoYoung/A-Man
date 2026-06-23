@@ -1,7 +1,7 @@
 -- 1. 3단계 메뉴 체계를 관리하는 Folders 테이블
 CREATE TABLE folders (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    nums        TEXT NOT NULL,                      -- 메뉴 번호 (예: "1", "1.1", "1.1.1")
+    nums        TEXT,                               -- 폴더/메뉴 번호 체계 (예: 1.1.1)
     name        TEXT NOT NULL,                      -- 메뉴/폴더 이름
     parent_id   INTEGER DEFAULT NULL,               -- 상위 폴더 ID (최상위는 NULL)
     level       INTEGER NOT NULL CHECK(level BETWEEN 1 AND 3), -- 1:대, 2:중, 3:소 (3단계 제한)
@@ -33,7 +33,7 @@ CREATE INDEX idx_pages_folder ON pages(folder_id);
 CREATE TABLE users (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     username        TEXT NOT NULL UNIQUE,               -- 로그인 ID (중복 불가)
-    password        TEXT NOT NULL,                      -- 암호화된 비밀번호 hash
+    password        TEXT NOT NULL,                      -- 암호화된 비밀번호 hash (개발시에는 평문으로 저장하겠지만, 실제 운영에서는 반드시 해시 처리 필요)
     email           TEXT NOT NULL UNIQUE,               -- 이메일 (중복 불가)
     name            TEXT NOT NULL,                      -- 사용자 본명 또는 닉네임
     role            TEXT NOT NULL DEFAULT 'user',       -- 사용자 역할 (예: 'admin', 'user')
