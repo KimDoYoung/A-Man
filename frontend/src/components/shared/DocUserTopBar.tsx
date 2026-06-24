@@ -17,7 +17,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   // Get logged-in user information
   const userStr = localStorage.getItem('aman_user')
   const user = userStr ? JSON.parse(userStr) : null
-  const displayName = user ? `${user.name} (${user.username})` : '최고관리자 (admin)'
+  const displayName = user ? `${user.name} (${user.username})` : `관리자 (${user.username})`
 
   const handleLogout = async () => {
     if (!confirm('로그아웃 하시겠습니까?')) return
@@ -45,9 +45,6 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         <div className="flex items-center space-x-2">
           <span className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50">
             A-Man version
-          </span>
-          <span className="text-xs text-amber-400 font-mono">
-            | Double Splitter Mode (Editor)
           </span>
         </div>
       </div>

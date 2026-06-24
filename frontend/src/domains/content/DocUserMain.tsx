@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Save, ChevronRight, Bold, Code } from 'lucide-react'
+import { Save, ChevronRight } from 'lucide-react'
 import axios from 'axios'
 import FolderTree from '@/components/shared/FolderTree'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import MdTextarea from '@/components/shared/MdTextarea'
+import EditorToolbar from '@/components/shared/EditorToolbar'
 import { PageData } from '@/types'
 
 const DocUserMain: React.FC = () => {
@@ -33,6 +34,9 @@ const DocUserMain: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
+
+  const isDirty = page ? (pageContent !== (page.content || '')) : false
 
   const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -160,6 +164,93 @@ const DocUserMain: React.FC = () => {
     }, 0)
   }
 
+  const insertLink = () => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const url = prompt('URL을 입력하세요:')
+    if (!url) return
+    insertMarkdown('[', `](${url})`)
+  }
+
+  const insertBullet = () => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = textarea.value
+    
+    const before = text.substring(0, start)
+    const selection = text.substring(start, end)
+    const after = text.substring(end)
+
+    const bulletList = (selection || '').split('\n').map((l) => `- ${l}`).join('\n')
+    setPageContent(before + bulletList + after)
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + 2, start + bulletList.length)
+    }, 0)
+  }
+
+  const insertNumber = () => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const text = textarea.value
+    
+    const before = text.substring(0, start)
+    const selection = text.substring(start, end)
+    const after = text.substring(end)
+
+    const numList = (selection || '').split('\n').map((l, i) => `${i + 1}. ${l}`).join('\n')
+    setPageContent(before + numList + after)
+
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + 3, start + numList.length)
+    }, 0)
+  }
+
+  const selectAndUploadImage = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      const textarea = textareaRef.current
+      if (!textarea) return
+
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+
+      const placeholderId = Date.now()
+      const loadingText = `![Uploading image ${placeholderId}...]()\n`
+      
+      setPageContent((prev) => {
+        return prev.substring(0, start) + loadingText + prev.substring(end)
+      })
+
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await axios.post<{ url: string }>('/aman/content/image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        const actualUrl = res.data?.url ?? 'undefined_url_returned'
+        const markdownImage = `![image](${actualUrl})\n`
+        setPageContent((prev) => prev.replace(loadingText, markdownImage))
+      } catch (error) {
+        console.error('이미지 업로드 실패:', error)
+        alert('이미지 업로드 중 오류가 발생했습니다.')
+        setPageContent((prev) => prev.replace(loadingText, ''))
+      }
+    }
+    input.click()
+  }
+
   // 4. 저장 처리 (Upsert)
   const handleSave = async () => {
     if (!page) return
@@ -183,9 +274,11 @@ const DocUserMain: React.FC = () => {
         content: pageContent
       })
       const savedPage = response.data
-      alert('변경사항 저장이 완료되었습니다.')
-
-
+      
+      setSaveStatus({ type: 'success', text: '변경사항 저장이 완료되었습니다.' })
+      setTimeout(() => {
+        setSaveStatus((prev) => prev.text === '변경사항 저장이 완료되었습니다.' ? { type: '', text: '' } : prev)
+      }, 3000)
 
       // 저장 완료 후, 페이지 ID를 업데이트하여 신규 상태를 방지하고 폴더 경로 유지
       setPage(savedPage)
@@ -194,99 +287,298 @@ const DocUserMain: React.FC = () => {
       navigate(`/admin/folder/${folderId}`, { replace: true })
     } catch (error) {
       console.error('저장 실패:', error)
-      alert('변경사항 저장 중 오류가 발생했습니다.')
+      setSaveStatus({ type: 'error', text: '변경사항 저장 중 오류가 발생했습니다.' })
+      setTimeout(() => {
+        setSaveStatus((prev) => prev.text === '변경사항 저장 중 오류가 발생했습니다.' ? { type: '', text: '' } : prev)
+      }, 3000)
     } finally {
       setSaving(false)
     }
   }
 
-  // 5. 초경량 마크다운 렌더러
+  // 5. 초경량 마크다운 렌더러 (테이블, 이미지, 링크, 인라인 코드 지원 추가)
   const renderMarkdownToHtml = (md: string) => {
-    if (!md.trim()) return <p className="text-gray-400 italic">내용이 비어있습니다.</p>
+    if (!md.trim()) return [<p key="empty" className="text-gray-400 italic">내용이 비어있습니다.</p>]
     const lines = md.split('\n')
-    let inList = false
     const elements: React.ReactNode[] = []
-
-    lines.forEach((line, idx) => {
+    
+    let i = 0
+    while (i < lines.length) {
+      const line = lines[i]
       const trimmed = line.trim()
 
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        inList = true
-        const text = trimmed.substring(2)
+      // 0. 코드 블록 파싱 (```로 시작하는 블록)
+      if (trimmed.startsWith('```')) {
+        const lang = trimmed.substring(3).trim()
+        const codeLines: string[] = []
+        i++ // 첫 줄(```) 건너뛰기
+        
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          codeLines.push(lines[i])
+          i++
+        }
+        
+        if (i < lines.length) {
+          i++ // 끝 줄(```) 건너뛰기
+        }
+
         elements.push(
-          <li key={`li-${idx}`} className="list-disc ml-5 text-slate-600 text-sm mb-1">
-            {parseInlineStyles(text)}
-          </li>
+          <pre key={`codeblock-${i}`} className="bg-slate-900 text-slate-100 p-4 rounded-lg my-4 font-mono text-xs overflow-x-auto leading-normal whitespace-pre">
+            <code className={lang ? `language-${lang}` : ''}>
+              {codeLines.join('\n')}
+            </code>
+          </pre>
         )
-        return
-      } else if (inList && !trimmed.startsWith('- ') && !trimmed.startsWith('* ') && trimmed !== '') {
-        inList = false
+        continue
       }
 
+      // 1. 테이블 파싱
+      if (trimmed.startsWith('|')) {
+        const rows: string[][] = []
+        
+        while (i < lines.length && lines[i].trim().startsWith('|')) {
+          const rowLine = lines[i].trim()
+          const cells = rowLine
+            .replace(/^\|/, '')
+            .replace(/\|$/, '')
+            .split('|')
+            .map(c => c.trim())
+          
+          // 헤더 구분선 제외 (ex: |---|---|...)
+          const isSeparator = cells.every(c => c.startsWith('-') || c.endsWith('-'))
+          if (!isSeparator) {
+            rows.push(cells)
+          }
+          i++
+        }
+
+        if (rows.length > 0) {
+          const header = rows[0]
+          const body = rows.slice(1)
+
+          elements.push(
+            <div key={`table-${i}`} className="overflow-x-auto my-4 border border-slate-200 rounded-lg shadow-xs">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    {header.map((cell, idx) => (
+                      <th key={`th-${idx}`} className="px-4 py-2.5 text-left font-semibold text-slate-700 border-b border-slate-200">
+                        {parseInlineStyles(cell)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {body.map((row, rIdx) => (
+                    <tr key={`tr-${rIdx}`} className="hover:bg-slate-50/55 transition-colors">
+                      {row.map((cell, cIdx) => (
+                        <td key={`td-${cIdx}`} className="px-4 py-2.5 text-slate-650 border-b border-slate-150">
+                          {parseInlineStyles(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        }
+        continue
+      }
+
+      // 2. 리스트 파싱 (연속된 리스트 그룹화)
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const items: React.ReactNode[] = []
+        while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+          const itemText = lines[i].trim().substring(2)
+          items.push(
+            <li key={`li-${i}`} className="list-disc ml-5 text-slate-650 text-sm mb-1">
+              {parseInlineStyles(itemText)}
+            </li>
+          )
+          i++
+        }
+        elements.push(<ul key={`ul-${i}`} className="my-2">{items}</ul>)
+        continue
+      }
+
+      // 3. 이미지 파싱 (ex: ![alt](url))
+      const imageRegex = /^!\[(.*?)\]\((.*?)\)$/
+      const imgMatch = trimmed.match(imageRegex)
+      if (imgMatch) {
+        const alt = imgMatch[1]
+        const url = imgMatch[2]
+        elements.push(
+          <div key={`img-${i}`} className="my-4 flex justify-center">
+            <img src={url} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm" />
+          </div>
+        )
+        i++
+        continue
+      }
+
+      // 4. 기타 일반 블록 요소들
       if (trimmed.startsWith('# ')) {
         const text = trimmed.substring(2)
         elements.push(
-          <h1 key={`h1-${idx}`} className="text-xl font-bold text-slate-900 mt-6 mb-3 pb-1 border-b border-slate-200">
+          <h1 key={`h1-${i}`} className="text-lg font-bold text-slate-900 mt-6 mb-3 pb-1 border-b border-slate-200">
             {parseInlineStyles(text)}
           </h1>
         )
       } else if (trimmed.startsWith('## ')) {
         const text = trimmed.substring(3)
         elements.push(
-          <h2 key={`h2-${idx}`} className="text-lg font-bold text-slate-900 mt-5 mb-2">
+          <h2 key={`h2-${i}`} className="text-base font-bold text-slate-900 mt-5 mb-2">
             {parseInlineStyles(text)}
           </h2>
         )
       } else if (trimmed.startsWith('### ')) {
         const text = trimmed.substring(4)
         elements.push(
-          <h3 key={`h3-${idx}`} className="text-base font-semibold text-slate-800 mt-4 mb-2">
+          <h3 key={`h3-${i}`} className="text-sm font-semibold text-slate-800 mt-4 mb-2">
             {parseInlineStyles(text)}
           </h3>
         )
       } else if (trimmed.startsWith('> ')) {
         const text = trimmed.substring(2)
         elements.push(
-          <blockquote key={`quote-${idx}`} className="border-l-4 border-indigo-500 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r">
+          <blockquote key={`quote-${i}`} className="border-l-4 border-indigo-500 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r">
             {parseInlineStyles(text)}
           </blockquote>
         )
       } else if (trimmed === '---') {
-        elements.push(<hr key={`hr-${idx}`} className="my-4 border-t border-slate-200" />)
+        elements.push(<hr key={`hr-${i}`} className="my-4 border-t border-slate-200" />)
       } else if (trimmed !== '') {
         elements.push(
-          <p key={`p-${idx}`} className="text-slate-600 text-sm leading-relaxed mb-3">
+          <p key={`p-${i}`} className="text-slate-650 text-sm leading-relaxed mb-3">
             {parseInlineStyles(trimmed)}
           </p>
         )
       }
-    })
+
+      i++
+    }
 
     return elements
   }
 
+  // 굵게(**), 기울임(*), 인라인코드(`) 등의 스타일 인라인 인코더 (링크, 이미지, 인라인 코드 지원 추가)
   const parseInlineStyles = (text: string): React.ReactNode => {
-    const boldRegex = /\*\*(.*?)\*\*/g
-    const parts: React.ReactNode[] = []
-    let lastIndex = 0
-    let match
+    if (!text) return '';
+    let tokens: React.ReactNode[] = [text];
 
-    while ((match = boldRegex.exec(text)) !== null) {
-      const matchIndex = match.index
-      const matchText = match[1]
-
-      if (matchIndex > lastIndex) {
-        parts.push(text.substring(lastIndex, matchIndex))
+    // 1. 이미지 파싱: !\[(.*?)\]\((.*?)\)
+    tokens = tokens.flatMap((token, index) => {
+      if (typeof token !== 'string') return token;
+      const regex = /!\[(.*?)\]\((.*?)\)/g;
+      const result: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let match;
+      while ((match = regex.exec(token)) !== null) {
+        if (match.index > lastIdx) {
+          result.push(token.substring(lastIdx, match.index));
+        }
+        const alt = match[1];
+        const url = match[2];
+        result.push(
+          <img
+            key={`img-inline-${index}-${match.index}`}
+            src={url}
+            alt={alt}
+            className="inline-block max-w-full h-auto rounded-md border border-gray-200 my-1 align-middle"
+          />
+        );
+        lastIdx = regex.lastIndex;
       }
-      parts.push(<strong key={`b-${matchIndex}`} className="font-bold text-slate-900">{matchText}</strong>)
-      lastIndex = boldRegex.lastIndex
-    }
+      if (lastIdx < token.length) {
+        result.push(token.substring(lastIdx));
+      }
+      return result;
+    });
 
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex))
-    }
+    // 2. 링크 파싱: \[(.*?)\]\((.*?)\)
+    tokens = tokens.flatMap((token, index) => {
+      if (typeof token !== 'string') return token;
+      const regex = /\[(.*?)\]\((.*?)\)/g;
+      const result: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let match;
+      while ((match = regex.exec(token)) !== null) {
+        if (match.index > lastIdx) {
+          result.push(token.substring(lastIdx, match.index));
+        }
+        const linkText = match[1];
+        const url = match[2];
+        result.push(
+          <a
+            key={`link-inline-${index}-${match.index}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+          >
+            {linkText}
+          </a>
+        );
+        lastIdx = regex.lastIndex;
+      }
+      if (lastIdx < token.length) {
+        result.push(token.substring(lastIdx));
+      }
+      return result;
+    });
 
-    return parts.length > 0 ? <>{parts}</> : text
+    // 3. 굵게 파싱: \*\*(.*?)\*\*
+    tokens = tokens.flatMap((token, index) => {
+      if (typeof token !== 'string') return token;
+      const regex = /\*\*(.*?)\*\*/g;
+      const result: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let match;
+      while ((match = regex.exec(token)) !== null) {
+        if (match.index > lastIdx) {
+          result.push(token.substring(lastIdx, match.index));
+        }
+        const boldText = match[1];
+        result.push(
+          <strong key={`bold-inline-${index}-${match.index}`} className="font-bold text-gray-900">
+            {boldText}
+          </strong>
+        );
+        lastIdx = regex.lastIndex;
+      }
+      if (lastIdx < token.length) {
+        result.push(token.substring(lastIdx));
+      }
+      return result;
+    });
+
+    // 4. 인라인 코드 파싱: `(.*?)`
+    tokens = tokens.flatMap((token, index) => {
+      if (typeof token !== 'string') return token;
+      const regex = /`(.*?)`/g;
+      const result: React.ReactNode[] = [];
+      let lastIdx = 0;
+      let match;
+      while ((match = regex.exec(token)) !== null) {
+        if (match.index > lastIdx) {
+          result.push(token.substring(lastIdx, match.index));
+        }
+        const codeText = match[1];
+        result.push(
+          <code key={`code-inline-${index}-${match.index}`} className="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200">
+            {codeText}
+          </code>
+        );
+        lastIdx = regex.lastIndex;
+      }
+      if (lastIdx < token.length) {
+        result.push(token.substring(lastIdx));
+      }
+      return result;
+    });
+
+    return <>{tokens}</>;
   }
 
   return (
@@ -377,66 +669,22 @@ const DocUserMain: React.FC = () => {
                   style={{ width: previewOpen ? `${previewWidthPercent}%` : '100%' }}
                 >
                   {/* 에디터 툴바 */}
-                  <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => insertMarkdown('# ')}
-                        className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-2 cursor-pointer"
-                        title="H1 헤더 추가"
-                      >
-                        H1
-                      </button>
-                      <button
-                        onClick={() => insertMarkdown('## ')}
-                        className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-2 cursor-pointer"
-                        title="H2 헤더 추가"
-                      >
-                        H2
-                      </button>
-                      <span className="w-px h-3.5 bg-gray-300"></span>
-                      <button
-                        onClick={() => insertMarkdown('**', '**')}
-                        className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-                        title="굵게"
-                      >
-                        <Bold className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => insertMarkdown('`', '`')}
-                        className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-                        title="코드"
-                      >
-                        <Code className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    {/* 미리보기 토글 */}
-                    <button
-                      onClick={() => setPreviewOpen(!previewOpen)}
-                      className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
-                    >
-                      {previewOpen ? (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5" />
-                          <span>미리보기 숨기기</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>미리보기 보이기</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <EditorToolbar
+                    insertMarkdown={insertMarkdown}
+                    insertLink={insertLink}
+                    insertBullet={insertBullet}
+                    insertNumber={insertNumber}
+                    selectAndUploadImage={selectAndUploadImage}
+                    previewOpen={previewOpen}
+                    setPreviewOpen={setPreviewOpen}
+                  />
 
                   {/* 텍스트 편집창 */}
-                  <textarea
-                    ref={textareaRef}
+                  <MdTextarea
                     value={pageContent}
-                    onChange={(e) => setPageContent(e.target.value)}
-                    placeholder="이곳에 도움말 문서를 마크다운 형식으로 편집하세요..."
-                    className="flex-1 p-4 font-mono text-xs resize-none focus:outline-hidden leading-relaxed bg-white custom-scroll"
-                    disabled={loading}
+                    onChange={setPageContent}
+                    onSave={handleSave}
+                    textareaRef={textareaRef}
                   />
                 </div>
 
@@ -461,7 +709,7 @@ const DocUserMain: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex-1 p-5 overflow-y-auto custom-scroll bg-slate-50/50">
-                      <div className="prose max-w-none bg-white p-5 border border-gray-100 rounded-md shadow-xs font-mono text-xs whitespace-pre-wrap leading-relaxed min-h-full">
+                      <div className="prose max-w-none bg-white p-6 border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
                         {renderMarkdownToHtml(pageContent)}
                       </div>
                     </div>
@@ -470,11 +718,25 @@ const DocUserMain: React.FC = () => {
               </div>
 
               {/* 저장 액션바 */}
-              <div className="mt-3 flex justify-end shrink-0 select-none">
+              <div className="mt-3 flex items-center justify-between shrink-0 select-none">
+                {/* 상태 알림 메시지 */}
+                <div>
+                  {saveStatus.type === 'success' && (
+                    <span className="text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-md flex items-center space-x-1">
+                      ✅ {saveStatus.text}
+                    </span>
+                  )}
+                  {saveStatus.type === 'error' && (
+                    <span className="text-xs font-medium text-red-650 bg-red-50 border border-red-100 px-3 py-1.5 rounded-md flex items-center space-x-1">
+                      ❌ {saveStatus.text}
+                    </span>
+                  )}
+                </div>
+
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
-                  disabled={saving}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={saving || !isDirty}
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>{saving ? '저장 중...' : '변경사항 저장하기 (Upsert)'}</span>
