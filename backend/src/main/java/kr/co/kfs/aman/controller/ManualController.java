@@ -21,6 +21,25 @@ public class ManualController {
         this.pageRepository = pageRepository;
     }
 
+    @GetMapping(value = "/new-aka", produces = "text/plain;charset=UTF-8")
+    public ResponseEntity<String> generateNewAka() {
+        java.util.Random random = new java.util.Random();
+        String candidate;
+        int maxAttempts = 100;
+        int attempts = 0;
+        
+        do {
+            int num = 1000 + random.nextInt(9000); // 1000 ~ 9999
+            candidate = String.valueOf(num);
+            attempts++;
+            if (attempts > maxAttempts) {
+                return ResponseEntity.status(500).body("고유한 AKA 코드를 생성할 수 없습니다.");
+            }
+        } while (pageRepository.findByAka(candidate).isPresent());
+        
+        return ResponseEntity.ok(candidate);
+    }
+
     @GetMapping(value = "/{aka}", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
     public ResponseEntity<String> getManualByAka(@PathVariable("aka") String aka) {
         Optional<Page> pageOpt = pageRepository.findByAka(aka);

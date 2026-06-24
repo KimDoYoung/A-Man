@@ -264,14 +264,30 @@ const DocUserMain: React.FC = () => {
     if (!page) return
 
     const hasExistingAka = page.aka && page.aka.trim() !== ''
-    const isCurrentAkaEmpty = !pageAka || pageAka.trim() === ''
+    let trimmedAka = pageAka.trim()
+    const isCurrentAkaEmpty = !trimmedAka
 
-    if (hasExistingAka && isCurrentAkaEmpty) {
-      alert('별칭(AKA)은 빈 값으로 저장할 수 없습니다. 기존 별칭을 유지하거나 새로운 별칭을 입력해주세요.')
-      return
+    if (isCurrentAkaEmpty) {
+      if (hasExistingAka) {
+        alert('별칭(AKA)은 빈 값으로 저장할 수 없습니다. 기존 별칭을 유지하거나 새로운 별칭을 입력해주세요.')
+        return
+      }
+
+      setSaving(true)
+      try {
+        const response = await axios.get('/manual/new-aka')
+        trimmedAka = response.data.trim()
+        setPageAka(trimmedAka)
+      } catch (error) {
+        console.error('새로운 AKA 발급 실패:', error)
+        alert('새 AKA를 발급받지 못했습니다. 수동으로 입력해 주세요.')
+        setSaving(false)
+        return
+      }
+    } else {
+      setSaving(true)
     }
 
-    setSaving(true)
     try {
       const folderId = page.folder?.id
       if (!folderId) {
@@ -284,7 +300,6 @@ const DocUserMain: React.FC = () => {
       const titleToSave = folderNums ? `${folderNums} ${folderName}` : folderName
 
       const trimmedContent = pageContent.trim()
-      const trimmedAka = pageAka.trim()
 
       const response = await axios.post('/aman/content', {
         id: page.id,

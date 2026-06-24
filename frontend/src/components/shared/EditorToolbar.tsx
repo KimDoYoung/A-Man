@@ -1,5 +1,13 @@
-import React from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile } from 'lucide-react'
+
+const EMOJIS = [
+  '‼️', '❗', '✔️', '🚩', '➡️', '📝', '▶️', '🔴', '🔷', '🔵', 
+  '🔷', '👉', '🚫', '❓', '💡', '🔥', '✨', '🎉', '📌', '⚠️', 
+  '✅', '❌', '❓', '💬', '😀', '😃', '👍', '✒️​', '📌​', '❤️​',
+  '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣' 
+  
+]
 
 interface EditorToolbarProps {
   insertMarkdown: (prefix: string, suffix?: string) => void
@@ -24,6 +32,22 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   previewOpen,
   setPreviewOpen
 }) => {
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  const emojiPanelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (emojiPanelRef.current && !emojiPanelRef.current.contains(event.target as Node)) {
+        setEmojiOpen(false)
+      }
+    }
+    if (emojiOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [emojiOpen])
   return (
     <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
       <div className="flex items-center space-x-2">
@@ -92,6 +116,31 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         >
           <Image className="w-3.5 h-3.5" />
         </button>
+        <div className="relative" ref={emojiPanelRef}>
+          <button
+            onClick={() => setEmojiOpen(!emojiOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${emojiOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            title="이모지 삽입"
+          >
+            <Smile className="w-3.5 h-3.5" />
+          </button>
+          {emojiOpen && (
+            <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg grid grid-cols-8 gap-1 w-48 z-50">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    insertMarkdown(emoji)
+                    setEmojiOpen(false)
+                  }}
+                  className="w-5.5 h-5.5 flex items-center justify-center text-base hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 별칭 AKA 입력창 */}

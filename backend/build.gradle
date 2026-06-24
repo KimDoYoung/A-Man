@@ -59,8 +59,8 @@ dependencies {
     implementation 'com.twelvemonkeys.imageio:imageio-core:3.9.4'
     
     // 8. Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
     
     // 9. Tomcat (외장 WAS 배포를 위해 제공된 런타임으로 설정)
     providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
