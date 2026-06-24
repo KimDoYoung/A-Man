@@ -18,6 +18,7 @@ CREATE TABLE pages (
     title       TEXT NOT NULL,                      -- 페이지 제목 (화면 메뉴나 탭에 표시될 이름)
     content     TEXT NOT NULL,                      -- 마크다운(md) 문장 본문 원본 전체
     sort_order  INTEGER DEFAULT 0,                  -- 폴더 내에서 페이지 노출 순서
+    aka         TEXT NOT NULL UNIQUE,               -- 페이지 별칭 (URL 경로에 사용될 수 있는 고유한 문자열)
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     
@@ -27,6 +28,7 @@ CREATE TABLE pages (
 -- 인덱스 생성
 CREATE INDEX idx_folders_parent ON folders(parent_id);
 CREATE INDEX idx_pages_folder ON pages(folder_id);
+CREATE INDEX idx_pages_aka ON pages(aka);
 
 
 -- 1. 사용자 정보를 관리하는 Users 테이블

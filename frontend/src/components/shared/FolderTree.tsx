@@ -211,7 +211,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
               <Folder className="w-3.5 h-3.5 mr-2 text-gray-400" />
             )}
             <span>
-              {node.nums ? `${node.nums} ` : ''}{node.name}
+              {node.name}{node.nums ? `(${node.nums})` : ''}
             </span>
           </div>
           {hasChildren && (

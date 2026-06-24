@@ -510,7 +510,7 @@ const DocUserMain: React.FC = () => {
         const linkText = match[1];
         const url = match[2];
         result.push(
-          <a
+          <a url을 표시해 주는 부분을 넣어야함
             key={`link-inline-${index}-${match.index}`}
             href={url}
             target="_blank"
