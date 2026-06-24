@@ -4,6 +4,7 @@ import { Eye, EyeOff, Save, ChevronRight, Bold, Code } from 'lucide-react'
 import axios from 'axios'
 import FolderTree from '@/components/shared/FolderTree'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
+import MdTextarea from '@/components/shared/MdTextarea'
 import { PageData } from '@/types'
 
 const DocUserMain: React.FC = () => {
