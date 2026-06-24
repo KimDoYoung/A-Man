@@ -1,6 +1,6 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import ManualLayout from './components/shared/ManualLayout'
+import FolderTree from './components/shared/FolderTree'
 import ManualMain from './domains/content/ManualMain'
 import MarkdownViewer from './domains/content/MarkdownViewer'
 
@@ -36,7 +36,7 @@ function App() {
       <Routes>
         {/* 1. 일반 사용자용 경로 (Free Pass) */}
         <Route path="/" element={<Navigate to="/docs" replace />} />
-        <Route path="/docs" element={<ManualLayout />}>
+        <Route path="/docs" element={<FolderTree />}>
           <Route index element={<ManualMain />} />
           <Route path="page/:page_id" element={<MarkdownViewer />} />
         </Route>

@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useOutletContext } from 'react-router-dom'
-import { OutletContextType } from '../../components/shared/ManualLayout'
+import { OutletContextType, PageData, TocItem } from '../../types'
 import axios from 'axios'
-
-interface PageData {
-  id: number;
-  title: string;
-  content: string;
-  updatedAt: string;
-}
 
 const MarkdownViewer: React.FC = () => {
   const { page_id } = useParams<{ page_id: string }>()
@@ -47,9 +40,9 @@ const MarkdownViewer: React.FC = () => {
   }, [page_id, setTocData])
 
   // 마크다운에서 헤더(#, ##, ###)를 추출하는 헬퍼 함수
-  const extractTocFromMarkdown = (md: string) => {
+  const extractTocFromMarkdown = (md: string): TocItem[] => {
     const lines = md.split('\n')
-    const toc: Array<{ id: string; text: string; level: number }> = []
+    const toc: TocItem[] = []
     
     let headingIndex = 0
     lines.forEach((line) => {

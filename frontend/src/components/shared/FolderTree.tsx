@@ -1,27 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate, useLocation, useOutletContext } from 'react-router-dom'
-import { Menu, BookOpen, Pin, Folder, FolderOpen, ChevronDown, Filter, ArrowUp } from 'lucide-react'
+import { Menu, BookOpen, Pin, Folder, FolderOpen, ChevronDown, Filter, ArrowUp, FileText, Plus, Edit2, Trash2 } from 'lucide-react'
 import axios from 'axios'
+import { FolderNode, OutletContextType, TocItem } from '../../types'
 
-// 3단계 폴더 계층 구조 인터페이스
-interface FolderNode {
-  id: number;
-  nums: string;
-  name: string;
-  level: number;
-  parentId: number | null;
-  sortOrder: number;
-  children: FolderNode[];
-  pages: Array<{ id: number; title: string; sortOrder: number }>;
-}
-
-export interface OutletContextType {
-  setTocData: (data: Array<{ id: string; text: string; level: number }>) => void;
-  tocOpen: boolean;
-  setTocOpen: (open: boolean) => void;
-}
-
-const ManualLayout: React.FC = () => {
+const FolderTree: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -38,7 +21,47 @@ const ManualLayout: React.FC = () => {
   // 데이터 피드백 상태
   const [folders, setFolders] = useState<FolderNode[]>([])
   const [filterText, setFilterText] = useState('')
-  const [tocData, setTocData] = useState<Array<{ id: string; text: string; level: number }>>([])
+  const [tocData, setTocData] = useState<TocItem[]>([])
+
+  // 컨텍스트 메뉴 상태
+  const [contextMenu, setContextMenu] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    targetId: number | string | null;
+    targetName: string;
+  }>({
+    open: false,
+    x: 0,
+    y: 0,
+    targetId: null,
+    targetName: ''
+  })
+
+  // 우클릭 컨텍스트 메뉴 닫기 핸들러
+  useEffect(() => {
+    const closeMenu = () => {
+      setContextMenu(prev => prev.open ? { ...prev, open: false } : prev)
+    }
+    window.addEventListener('click', closeMenu)
+    window.addEventListener('contextmenu', closeMenu)
+    return () => {
+      window.removeEventListener('click', closeMenu)
+      window.removeEventListener('contextmenu', closeMenu)
+    }
+  }, [])
+
+  const handleContextMenu = (e: React.MouseEvent, id: number | string, name: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({
+      open: true,
+      x: e.clientX,
+      y: e.clientY,
+      targetId: id,
+      targetName: name
+    })
+  }
 
   // 리사이징 드래그 핸들링
   const startResize = (e: React.MouseEvent) => {
@@ -165,12 +188,12 @@ const ManualLayout: React.FC = () => {
   };
 
   // 특정 소분류 폴더(3단계) 아래의 페이지들을 가져와 바인딩하는 토글
-  const toggleFolder = async (folder: FolderNode) => {
+  const toggleFolder = async (folder: FolderNode, depth: number) => {
     const isOpen = !!expandedFolders[folder.id]
     setExpandedFolders(prev => ({ ...prev, [folder.id]: !isOpen }))
 
     // 폴더를 여는 경우에만 API 호출하여 페이지 리스트를 가져와 채움
-    if (!isOpen && folder.level === 3 && folder.pages.length === 0) {
+    if (!isOpen && depth === 3 && folder.pages.length === 0) {
       try {
         const response = await axios.get(`/aman/docs/folders/${folder.id}/pages`)
         setFolders(prev => updatePagesInTree(prev, folder.id, response.data))
@@ -211,22 +234,28 @@ const ManualLayout: React.FC = () => {
   }
 
   // 3 depth 트리 노드 아코디언 재귀 렌더러
-  const renderFolderNode = (node: FolderNode) => {
+  const renderFolderNode = (node: FolderNode, depth: number = 1) => {
     const isExpanded = !!expandedFolders[node.id]
-    const hasChildren = node.children.length > 0 || node.level === 3
+    // 3단계에서는 하위 페이지 펼침 chevron SVG(화살표)가 안보이도록 hasChildren을 children.length > 0으로 설정
+    const hasChildren = node.children.length > 0
 
     return (
       <li key={node.id} className="space-y-1">
         <div 
-          onClick={() => toggleFolder(node)}
+          onClick={() => toggleFolder(node, depth)}
+          onContextMenu={(e) => handleContextMenu(e, node.id, node.name)}
           className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 cursor-pointer text-gray-800 transition-colors ${
-            node.level === 1 ? 'font-semibold text-gray-900' : 'text-gray-600'
+            depth === 1 ? 'font-semibold text-gray-900' : 'text-gray-600'
           }`}
-          style={{ paddingLeft: `${(node.level - 1) * 12 + 6}px` }}
+          style={{ 
+            paddingLeft: depth === 3 
+              ? '42px' 
+              : `${(depth - 1) * 16 + 6}px` 
+          }}
         >
           <div className="flex items-center">
-            {isExpanded ? (
-              <FolderOpen className={`w-3.5 h-3.5 mr-2 ${node.level === 1 ? 'text-indigo-500' : 'text-amber-500'}`} />
+            {depth === 3 ? null : isExpanded ? (
+              <FolderOpen className={`w-3.5 h-3.5 mr-2 ${depth === 1 ? 'text-indigo-500' : 'text-amber-500'}`} />
             ) : (
               <Folder className="w-3.5 h-3.5 mr-2 text-gray-400" />
             )}
@@ -244,10 +273,10 @@ const ManualLayout: React.FC = () => {
         {isExpanded && (
           <ul className="space-y-1">
             {/* 자식 폴더 렌더링 */}
-            {node.children.map(child => renderFolderNode(child))}
+            {node.children.map(child => renderFolderNode(child, depth + 1))}
             
             {/* 3단계 폴더일 경우, 하위에 속한 도움말 페이지 렌더링 */}
-            {node.level === 3 && node.pages.map(page => {
+            {depth === 3 && node.pages.map(page => {
               const pageUrl = `/docs/page/${page.id}`
               const isActive = location.pathname === pageUrl
               return (
@@ -258,7 +287,8 @@ const ManualLayout: React.FC = () => {
                       e.preventDefault()
                       navigate(pageUrl)
                     }}
-                    className={`block py-1 px-3 ml-6 rounded-md text-xs transition-all border ${
+                    onContextMenu={(e) => handleContextMenu(e, `page_${page.id}`, page.title)}
+                    className={`block py-1 px-3 ml-14 rounded-md text-xs transition-all border ${
                       isActive 
                         ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-medium' 
                         : 'border-transparent hover:bg-gray-50 text-gray-500 hover:text-gray-900'
@@ -355,7 +385,7 @@ const ManualLayout: React.FC = () => {
 
             {/* 계층 트리 리스트 */}
             <ul className="space-y-1 overflow-y-auto flex-1 text-xs whitespace-nowrap custom-scroll pr-1">
-              {folders.map(root => renderFolderNode(root))}
+              {folders.map(root => renderFolderNode(root, 1))}
             </ul>
           </aside>
         )}
@@ -428,8 +458,61 @@ const ManualLayout: React.FC = () => {
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
+
+      {/* 4. 우클릭 컨텍스트 메뉴 */}
+      {contextMenu.open && (
+        <div 
+          className="fixed z-[100] w-40 bg-white border border-gray-200 rounded-lg shadow-xl py-1 text-xs text-gray-700 font-medium select-none"
+          style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            onClick={() => {
+              alert(`'${contextMenu.targetName}' 항목 아래에 메뉴를 추가합니다.`);
+              setContextMenu(prev => ({ ...prev, open: false }));
+            }} 
+            className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center space-x-2 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-gray-400" />
+            <span>아래에 메뉴 추가</span>
+          </button>
+          <button 
+            onClick={() => {
+              alert(`'${contextMenu.targetName}' 항목 위에 메뉴를 추가합니다.`);
+              setContextMenu(prev => ({ ...prev, open: false }));
+            }} 
+            className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center space-x-2 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-gray-400" />
+            <span>위에 메뉴 추가</span>
+          </button>
+          <div className="border-t border-gray-100 my-1"></div>
+          <button 
+            onClick={() => {
+              alert(`'${contextMenu.targetName}' 이름 바꾸기 팝업 활성화`);
+              setContextMenu(prev => ({ ...prev, open: false }));
+            }} 
+            className="w-full text-left px-3 py-1.5 hover:bg-gray-50 flex items-center space-x-2 cursor-pointer"
+          >
+            <Edit2 className="w-3.5 h-3.5 text-gray-400" />
+            <span>이름 바꾸기</span>
+          </button>
+          <button 
+            onClick={() => {
+              if (confirm(`정말 '${contextMenu.targetName}' 항목을 삭제하시겠습니까?`)) {
+                alert(`'${contextMenu.targetName}' 항목이 삭제되었습니다.`);
+              }
+              setContextMenu(prev => ({ ...prev, open: false }));
+            }} 
+            className="w-full text-left px-3 py-1.5 hover:bg-red-50 hover:text-red-600 flex items-center space-x-2 text-red-500 cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>삭제</span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-export default ManualLayout
+export default FolderTree
