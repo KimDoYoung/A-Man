@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Menu, UserCheck, LogOut } from 'lucide-react'
 import axios from 'axios'
@@ -13,11 +13,24 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   setSidebarOpen
 }) => {
   const navigate = useNavigate()
+  const [version, setVersion] = useState('0.0.1')
+
+  useEffect(() => {
+    axios.get('/aman/health')
+      .then(res => {
+        if (res.data && res.data.version) {
+          setVersion(res.data.version)
+        }
+      })
+      .catch(err => {
+        console.error('버전 정보 조회 실패:', err)
+      })
+  }, [])
 
   // Get logged-in user information
   const userStr = localStorage.getItem('aman_user')
   const user = userStr ? JSON.parse(userStr) : null
-  const displayName = user ? `${user.name} (${user.username})` : `관리자 (${user.username})`
+  const displayName = user ? `${user.name} (${user.username})` : '관리자'
 
   const handleLogout = async () => {
     if (!confirm('로그아웃 하시겠습니까?')) return
@@ -32,7 +45,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   }
 
   return (
-    <header className="h-14 bg-gray-900 text-white px-6 flex items-center justify-between border-b border-gray-800 shrink-0 select-none">
+    <header className="h-14 bg-gray-700 text-white px-6 flex items-center justify-between border-b border-gray-800 shrink-0 select-none">
       {/* 좌측 토글 및 로고 타이틀 */}
       <div className="flex items-center space-x-3">
         <button 
@@ -44,7 +57,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         </button>
         <div className="flex items-center space-x-2">
           <span className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50">
-            A-Man version
+            A-Man ({version})
           </span>
         </div>
       </div>
