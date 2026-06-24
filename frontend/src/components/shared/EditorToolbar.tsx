@@ -7,6 +7,8 @@ interface EditorToolbarProps {
   insertBullet: () => void
   insertNumber: () => void
   selectAndUploadImage: () => void
+  aka: string
+  onAkaChange: (value: string) => void
   previewOpen: boolean
   setPreviewOpen: (open: boolean) => void
 }
@@ -17,6 +19,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   insertBullet,
   insertNumber,
   selectAndUploadImage,
+  aka,
+  onAkaChange,
   previewOpen,
   setPreviewOpen
 }) => {
@@ -88,6 +92,19 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         >
           <Image className="w-3.5 h-3.5" />
         </button>
+      </div>
+
+      {/* 별칭 AKA 입력창 */}
+      <div className="flex items-center space-x-1.5 ml-auto mr-4">
+        <span className="text-[10px] font-semibold text-gray-400">별칭(AKA):</span>
+        <input
+          type="text"
+          value={aka || ''}
+          onChange={(e) => onAkaChange(e.target.value)}
+          placeholder="예: 1110"
+          className="w-24 px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded focus:outline-hidden focus:border-indigo-500 font-mono text-gray-800"
+          title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /manual/1110 으로 접근 가능)"
+        />
       </div>
 
       {/* 미리보기 토글 */}

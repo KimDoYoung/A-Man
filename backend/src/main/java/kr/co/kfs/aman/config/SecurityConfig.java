@@ -43,7 +43,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .and()
             .authorizeRequests()
                 // /health 및 정적 이미지 경로 등 Free Pass 설정
-                .antMatchers("/health", "/images/**", "/auth/**", "/docs/**").permitAll()
+                .antMatchers("/health", "/images/**", "/auth/**", "/docs/**", "/manual/**").permitAll()
                 // 그 외 모든 /admin, /user, /content 등의 API는 인증 필요
                 .anyRequest().authenticated()
             .and()

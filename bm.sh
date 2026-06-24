@@ -105,16 +105,16 @@ do_run() {
 do_stop() {
     header "Stop - 개발 서버 종료"
     local pid
-    pid=$(lsof -t -i:8686 || true)
+    pid=$(lsof -t -sTCP:LISTEN -i:8686 || true)
     if [[ -n "$pid" ]]; then
         info "포트 8686을 점유 중인 프로세스(PID: $pid)를 종료합니다."
-        kill "$pid"
+        kill $pid
         sleep 2
         
         # 프로세스 종료 재확인
-        if lsof -i:8686 &>/dev/null; then
+        if lsof -sTCP:LISTEN -i:8686 &>/dev/null; then
             warn "프로세스가 아직 포트를 반환하지 않아 강제 종료(kill -9)를 진행합니다."
-            kill -9 "$pid"
+            kill -9 $pid
             sleep 1
         fi
         info "서버가 성공적으로 종료되었습니다."

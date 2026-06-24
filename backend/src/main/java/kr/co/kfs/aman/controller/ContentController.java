@@ -47,7 +47,7 @@ public class ContentController {
         String title = body.get("title").toString();
         String content = body.get("content").toString();
         Integer sortOrder = body.containsKey("sortOrder") ? Integer.valueOf(body.get("sortOrder").toString()) : 0;
-
+        String aka = body.containsKey("aka") && body.get("aka") != null ? body.get("aka").toString().trim() : "";
         Optional<Folder> folderOpt = folderRepository.findById(folderId);
         if (!folderOpt.isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("존재하지 않는 폴더 ID입니다.");
@@ -64,23 +64,41 @@ public class ContentController {
                 page.setTitle(title);
                 page.setContent(content);
                 page.setSortOrder(sortOrder);
+                
+                if (aka.isEmpty()) {
+                    // 기존에 aka가 채워져 있었다면 기존 것 유지, 없었다면 임의 생성
+                    if (page.getAka() == null || page.getAka().trim().isEmpty()) {
+                        String generatedAka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+                        page.setAka(generatedAka);
+                    }
+                } else {
+                    page.setAka(aka);
+                }
             } else {
                 // ID가 명시되어 있으나 DB에 없는 경우 신규 생성
+                if (aka.isEmpty()) {
+                    aka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+                }
                 page = Page.builder()
                         .id(pageId)
                         .folder(folderOpt.get())
                         .title(title)
                         .content(content)
                         .sortOrder(sortOrder)
+                        .aka(aka)
                         .build();
             }
         } else {
             // Insert 수행
+            if (aka.isEmpty()) {
+                aka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+            }
             page = Page.builder()
                     .folder(folderOpt.get())
                     .title(title)
                     .content(content)
                     .sortOrder(sortOrder)
+                    .aka(aka)
                     .build();
         }
 

@@ -46,6 +46,9 @@ public class Page {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "aka")
+    private String aka;
+
     @Column(name = "sort_order")
     @Builder.Default
     private Integer sortOrder = 0;

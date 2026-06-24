@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface PageRepository extends JpaRepository<Page, Long> {
     List<Page> findByFolderIdOrderBySortOrderAsc(Long folderId);
     Optional<Page> findByFolderId(Long folderId);
+    Optional<Page> findByAka(String aka);
 }

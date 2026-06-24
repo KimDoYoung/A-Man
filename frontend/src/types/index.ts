@@ -22,6 +22,7 @@ export interface PageData {
   id: number;
   title: string;
   content: string;
+  aka?: string;
   updatedAt: string;
 }
 

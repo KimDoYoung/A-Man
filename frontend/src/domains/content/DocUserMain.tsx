@@ -26,6 +26,7 @@ const DocUserMain: React.FC = () => {
   const [page, setPage] = useState<PageData & { folder?: { id: number; name: string; nums?: string } } | null>(null)
   const [pageTitle, setPageTitle] = useState('')
   const [pageContent, setPageContent] = useState('')
+  const [pageAka, setPageAka] = useState('')
 
   // 폴더 계층 구조 정보 상태 (빵부스러기용)
   const [folderHierarchy, setFolderHierarchy] = useState<any[]>([])
@@ -35,8 +36,9 @@ const DocUserMain: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
+  const [copied, setCopied] = useState(false)
 
-  const isDirty = page ? (pageContent !== (page.content || '')) : false
+  const isDirty = page ? (pageContent !== (page.content || '') || pageAka !== (page.aka || '')) : false
 
   const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -48,6 +50,7 @@ const DocUserMain: React.FC = () => {
         setPage(null)
         setPageTitle('')
         setPageContent('')
+        setPageAka('')
         setFolderHierarchy([])
         return
       }
@@ -63,6 +66,7 @@ const DocUserMain: React.FC = () => {
           setPage(data)
           setPageTitle(data.title)
           setPageContent(data.content)
+          setPageAka(data.aka || '')
           targetFolderId = data.folder?.id || null
         } else if (folder_id) {
           const pagesRes = await axios.get(`/aman/docs/folders/${folder_id}/pages`)
@@ -77,6 +81,7 @@ const DocUserMain: React.FC = () => {
             setPage(pages[0])
             setPageTitle(pages[0].title)
             setPageContent(pages[0].content)
+            setPageAka(pages[0].aka || '')
           } else {
             // 페이지가 없는 빈 폴더인 경우 신규 작성을 유도
             setPage({
@@ -88,6 +93,7 @@ const DocUserMain: React.FC = () => {
             })
             setPageTitle('')
             setPageContent('')
+            setPageAka('')
           }
         }
 
@@ -255,6 +261,14 @@ const DocUserMain: React.FC = () => {
   const handleSave = async () => {
     if (!page) return
 
+    const hasExistingAka = page.aka && page.aka.trim() !== ''
+    const isCurrentAkaEmpty = !pageAka || pageAka.trim() === ''
+
+    if (hasExistingAka && isCurrentAkaEmpty) {
+      alert('별칭(AKA)은 빈 값으로 저장할 수 없습니다. 기존 별칭을 유지하거나 새로운 별칭을 입력해주세요.')
+      return
+    }
+
     setSaving(true)
     try {
       const folderId = page.folder?.id
@@ -271,7 +285,8 @@ const DocUserMain: React.FC = () => {
         id: page.id,
         folderId: folderId,
         title: titleToSave,
-        content: pageContent
+        content: pageContent,
+        aka: pageAka
       })
       const savedPage = response.data
       
@@ -284,6 +299,7 @@ const DocUserMain: React.FC = () => {
       setPage(savedPage)
       setPageTitle(savedPage.title)
       setPageContent(savedPage.content)
+      setPageAka(savedPage.aka || '')
       navigate(`/admin/folder/${folderId}`, { replace: true })
     } catch (error) {
       console.error('저장 실패:', error)
@@ -675,6 +691,8 @@ const DocUserMain: React.FC = () => {
                     insertBullet={insertBullet}
                     insertNumber={insertNumber}
                     selectAndUploadImage={selectAndUploadImage}
+                    aka={pageAka}
+                    onAkaChange={setPageAka}
                     previewOpen={previewOpen}
                     setPreviewOpen={setPreviewOpen}
                   />
@@ -719,8 +737,8 @@ const DocUserMain: React.FC = () => {
 
               {/* 저장 액션바 */}
               <div className="mt-3 flex items-center justify-between shrink-0 select-none">
-                {/* 상태 알림 메시지 */}
-                <div>
+                {/* 상태 알림 또는 AKA URL 복사 영역 */}
+                <div className="flex items-center space-x-3">
                   {saveStatus.type === 'success' && (
                     <span className="text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-md flex items-center space-x-1">
                       ✅ {saveStatus.text}
@@ -730,6 +748,32 @@ const DocUserMain: React.FC = () => {
                     <span className="text-xs font-medium text-red-650 bg-red-50 border border-red-100 px-3 py-1.5 rounded-md flex items-center space-x-1">
                       ❌ {saveStatus.text}
                     </span>
+                  )}
+                  
+                  {!saveStatus.type && page && page.aka && (
+                    <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-600">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] bg-slate-200 px-1 py-0.5 rounded mr-1">URL</span>
+                      <span className="font-mono text-slate-700 select-all">{`${window.location.origin}/aman/manual/${page.aka}`}</span>
+                      <button
+                        onClick={() => {
+                          const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`;
+                          navigator.clipboard.writeText(fullUrl);
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="p-1 hover:bg-slate-200 rounded text-slate-500 cursor-pointer hover:text-slate-800 transition-colors flex items-center justify-center"
+                        title="URL 복사"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                        </svg>
+                      </button>
+                      {copied && (
+                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-sm transition-all duration-200 select-none">
+                          복사 완료!
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 

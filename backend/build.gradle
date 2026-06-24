@@ -3,6 +3,8 @@ plugins {
     id 'war' // 기존 인프라(Tomcat) 배포를 위한 WAR 플러그인
     id 'org.springframework.boot' version '2.3.12.RELEASE'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'checkstyle'
+    id 'com.github.spotbugs' version '4.7.5'
 }
 
 group = 'kr.co.kfs.aman' // 요청하신 베이스 패키지 반영
@@ -92,4 +94,38 @@ bootRun {
         '-XX:MetaspaceSize=512m',
         '-XX:MaxMetaspaceSize=1024m'
     ]
+}
+
+checkstyle {
+    toolVersion = "8.45.1"
+    ignoreFailures = true
+    showViolations = true
+}
+
+spotbugs {
+    toolVersion = "4.7.3"
+    ignoreFailures = true
+    showStackTraces = true
+}
+
+spotbugsMain {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+
+spotbugsTest {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+
+tasks.withType(Checkstyle) {
+    group = 'verification'
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
+    group = 'verification'
 }
