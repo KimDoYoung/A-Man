@@ -4,7 +4,7 @@ import { OutletContextType, PageData, TocItem } from '@/types'
 import axios from 'axios'
 
 const MarkdownViewer: React.FC = () => {
-  const { page_id } = useParams<{ page_id: string }>()
+  const { page_id, folder_id } = useParams<{ page_id?: string; folder_id?: string }>()
   const { setTocData } = useOutletContext<OutletContextType>()
   const [page, setPage] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -12,17 +12,31 @@ const MarkdownViewer: React.FC = () => {
 
   useEffect(() => {
     const fetchPage = async () => {
-      if (!page_id) return
+      if (!page_id && !folder_id) return
       setLoading(true)
       setErrorMsg('')
       try {
-        const response = await axios.get(`/aman/docs/${page_id}`)
-        const pageData = response.data
-        setPage(pageData)
+        let pageData = null
+        if (page_id) {
+          const response = await axios.get(`/aman/docs/${page_id}`)
+          pageData = response.data
+        } else if (folder_id) {
+          const response = await axios.get(`/aman/docs/folders/${folder_id}/pages`)
+          const pages = response.data
+          if (pages && pages.length > 0) {
+            pageData = pages[0]
+          }
+        }
 
-        // 마크다운 파싱을 통한 동적 목차(TOC) 데이터 추출
-        const toc = extractTocFromMarkdown(pageData.content)
-        setTocData(toc)
+        if (pageData) {
+          setPage(pageData)
+          // 마크다운 파싱을 통한 동적 목차(TOC) 데이터 추출
+          const toc = extractTocFromMarkdown(pageData.content)
+          setTocData(toc)
+        } else {
+          setPage(null)
+          setTocData([])
+        }
       } catch (error) {
         console.error('페이지 로드 실패:', error)
         setErrorMsg('도움말 문서를 가져오는 도중 오류가 발생했습니다.')
@@ -37,7 +51,7 @@ const MarkdownViewer: React.FC = () => {
     return () => {
       setTocData([])
     }
-  }, [page_id, setTocData])
+  }, [page_id, folder_id, setTocData])
 
   // 마크다운에서 헤더(#, ##, ###)를 추출하는 헬퍼 함수
   const extractTocFromMarkdown = (md: string): TocItem[] => {

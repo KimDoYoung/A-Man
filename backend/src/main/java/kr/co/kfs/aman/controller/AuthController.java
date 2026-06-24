@@ -83,6 +83,7 @@ public class AuthController {
         responseBody.put("username", user.getUsername());
         responseBody.put("name", user.getName());
         responseBody.put("role", user.getRole());
+        responseBody.put("accessToken", accessToken);
         responseBody.put("message", "로그인 성공");
 
         return ResponseEntity.ok(responseBody);

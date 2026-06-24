@@ -7,7 +7,7 @@ import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { PageData } from '@/types'
 
 const DocUserMain: React.FC = () => {
-  const { page_id } = useParams<{ page_id: string }>()
+  const { page_id, folder_id } = useParams<{ page_id?: string; folder_id?: string }>()
   const navigate = useNavigate()
 
   // 레이아웃 인터랙션 상태
@@ -18,10 +18,15 @@ const DocUserMain: React.FC = () => {
   const [resizingSidebar, setResizingSidebar] = useState(false)
   const [resizingPreview, setResizingPreview] = useState(false)
 
+
+
   // 문서 데이터 상태
-  const [page, setPage] = useState<PageData & { folder?: { id: number; name: string } } | null>(null)
+  const [page, setPage] = useState<PageData & { folder?: { id: number; name: string; nums?: string } } | null>(null)
   const [pageTitle, setPageTitle] = useState('')
   const [pageContent, setPageContent] = useState('')
+
+  // 폴더 계층 구조 정보 상태 (빵부스러기용)
+  const [folderHierarchy, setFolderHierarchy] = useState<any[]>([])
   
   // 피드백 상태
   const [loading, setLoading] = useState(false)
@@ -31,34 +36,74 @@ const DocUserMain: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // 1. 문서 상세 데이터 로드
+  // 1. 문서 상세 데이터 또는 폴더 기준 데이터 로드
   useEffect(() => {
-    const fetchPageDetail = async () => {
-      if (!page_id) {
+    const fetchData = async () => {
+      if (!page_id && !folder_id) {
         setPage(null)
         setPageTitle('')
         setPageContent('')
+        setFolderHierarchy([])
         return
       }
 
       setLoading(true)
       setErrorMsg('')
       try {
-        const response = await axios.get(`/aman/docs/${page_id}`)
-        const data = response.data
-        setPage(data)
-        setPageTitle(data.title)
-        setPageContent(data.content)
+        let targetFolderId: number | null = null
+
+        if (page_id) {
+          const response = await axios.get(`/aman/docs/${page_id}`)
+          const data = response.data
+          setPage(data)
+          setPageTitle(data.title)
+          setPageContent(data.content)
+          targetFolderId = data.folder?.id || null
+        } else if (folder_id) {
+          const pagesRes = await axios.get(`/aman/docs/folders/${folder_id}/pages`)
+          const pages = pagesRes.data
+
+          const folderRes = await axios.get(`/aman/docs/folders/${folder_id}`)
+          const folder = folderRes.data
+          targetFolderId = Number(folder_id)
+
+          if (pages && pages.length > 0) {
+            // 리다이렉트하지 않고 바로 첫 번째 페이지를 에디터에 로드하여 URL과 사이드바 활성 상태 유지
+            setPage(pages[0])
+            setPageTitle(pages[0].title)
+            setPageContent(pages[0].content)
+          } else {
+            // 페이지가 없는 빈 폴더인 경우 신규 작성을 유도
+            setPage({
+              id: undefined as any,
+              title: '',
+              content: '',
+              folder: folder,
+              sortOrder: 0
+            })
+            setPageTitle('')
+            setPageContent('')
+          }
+        }
+
+        // 폴더 계층 구조 로드 (빵부스러기용)
+        if (targetFolderId) {
+          const hierarchyRes = await axios.get(`/aman/docs/folders/${targetFolderId}/hierarchy`)
+          setFolderHierarchy(hierarchyRes.data)
+        } else {
+          setFolderHierarchy([])
+        }
       } catch (error) {
-        console.error('문서 로드 오류:', error)
-        setErrorMsg('문서 데이터를 불러오는 중 오류가 발생했습니다.')
+        console.error('데이터 로드 오류:', error)
+        setErrorMsg('데이터를 불러오는 중 오류가 발생했습니다.')
+        setFolderHierarchy([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchPageDetail()
-  }, [page_id])
+    fetchData()
+  }, [page_id, folder_id, navigate])
 
   // 2. 더블 스플리터 드래그 핸들링
   useEffect(() => {
@@ -117,10 +162,6 @@ const DocUserMain: React.FC = () => {
   // 4. 저장 처리 (Upsert)
   const handleSave = async () => {
     if (!page) return
-    if (!pageTitle.trim()) {
-      alert('문서 제목을 입력해 주세요.')
-      return
-    }
 
     setSaving(true)
     try {
@@ -129,13 +170,27 @@ const DocUserMain: React.FC = () => {
         throw new Error('폴더 정보가 존재하지 않습니다.')
       }
 
-      await axios.post('/aman/content', {
+      // 제목은 폴더 이름(nums와 name의 조합 혹은 name)으로 자동 결정
+      const folderNums = page.folder?.nums
+      const folderName = page.folder?.name || '새 도움말 페이지'
+      const titleToSave = folderNums ? `${folderNums} ${folderName}` : folderName
+
+      const response = await axios.post('/aman/content', {
         id: page.id,
         folderId: folderId,
-        title: pageTitle,
+        title: titleToSave,
         content: pageContent
       })
+      const savedPage = response.data
       alert('변경사항 저장이 완료되었습니다.')
+
+
+
+      // 저장 완료 후, 페이지 ID를 업데이트하여 신규 상태를 방지하고 폴더 경로 유지
+      setPage(savedPage)
+      setPageTitle(savedPage.title)
+      setPageContent(savedPage.content)
+      navigate(`/admin/folder/${folderId}`, { replace: true })
     } catch (error) {
       console.error('저장 실패:', error)
       alert('변경사항 저장 중 오류가 발생했습니다.')
@@ -241,60 +296,70 @@ const DocUserMain: React.FC = () => {
       {/* 2. 메인 컨테이너 영역 */}
       <div className="flex flex-1 overflow-hidden items-stretch">
         {/* 2.1 왼쪽 트리 내비게이션 */}
-        {sidebarOpen && (
-          <aside
-            className="bg-white p-4 flex flex-col shrink-0 overflow-hidden border-r border-gray-200"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            {/* 관리자 모드이므로 contextMenuEnable={true} 전달 */}
-            <FolderTree contextMenuEnable={true} />
-          </aside>
-        )}
+        <aside
+          className={`bg-white p-4 flex flex-col shrink-0 overflow-hidden border-r border-gray-200 ${
+            sidebarOpen ? '' : 'hidden'
+          }`}
+          style={{ width: `${sidebarWidth}px` }}
+        >
+          {/* 관리자 모드이므로 contextMenuEnable={true} 전달 */}
+          <FolderTree contextMenuEnable={true} />
+        </aside>
 
         {/* 2.2 1번 스플리터 (사이드바 - 본문용) */}
-        {sidebarOpen && (
-          <div
-            className={`w-1.5 cursor-col-resize hover:bg-indigo-500 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center z-20 ${
-              resizingSidebar ? 'bg-indigo-500' : 'bg-transparent'
-            }`}
-            onMouseDown={() => setResizingSidebar(true)}
-          >
-            <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
-          </div>
-        )}
+        <div
+          className={`w-1.5 cursor-col-resize hover:bg-indigo-500 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center z-20 ${
+            sidebarOpen ? '' : 'hidden'
+          } ${resizingSidebar ? 'bg-indigo-500' : 'bg-transparent'}`}
+          onMouseDown={() => setResizingSidebar(true)}
+        >
+          <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
+        </div>
 
         {/* 2.3 중앙 본문 및 에디터 영역 */}
         <main className="flex-1 bg-white p-6 flex flex-col overflow-hidden">
           {/* Breadcrumbs */}
           <nav className="flex items-center space-x-2 text-[11px] text-gray-400 font-medium mb-2.5 shrink-0">
-            <span className="hover:text-gray-600 cursor-pointer">시스템 설정</span>
-            {page?.folder && (
+            {folderHierarchy.length > 0 ? (
+              folderHierarchy.map((item, idx) => (
+                <React.Fragment key={item.id}>
+                  {idx > 0 && <ChevronRight className="w-3 h-3 text-gray-300" />}
+                  <span className={idx === folderHierarchy.length - 1 ? "text-indigo-600 font-semibold" : "text-gray-400 font-medium"}>
+                    {item.nums ? `${item.nums} ` : ''}{item.name}
+                  </span>
+                </React.Fragment>
+              ))
+            ) : (
               <>
+                <span className="hover:text-gray-600 cursor-pointer">시스템 설정</span>
                 <ChevronRight className="w-3 h-3 text-gray-300" />
-                <span className="hover:text-gray-600 cursor-pointer">{page.folder.name}</span>
-              </>
-            )}
-            {pageTitle && (
-              <>
-                <ChevronRight className="w-3 h-3 text-gray-300" />
-                <span className="text-indigo-600 font-semibold">{pageTitle}</span>
+                <span className="text-gray-400 font-medium">도움말</span>
               </>
             )}
           </nav>
 
-          {/* 문서 제목 편집 */}
+          {/* 비어있는 상태 알림 */}
+          {page && !page.id && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-100 text-amber-800 rounded-md text-xs flex items-center justify-between shrink-0">
+              <span>⚠️ 현재 이 카테고리에 도움말 페이지가 비어 있습니다. 아래에 내용을 작성하여 새 도움말을 저장하십시오.</span>
+            </div>
+          )}
+
+          {/* 에러 메시지 표시 */}
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-800 rounded-md text-xs shrink-0">
+              {errorMsg}
+            </div>
+          )}
+
+          {/* 문서 제목 표시 */}
           <div className="mb-4 shrink-0 flex items-center justify-between border-b border-gray-100 pb-2">
             {page ? (
-              <input
-                type="text"
-                value={pageTitle}
-                onChange={(e) => setPageTitle(e.target.value)}
-                placeholder="문서 제목을 입력하세요"
-                className="text-xl font-bold text-gray-900 bg-transparent focus:outline-hidden w-full"
-                disabled={loading}
-              />
+              <h1 className="text-xl font-bold text-gray-900">
+                {page.folder ? `${page.folder.nums ? page.folder.nums + ' ' : ''}${page.folder.name}` : '새 도움말 페이지'}
+              </h1>
             ) : (
-              <h1 className="text-xl font-bold text-gray-400">편집할 도움말 문서를 선택하십시오.</h1>
+              <h1 className="text-xl font-bold text-gray-400">편집할 도움말 카테고리를 선택하십시오.</h1>
             )}
           </div>
 

@@ -55,6 +55,31 @@ public class DocsController {
         return ResponseEntity.ok(subFolders);
     }
 
+    @GetMapping("/folders/{folder_id}")
+    public ResponseEntity<?> getFolderDetail(@PathVariable("folder_id") Long folderId) {
+        Optional<Folder> folderOpt = folderRepository.findById(folderId);
+        if (!folderOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 폴더입니다.");
+        }
+        return ResponseEntity.ok(folderOpt.get());
+    }
+
+    @GetMapping("/folders/{folder_id}/hierarchy")
+    public ResponseEntity<?> getFolderHierarchy(@PathVariable("folder_id") Long folderId) {
+        java.util.List<Folder> hierarchy = new java.util.ArrayList<>();
+        Optional<Folder> folderOpt = folderRepository.findById(folderId);
+        if (!folderOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 폴더입니다.");
+        }
+        
+        Folder current = folderOpt.get();
+        while (current != null) {
+            hierarchy.add(0, current);
+            current = current.getParent();
+        }
+        return ResponseEntity.ok(hierarchy);
+    }
+
     @GetMapping("/folders/{folder_id}/pages")
     public ResponseEntity<?> getFolderPages(@PathVariable("folder_id") Long folderId) {
         // 편의를 위해 특정 폴더 하위의 페이지 리스트 조회 추가

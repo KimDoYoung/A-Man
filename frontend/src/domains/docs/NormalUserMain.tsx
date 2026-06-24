@@ -68,27 +68,25 @@ const NormalUserMain: React.FC = () => {
       <div className="flex-1 flex items-stretch overflow-hidden">
         
         {/* 2.1 왼쪽 사이드바 (3depth 아코디언 트리) */}
-        {sidebarOpen && (
-          <aside 
-            className="bg-white p-4 shrink-0 flex flex-col overflow-hidden border-r border-gray-200 transition-all duration-75"
-            style={{ width: `${sidebarWidth}px` }}
-          >
-            {/* FolderTree 컴포넌트 마운트 */}
-            <FolderTree contextMenuEnable={false} />
-          </aside>
-        )}
+        <aside 
+          className={`bg-white p-4 shrink-0 flex flex-col overflow-hidden border-r border-gray-200 transition-all duration-75 ${
+            sidebarOpen ? '' : 'hidden'
+          }`}
+          style={{ width: `${sidebarWidth}px` }}
+        >
+          {/* FolderTree 컴포넌트 마운트 */}
+          <FolderTree contextMenuEnable={false} />
+        </aside>
 
         {/* 2.2 사이드바 폭 드래그 리사이저 */}
-        {sidebarOpen && (
-          <div 
-            className={`w-1 cursor-col-resize hover:bg-indigo-500 active:bg-indigo-600 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center ${
-              isResizing ? 'bg-indigo-500' : 'bg-transparent'
-            }`}
-            onMouseDown={startResize}
-          >
-            <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
-          </div>
-        )}
+        <div 
+          className={`w-1 cursor-col-resize hover:bg-indigo-500 active:bg-indigo-600 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center ${
+            sidebarOpen ? '' : 'hidden'
+          } ${isResizing ? 'bg-indigo-500' : 'bg-transparent'}`}
+          onMouseDown={startResize}
+        >
+          <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
+        </div>
 
         {/* 2.3 메인 본문 콘텐츠 및 우측 목차 감싸기 */}
         <div className="flex-1 flex items-start overflow-y-auto relative bg-white">

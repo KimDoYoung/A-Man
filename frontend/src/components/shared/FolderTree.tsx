@@ -149,33 +149,17 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
     return roots.sort((a, b) => a.sortOrder - b.sortOrder)
   };
 
-  // 특정 소분류 폴더(3단계) 아래의 페이지들을 가져와 바인딩하는 토글
-  const toggleFolder = async (folder: FolderNode, depth: number) => {
+  // 특정 폴더 토글 및 경로 이동
+  const toggleFolder = (folder: FolderNode, depth: number) => {
     const isOpen = !!expandedFolders[folder.id]
     setExpandedFolders(prev => ({ ...prev, [folder.id]: !isOpen }))
 
-    // 폴더를 여는 경우에만 API 호출하여 페이지 리스트를 가져와 채움
-    if (!isOpen && depth === 3 && folder.pages.length === 0) {
-      try {
-        const response = await axios.get(`/aman/docs/folders/${folder.id}/pages`)
-        setFolders(prev => updatePagesInTree(prev, folder.id, response.data))
-      } catch (error) {
-        console.error('Pages 로드 오류:', error)
-      }
+    const isAdmin = location.pathname.startsWith('/admin')
+    if (isAdmin) {
+      navigate(`/admin/folder/${folder.id}`)
+    } else {
+      navigate(`/docs/folder/${folder.id}`)
     }
-  }
-
-  // 트리 재귀 순회를 돌며 특정 폴더에 페이지 목록을 주입하는 함수
-  const updatePagesInTree = (nodes: FolderNode[], folderId: number, pages: any[]): FolderNode[] => {
-    return nodes.map(node => {
-      if (node.id === folderId) {
-        return { ...node, pages }
-      }
-      if (node.children.length > 0) {
-        return { ...node, children: updatePagesInTree(node.children, folderId, pages) }
-      }
-      return node
-    })
   }
 
   // 폴더 전체 열기 / 전체 닫기 헬퍼
@@ -199,14 +183,20 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
   const renderFolderNode = (node: FolderNode, depth: number = 1) => {
     const isExpanded = !!expandedFolders[node.id]
     const hasChildren = node.children.length > 0
+    const isAdmin = location.pathname.startsWith('/admin')
+    const isFolderActive = 
+      (isAdmin && location.pathname === `/admin/folder/${node.id}`) ||
+      (!isAdmin && location.pathname === `/docs/folder/${node.id}`)
 
     return (
       <li key={node.id} className="space-y-1">
         <div 
           onClick={() => toggleFolder(node, depth)}
           onContextMenu={contextMenuEnable ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
-          className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 cursor-pointer text-gray-800 transition-colors ${
-            depth === 1 ? 'font-semibold text-gray-900' : 'text-gray-600'
+          className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${
+            isFolderActive
+              ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold'
+              : depth === 1 ? 'font-semibold text-gray-900' : 'text-gray-600'
           }`}
           style={{ 
             paddingLeft: depth === 3 
@@ -235,32 +225,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
           <ul className="space-y-1">
             {/* 자식 폴더 렌더링 */}
             {node.children.map(child => renderFolderNode(child, depth + 1))}
-            
-            {/* 3단계 폴더일 경우, 하위에 속한 도움말 페이지 렌더링 */}
-            {depth === 3 && node.pages.map(page => {
-              const isAdmin = location.pathname.startsWith('/admin')
-              const pageUrl = isAdmin ? `/admin/page/${page.id}` : `/docs/page/${page.id}`
-              const isActive = location.pathname === pageUrl
-              return (
-                <li key={page.id}>
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      navigate(pageUrl)
-                    }}
-                    onContextMenu={contextMenuEnable ? (e) => handleContextMenu(e, `page_${page.id}`, page.title, 4) : undefined}
-                    className={`block py-1 px-3 ml-14 rounded-md text-xs transition-all border ${
-                      isActive 
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 font-medium' 
-                        : 'border-transparent hover:bg-gray-50 text-gray-500 hover:text-gray-900'
-                    }`}
-                  >
-                    {page.title}
-                  </a>
-                </li>
-              )
-            })}
           </ul>
         )}
       </li>

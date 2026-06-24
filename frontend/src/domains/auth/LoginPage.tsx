@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, User, AlertCircle } from 'lucide-react'
 import axios from 'axios'
-import favicon from '@/assets/aman-favicon.png'
+import favicon from '@/assets/favicon.png'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
