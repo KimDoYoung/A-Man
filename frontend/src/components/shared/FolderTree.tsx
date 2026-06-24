@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Folder, FolderOpen, ChevronDown, Filter } from 'lucide-react'
+import { Folder, FolderOpen, ChevronDown, FileText } from 'lucide-react'
 import axios from 'axios'
 import { FolderNode, TocItem } from '@/types'
 import FolderTreeContextMenu from '@/components/shared/FolderTreeContextMenu'
+import FilterInput from '@/components/shared/FilterInput'
 
 interface FolderTreeProps {
   contextMenuEnable?: boolean;
@@ -205,7 +206,9 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
           }}
         >
           <div className="flex items-center">
-            {depth === 3 ? null : isExpanded ? (
+            {depth === 3 ? (
+              <FileText className="w-3.5 h-3.5 mr-2 text-slate-400" />
+            ) : isExpanded ? (
               <FolderOpen className={`w-3.5 h-3.5 mr-2 ${depth === 1 ? 'text-indigo-500' : 'text-amber-500'}`} />
             ) : (
               <Folder className="w-3.5 h-3.5 mr-2 text-gray-400" />
@@ -236,18 +239,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
       <div className="mb-3 pb-2 border-b border-gray-100 shrink-0">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">메뉴 내비게이션</p>
         <div className="flex items-center space-x-1.5">
-          <div className="relative flex-1">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-gray-400">
-              <Filter className="w-3.5 h-3.5" />
-            </span>
-            <input 
-              type="text" 
-              placeholder="필터링..." 
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-hidden focus:bg-white focus:border-indigo-500 transition-all"
-            />
-          </div>
+            <FilterInput value={filterText} onChange={setFilterText} />
           
           <button 
             onClick={expandAll} 
