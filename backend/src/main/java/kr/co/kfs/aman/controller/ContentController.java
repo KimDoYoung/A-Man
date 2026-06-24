@@ -45,7 +45,7 @@ public class ContentController {
     public ResponseEntity<?> upsertPage(@RequestBody Map<String, Object> body) {
         Long folderId = Long.valueOf(body.get("folderId").toString());
         String title = body.get("title").toString();
-        String content = body.get("content").toString();
+        String content = body.get("content").toString().trim();
         Integer sortOrder = body.containsKey("sortOrder") ? Integer.valueOf(body.get("sortOrder").toString()) : 0;
         String aka = body.containsKey("aka") && body.get("aka") != null ? body.get("aka").toString().trim() : "";
         Optional<Folder> folderOpt = folderRepository.findById(folderId);

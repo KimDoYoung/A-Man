@@ -283,12 +283,15 @@ const DocUserMain: React.FC = () => {
       const folderName = page.folder?.name || '새 도움말 페이지'
       const titleToSave = folderNums ? `${folderNums} ${folderName}` : folderName
 
+      const trimmedContent = pageContent.trim()
+      const trimmedAka = pageAka.trim()
+
       const response = await axios.post('/aman/content', {
         id: page.id,
         folderId: folderId,
         title: titleToSave,
-        content: pageContent,
-        aka: pageAka
+        content: trimmedContent,
+        aka: trimmedAka
       })
       const savedPage = response.data
       
