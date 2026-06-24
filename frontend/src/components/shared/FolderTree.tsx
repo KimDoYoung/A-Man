@@ -238,7 +238,8 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
             
             {/* 3단계 폴더일 경우, 하위에 속한 도움말 페이지 렌더링 */}
             {depth === 3 && node.pages.map(page => {
-              const pageUrl = `/docs/page/${page.id}`
+              const isAdmin = location.pathname.startsWith('/admin')
+              const pageUrl = isAdmin ? `/admin/page/${page.id}` : `/docs/page/${page.id}`
               const isActive = location.pathname === pageUrl
               return (
                 <li key={page.id}>

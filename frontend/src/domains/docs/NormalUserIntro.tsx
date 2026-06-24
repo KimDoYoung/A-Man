@@ -1,7 +1,7 @@
 import React from 'react'
 import { BookOpen, Key, FileText, CheckCircle } from 'lucide-react'
 
-const ManualMain: React.FC = () => {
+const NormalUserIntro: React.FC = () => {
   return (
     <article className="prose max-w-3xl">
       <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 pb-4 border-b border-gray-200 mb-6">
@@ -68,4 +68,4 @@ const ManualMain: React.FC = () => {
   )
 }
 
-export default ManualMain
+export default NormalUserIntro
