@@ -1,8 +1,8 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import FolderTree from './components/shared/FolderTree'
-import ManualMain from './domains/content/ManualMain'
-import MarkdownViewer from './domains/content/MarkdownViewer'
+import NormalUserMain from '@/domains/docs/NormalUserMain'
+import NormalUserIndex from '@/domains/docs/NormalUserIndex'
+import MarkdownViewer from '@/domains/content/MarkdownViewer'
 
 // 임시 컴포넌트 (추후 구현 예정)
 const Login = () => <div className="p-8">로그인 화면 (준비 중)</div>
@@ -36,8 +36,8 @@ function App() {
       <Routes>
         {/* 1. 일반 사용자용 경로 (Free Pass) */}
         <Route path="/" element={<Navigate to="/docs" replace />} />
-        <Route path="/docs" element={<FolderTree />}>
-          <Route index element={<ManualMain />} />
+        <Route path="/docs" element={<NormalUserMain />}>
+          <Route index element={<NormalUserIndex />} />
           <Route path="page/:page_id" element={<MarkdownViewer />} />
         </Route>
 
