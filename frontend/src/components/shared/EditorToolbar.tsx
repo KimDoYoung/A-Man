@@ -3,10 +3,9 @@ import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile } from '
 
 const EMOJIS = [
   '‼️', '❗', '✔️', '🚩', '➡️', '📝', '▶️', '🔴', '🔷', '🔵', 
-  '🔷', '👉', '🚫', '❓', '💡', '🔥', '✨', '🎉', '📌', '⚠️', 
-  '✅', '❌', '❓', '💬', '😀', '😃', '👍', '✒️​', '📌​', '❤️​',
-  '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣' 
-  
+  '👉', '🚫', '❓', '💡', '🔥', '✨', '🎉', '📌', '⚠️', '✅', 
+  '❌', '💬', '😀', '😃', '👍', '✒️​', '📌​', '❤️​',
+  '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'
 ]
 
 interface EditorToolbarProps {
@@ -126,9 +125,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </button>
           {emojiOpen && (
             <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg grid grid-cols-8 gap-1 w-48 z-50">
-              {EMOJIS.map((emoji) => (
+              {EMOJIS.map((emoji, idx) => (
                 <button
-                  key={emoji}
+                  key={`${emoji}-${idx}`}
                   onClick={() => {
                     insertMarkdown(emoji)
                     setEmojiOpen(false)
