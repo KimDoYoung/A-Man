@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, User, AlertCircle } from 'lucide-react'
 import axios from 'axios'
-import favicon from '@/assets/favicon.png'
+import favicon from '@/assets/aman-favicon.png'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
@@ -124,12 +124,17 @@ const LoginPage: React.FC = () => {
               <span>로그인</span>
             )}
           </button>
+          <button type="button" onClick={() => navigate('/')} className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 rounded-lg text-sm font-semibold tracking-wide shadow-md shadow-gray-500/10 transition-all cursor-pointer flex items-center justify-center space-x-2">
+            <span>홈으로 돌아가기</span>
+          </button>
         </form>
 
         {/* 푸터 */}
         <div className="mt-8 text-center border-t border-slate-100 pt-4">
           <p className="text-[10px] text-slate-400 font-medium">
-            © 2026 KFS Co., Ltd. All rights reserved.
+            © 2026 <a href="http://www.k-fs.co.kr/user1/index1" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
+              Korea Fund Service Co., Ltd.
+            </a> All rights reserved.
           </p>
         </div>
 

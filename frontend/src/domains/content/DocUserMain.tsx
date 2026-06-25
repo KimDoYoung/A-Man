@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useBlocker } from 'react-router-dom'
 import { Save } from 'lucide-react'
 import axios from 'axios'
 import FolderTree from '@/components/shared/FolderTree'
@@ -42,8 +42,31 @@ const DocUserMain: React.FC = () => {
 
   const isDirty = page ? (pageContent !== (page.content || '') || pageAka !== (page.aka || '')) : false
 
+  // 1. 브라우저 새로고침, 탭 닫기, 외부 페이지 이동 차단 (beforeunload)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = '' // 현대 브라우저 표준
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [isDirty])
+
+  // 2. React Router 내부 클라이언트 사이드 페이지 전환 차단 (사이드바 폴더/파일 클릭 등)
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && !isLeavingRef.current && currentLocation.pathname !== nextLocation.pathname
+  )
+
+  // blocker state가 blocked일 때 렌더링 영역(아래 JSX)에서 커스텀 모달로 처리합니다.
+
   const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const isLeavingRef = useRef(false)
 
   // 1. 문서 상세 데이터 또는 폴더 기준 데이터 로드
   useEffect(() => {
@@ -260,8 +283,8 @@ const DocUserMain: React.FC = () => {
   }
 
   // 4. 저장 처리 (Upsert)
-  const handleSave = async () => {
-    if (!page) return
+  const handleSave = async (skipNavigate = false): Promise<boolean> => {
+    if (!page) return false
 
     const hasExistingAka = page.aka && page.aka.trim() !== ''
     let trimmedAka = pageAka.trim()
@@ -270,19 +293,19 @@ const DocUserMain: React.FC = () => {
     if (isCurrentAkaEmpty) {
       if (hasExistingAka) {
         alert('별칭(AKA)은 빈 값으로 저장할 수 없습니다. 기존 별칭을 유지하거나 새로운 별칭을 입력해주세요.')
-        return
+        return false
       }
 
       setSaving(true)
       try {
-        const response = await axios.get('/manual/new-aka')
+        const response = await axios.get('/aman/manual/new-aka')
         trimmedAka = response.data.trim()
         setPageAka(trimmedAka)
       } catch (error) {
         console.error('새로운 AKA 발급 실패:', error)
         alert('새 AKA를 발급받지 못했습니다. 수동으로 입력해 주세요.')
         setSaving(false)
-        return
+        return false
       }
     } else {
       setSaving(true)
@@ -316,17 +339,25 @@ const DocUserMain: React.FC = () => {
       }, 3000)
 
       // 저장 완료 후, 페이지 ID를 업데이트하여 신규 상태를 방지하고 폴더 경로 유지
+      isLeavingRef.current = true
       setPage(savedPage)
       setPageTitle(savedPage.title)
       setPageContent(savedPage.content)
       setPageAka(savedPage.aka || '')
-      navigate(`/admin/folder/${folderId}`, { replace: true })
+      if (!skipNavigate) {
+        navigate(`/admin/folder/${folderId}`, { replace: true })
+      }
+      setTimeout(() => {
+        isLeavingRef.current = false
+      }, 100)
+      return true
     } catch (error) {
       console.error('저장 실패:', error)
       setSaveStatus({ type: 'error', text: '변경사항 저장 중 오류가 발생했습니다.' })
       setTimeout(() => {
         setSaveStatus((prev) => prev.text === '변경사항 저장 중 오류가 발생했습니다.' ? { type: '', text: '' } : prev)
       }, 3000)
+      return false
     } finally {
       setSaving(false)
     }
@@ -516,6 +547,56 @@ const DocUserMain: React.FC = () => {
           )}
         </main>
       </div>
+
+      {/* 3. 변경사항 저장 확인 커스텀 모달 */}
+      {blocker.state === 'blocked' && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] transition-all duration-300">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-slate-950 mb-2">변경사항 저장</h3>
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              작성 중인 도움말 변경 사항이 있습니다. 이동하기 전에 저장하시겠습니까?
+            </p>
+            <div className="flex items-center justify-end space-x-2">
+              <button
+                onClick={() => {
+                  blocker.reset()
+                }}
+                className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+              >
+                취소 (편집 계속)
+              </button>
+              <button
+                onClick={() => {
+                  blocker.proceed()
+                }}
+                className="px-3 py-2 text-xs font-semibold text-red-650 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+              >
+                저장 안 함
+              </button>
+              <button
+                onClick={async () => {
+                  const destination = blocker.location
+                    ? blocker.location.pathname + (blocker.location.search || '') + (blocker.location.hash || '')
+                    : null
+                  
+                  isLeavingRef.current = true
+                  const success = await handleSave(true)
+                  if (success && destination) {
+                    blocker.reset()
+                    navigate(destination)
+                  } else {
+                    isLeavingRef.current = false
+                    blocker.reset()
+                  }
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-xs hover:shadow-md transition-all cursor-pointer"
+              >
+                저장 후 이동
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

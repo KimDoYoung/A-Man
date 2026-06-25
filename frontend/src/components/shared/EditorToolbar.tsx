@@ -53,21 +53,21 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <div className="flex items-center space-x-2">
         <button
           onClick={() => insertMarkdown('# ')}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-2 cursor-pointer"
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
           title="H1 헤더 추가"
         >
           H1
         </button>
         <button
           onClick={() => insertMarkdown('## ')}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-2 cursor-pointer"
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
           title="H2 헤더 추가"
         >
           H2
         </button>
         <button
           onClick={() => insertMarkdown('### ')}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-2 cursor-pointer"
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
           title="H3 헤더 추가"
         >
           H3
@@ -152,7 +152,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           onChange={(e) => onAkaChange(e.target.value)}
           placeholder="예: 1110"
           className="w-24 px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded focus:outline-hidden focus:border-indigo-500 font-mono text-gray-800"
-          title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /manual/1110 으로 접근 가능)"
+          title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /aman/manual/1110 으로 접근 가능)"
         />
       </div>
 
@@ -164,12 +164,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         {previewOpen ? (
           <>
             <EyeOff className="w-3.5 h-3.5" />
-            <span>미리보기 숨기기</span>
+            <span>숨기기</span>
           </>
         ) : (
           <>
             <Eye className="w-3.5 h-3.5" />
-            <span>미리보기 보이기</span>
+            <span>보이기</span>
           </>
         )}
       </button>
