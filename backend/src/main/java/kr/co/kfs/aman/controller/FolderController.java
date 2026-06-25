@@ -128,4 +128,30 @@ public class FolderController {
             deleteFolderRecursive(child);
         }
     }
+
+    @PostMapping("/regenerate-all")
+    @Transactional
+    public ResponseEntity<?> regenerateAllNumbers() {
+        List<Folder> roots = folderRepository.findByParentIsNullOrderBySortOrderAsc();
+        int rootIndex = 1;
+        for (Folder root : roots) {
+            rebuildFolderRecursive(root, null, rootIndex);
+            rootIndex++;
+        }
+        return ResponseEntity.ok("전체 메뉴의 번호(nums) 및 정렬 순서가 성공적으로 재생성되었습니다.");
+    }
+
+    private void rebuildFolderRecursive(Folder folder, String parentNums, int sequence) {
+        String currentNums = parentNums == null ? String.valueOf(sequence) : parentNums + "." + sequence;
+        folder.setNums(currentNums);
+        folder.setSortOrder(sequence * 10);
+        folderRepository.save(folder);
+
+        List<Folder> children = folderRepository.findByParentIdOrderBySortOrderAsc(folder.getId());
+        int childIndex = 1;
+        for (Folder child : children) {
+            rebuildFolderRecursive(child, currentNums, childIndex);
+            childIndex++;
+        }
+    }
 }

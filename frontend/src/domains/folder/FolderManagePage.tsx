@@ -341,6 +341,35 @@ const FolderManagePage: React.FC = () => {
     showStatus('success', '정렬 순서에 기초하여 메뉴 번호가 자동 부여되었습니다. [저장]을 눌러 반영하세요.')
   }
 
+  // Regenerate all folder numbers recursively on the backend
+  const handleRegenerateAllNumbers = async () => {
+    if (!confirm('⚠️ 전체 메뉴의 번호(nums) 및 정렬 순서(sortOrder)를 현재 정렬 기준에 맞추어 일괄 재생성하시겠습니까?\n이 작업은 데이터베이스에 즉시 반영되며 되돌릴 수 없습니다.')) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      const response = await axios.post('/aman/folder/regenerate-all')
+      showStatus('success', response.data || '전체 번호가 성공적으로 재생성되었습니다.')
+      
+      // Reload left tree and current grid view
+      await fetchTreeData()
+      if (selectedFolder) {
+        // Load latest version of selected folder to update grid context
+        const latestResponse = await axios.get(`/aman/docs/folders/${selectedFolder.id}`)
+        setSelectedFolder(latestResponse.data)
+        loadSubFolders(selectedFolder.id)
+      } else {
+        loadRootFolders()
+      }
+    } catch (err: any) {
+      console.error(err)
+      showStatus('error', err.response?.data || '전체 번호 재생성 중 오류가 발생했습니다.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Render tree node recursively
   const renderTreeNode = (node: FolderNode) => {
     const isExpanded = !!expandedFolders[node.id]
@@ -409,13 +438,23 @@ const FolderManagePage: React.FC = () => {
             </p>
           </div>
 
-          {statusMsg.text && (
-            <div className={`mt-2 md:mt-0 px-4 py-2 rounded-lg text-xs font-semibold border ${
-              statusMsg.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-red-50 border-red-200 text-red-600'
-            }`}>
-              {statusMsg.text}
-            </div>
-          )}
+          <div className="flex flex-col items-end justify-between gap-2 mt-2 md:mt-0">
+            {statusMsg.text && (
+              <div className={`px-4 py-2 rounded-lg text-xs font-semibold border ${
+                statusMsg.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-red-50 border-red-200 text-red-600'
+              }`}>
+                {statusMsg.text}
+              </div>
+            )}
+            <button
+              onClick={handleRegenerateAllNumbers}
+              className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+              title="데이터베이스 내의 전체 메뉴 번호(nums) 및 정렬 순서를 재정리합니다."
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>전체번호 재생성</span>
+            </button>
+          </div>
         </div>
 
         {/* Dual Pane Layout Container */}
@@ -473,11 +512,12 @@ const FolderManagePage: React.FC = () => {
                 <button
                   onClick={handleAutoCalcNums}
                   className="px-2.5 py-1.5 bg-sky-500/10 text-sky-600 hover:bg-sky-500/20 border border-sky-500/20 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1"
-                  title="정렬 순서에 따라 메뉴 번호 체계 자동 번호 매기기"
+                  title="현재 그리드 내 하위 메뉴들의 번호를 일괄 계산합니다."
                 >
                   <ListOrdered className="w-3.5 h-3.5" />
-                  <span>번호 자동계산</span>
+                  <span>선택 레벨 번호계산</span>
                 </button>
+
                 <button
                   onClick={handleAddChildRow}
                   className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1"
