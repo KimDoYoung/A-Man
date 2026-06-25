@@ -16,6 +16,12 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const location = useLocation()
   const isAdminAssetsPage = location.pathname === '/admin/assets'
   const isAdminUsersPage = location.pathname === '/admin/users'
+  const isAdminFoldersPage = location.pathname === '/admin/folders'
+  const isDocEditPage = location.pathname === '/admin' || 
+    (location.pathname.startsWith('/admin/') && 
+     !location.pathname.startsWith('/admin/assets') && 
+     !location.pathname.startsWith('/admin/users') && 
+     !location.pathname.startsWith('/admin/folders'))
   const [version, setVersion] = useState('0.0.1')
 
   // Profile Edit Modal States
@@ -163,19 +169,56 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             A-Man ({version})
           </span>
           <button
-            onClick={() => navigate(isAdminAssetsPage ? '/admin' : '/admin/assets')}
-            className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
-            title={isAdminAssetsPage ? '문서 편집 화면으로 이동' : '공통 자산 관리 화면으로 이동'}
+            onClick={() => navigate('/docs')}
+            className="flex items-center space-x-1 px-2.5 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
+            title="도움말 홈 화면으로 이동"
           >
-            {isAdminAssetsPage ? '문서 편집' : '자산 관리'}
+            홈으로
+          </button>
+          <button
+            onClick={() => navigate('/admin')}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+              isDocEditPage 
+                ? 'bg-indigo-600 text-white border-indigo-600' 
+                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+            }`}
+            title="문서 편집 화면으로 이동"
+          >
+            문서 편집
+          </button>
+          <button
+            onClick={() => navigate('/admin/assets')}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+              isAdminAssetsPage 
+                ? 'bg-indigo-600 text-white border-indigo-600' 
+                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+            }`}
+            title="공통 자산 관리 화면으로 이동"
+          >
+            자산 관리
+          </button>
+          <button
+            onClick={() => navigate('/admin/folders')}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+              isAdminFoldersPage 
+                ? 'bg-amber-600 text-white border-amber-600' 
+                : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+            }`}
+            title="메뉴 폴더 구조 관리 화면으로 이동"
+          >
+            메뉴 관리
           </button>
           {user?.role === 'admin' && (
             <button
-              onClick={() => navigate(isAdminUsersPage ? '/admin' : '/admin/users')}
-              className="flex items-center space-x-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
-              title={isAdminUsersPage ? '문서 편집 화면으로 이동' : '사용자 계정 관리 화면으로 이동'}
+              onClick={() => navigate('/admin/users')}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                isAdminUsersPage 
+                  ? 'bg-emerald-600 text-white border-emerald-600' 
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+              }`}
+              title="사용자 계정 관리 화면으로 이동"
             >
-              {isAdminUsersPage ? '문서 편집' : '사용자 관리'}
+              사용자 관리
             </button>
           )}
         </div>
