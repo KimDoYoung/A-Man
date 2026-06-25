@@ -5,6 +5,7 @@ import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { AgGridReact } from 'ag-grid-react'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
+import DepthBadge from './components/DepthBadge'
 
 interface FolderNode {
   id: number
@@ -29,6 +30,52 @@ const FolderManagePage: React.FC = () => {
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
   
   const gridRef = useRef<AgGridReact>(null)
+
+  // Splitter Resizing
+  const [treeWidth, setTreeWidth] = useState(() => {
+    const saved = localStorage.getItem('folder-tree-width')
+    return saved ? parseInt(saved, 10) : 320
+  })
+  const isResizingRef = useRef(false)
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    isResizingRef.current = true
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isResizingRef.current) return
+    const container = document.getElementById('folder-manage-container')
+    if (container) {
+      const rect = container.getBoundingClientRect()
+      const newWidth = e.clientX - rect.left
+      if (newWidth >= 240 && newWidth <= 600) {
+        setTreeWidth(newWidth)
+        localStorage.setItem('folder-tree-width', newWidth.toString())
+      }
+    }
+  }
+
+  const handleMouseUp = () => {
+    isResizingRef.current = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', handleMouseUp)
+  }
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
 
   // Fetch folders and build tree
   const fetchTreeData = async () => {
@@ -150,9 +197,31 @@ const FolderManagePage: React.FC = () => {
     setSelectedFolder(folder)
     if (folder) {
       loadSubFolders(folder.id)
+      // Expand the folder when name/row is clicked (without collapsing if already open)
+      setExpandedFolders(prev => ({ ...prev, [folder.id]: true }))
     } else {
       loadRootFolders()
+      // Collapse all folders when returning to root view
+      setExpandedFolders({})
     }
+  }
+
+  const handleExpandAll = () => {
+    const expanded: Record<number, boolean> = {}
+    const traverse = (nodes: any[]) => {
+      nodes.forEach(node => {
+        expanded[node.id] = true
+        if (node.children && node.children.length > 0) {
+          traverse(node.children)
+        }
+      })
+    }
+    traverse(flatFolders)
+    setExpandedFolders(expanded)
+  }
+
+  const handleCollapseAll = () => {
+    setExpandedFolders({})
   }
 
   // AG Grid Columns Definition
@@ -436,9 +505,7 @@ const FolderManagePage: React.FC = () => {
             <span className="truncate">{node.name}</span>
           </div>
           
-          <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-400 border border-gray-200 rounded font-mono">
-            D{node.level}
-          </span>
+          <DepthBadge level={node.level} />
         </div>
 
         {hasChildren && isExpanded && (
@@ -496,22 +563,39 @@ const FolderManagePage: React.FC = () => {
         </div>
 
         {/* Dual Pane Layout Container */}
-        <div className="flex-1 flex space-x-6 overflow-hidden">
+        <div id="folder-manage-container" className="flex-1 flex overflow-hidden">
           
           {/* Left Pane: Tree View */}
-          <div className="w-80 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-            <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
-              <span className="text-xs font-bold text-slate-700">메뉴 폴더 트리</span>
-              <button 
-                onClick={() => handleSelectFolderNode(null)}
-                className={`text-[10px] px-2 py-1 rounded border font-semibold cursor-pointer transition-colors ${
-                  selectedFolder === null 
-                    ? 'bg-indigo-600 border-indigo-600 text-white' 
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                최상위 메뉴 보기
-              </button>
+          <div 
+            style={{ width: `${treeWidth}px` }}
+            className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden shrink-0"
+          >
+            <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0 gap-1">
+              <span className="text-xs font-bold text-slate-700 shrink-0">메뉴 트리</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <button 
+                  onClick={() => handleSelectFolderNode(null)}
+                  className={`text-[10px] px-1.5 py-1 rounded border font-semibold cursor-pointer transition-colors ${
+                    selectedFolder === null 
+                      ? 'bg-indigo-600 border-indigo-600 text-white' 
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  최상위보기
+                </button>
+                <button
+                  onClick={handleExpandAll}
+                  className="text-[10px] px-1.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded font-semibold cursor-pointer transition-colors"
+                >
+                  모두펼치기
+                </button>
+                <button
+                  onClick={handleCollapseAll}
+                  className="text-[10px] px-1.5 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded font-semibold cursor-pointer transition-colors"
+                >
+                  모두접기
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-1">
@@ -528,6 +612,15 @@ const FolderManagePage: React.FC = () => {
                 treeData.map(node => renderTreeNode(node))
               )}
             </div>
+          </div>
+
+          {/* Resizer/Splitter */}
+          <div
+            onMouseDown={handleMouseDown}
+            className="w-4 cursor-col-resize flex items-center justify-center group shrink-0 select-none"
+            title="드래그하여 트리 너비 조절"
+          >
+            <div className="w-1 h-16 bg-slate-200 rounded-full group-hover:bg-indigo-400 group-active:bg-indigo-600 transition-all group-hover:w-1.5" />
           </div>
 
           {/* Right Pane: Grid Editor */}

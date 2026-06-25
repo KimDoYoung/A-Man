@@ -17,11 +17,13 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const isAdminAssetsPage = location.pathname === '/admin/assets'
   const isAdminUsersPage = location.pathname === '/admin/users'
   const isAdminFoldersPage = location.pathname === '/admin/folders'
+  const isAdminSettingsPage = location.pathname === '/admin/settings'
   const isDocEditPage = location.pathname === '/admin' || 
     (location.pathname.startsWith('/admin/') && 
      !location.pathname.startsWith('/admin/assets') && 
      !location.pathname.startsWith('/admin/users') && 
-     !location.pathname.startsWith('/admin/folders'))
+     !location.pathname.startsWith('/admin/folders') &&
+     !location.pathname.startsWith('/admin/settings'))
   const [version, setVersion] = useState('0.0.1')
 
   // Profile Edit Modal States
@@ -221,6 +223,17 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               사용자 관리
             </button>
           )}
+          <button
+            onClick={() => navigate('/admin/settings')}
+            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+              isAdminSettingsPage 
+                ? 'bg-purple-600 text-white border-purple-600' 
+                : 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20'
+            }`}
+            title="시스템 환경 설정 화면으로 이동"
+          >
+            설정
+          </button>
         </div>
       </div>
       

@@ -82,8 +82,12 @@ do_dev() {
     header "Dev - 개발 서버 실행"
     cd "$FRONTEND_DIR" || exit
     local mode="${AMAN_MODE:-development}"
-    info "개발 서버 시작 (http://localhost:5173) mode=${mode}"
-    npm run dev -- --mode "$mode" || warn "패키지가 아직 빌드되지 않았거나 package.json이 올바르지 않습니다. 먼저 'fm.sh install'을 실행해 주세요."
+    local vite_mode="$mode"
+    if [[ "$vite_mode" == "local" ]]; then
+        vite_mode="development"
+    fi
+    info "개발 서버 시작 (http://localhost:5173) mode=${mode} (Vite mode: ${vite_mode})"
+    npm run dev -- --mode "$vite_mode" || warn "패키지가 아직 빌드되지 않았거나 package.json이 올바르지 않습니다. 먼저 'fm.sh install'을 실행해 주세요."
 }
 
 do_test() {
@@ -96,8 +100,12 @@ do_build() {
     header "Build - 프로덕션 빌드"
     cd "$FRONTEND_DIR" || exit
     local mode="${AMAN_MODE:-production}"
-    info "빌드 시작... mode=${mode}"
-    npm run build -- --mode "$mode"
+    local vite_mode="$mode"
+    if [[ "$vite_mode" == "local" ]]; then
+        vite_mode="production"
+    fi
+    info "빌드 시작... mode=${mode} (Vite mode: ${vite_mode})"
+    npm run build -- --mode "$vite_mode"
     if [[ -d "dist" ]]; then
         info "빌드 완료: dist/"
     else
