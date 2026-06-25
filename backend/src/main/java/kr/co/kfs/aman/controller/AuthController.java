@@ -80,8 +80,10 @@ public class AuthController {
         setCookie(response, "refresh_token", refreshToken, 1209600); // 14일
 
         Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("id", user.getId());
         responseBody.put("username", user.getUsername());
         responseBody.put("name", user.getName());
+        responseBody.put("email", user.getEmail());
         responseBody.put("role", user.getRole());
         responseBody.put("accessToken", accessToken);
         responseBody.put("message", "로그인 성공");

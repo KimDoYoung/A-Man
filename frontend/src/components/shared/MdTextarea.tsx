@@ -93,6 +93,90 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const textarea = e.currentTarget;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = form.content;
+
+            if (start === end) {
+                // 선택 영역이 없는 경우: 현재 커서 위치에 \t 삽입
+                const updated = text.substring(0, start) + '\t' + text.substring(start);
+                setForm({ content: updated });
+                onChange(updated);
+                
+                // 커서 위치를 \t 뒤로 이동
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(start + 1, start + 1);
+                }, 0);
+            } else {
+                // 선택 영역이 있는 경우: 선택 범위가 속한 모든 라인의 처음에 \t 추가
+                const beforeSelection = text.substring(0, start);
+                const afterSelection = text.substring(end);
+
+                // 선택 영역이 시작된 라인의 첫 글자 위치 찾기
+                const lastNewline = beforeSelection.lastIndexOf('\n');
+                const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+                
+                const textToIndent = text.substring(lineStart, end);
+                const lines = textToIndent.split('\n');
+
+                let updatedTextToIndent: string;
+                let newSelectionStart = start;
+                let newSelectionEnd = end;
+
+                if (e.shiftKey) {
+                    // Shift + Tab: 들여쓰기 제거
+                    let totalRemoved = 0;
+
+                    const updatedLines = lines.map((line, idx) => {
+                        let removed = 0;
+                        let newline = line;
+                        if (line.startsWith('\t')) {
+                            newline = line.substring(1);
+                            removed = 1;
+                        } else if (line.startsWith('    ')) {
+                            newline = line.substring(4);
+                            removed = 4;
+                        } else if (line.startsWith('  ')) {
+                            newline = line.substring(2);
+                            removed = 2;
+                        }
+
+                        if (idx === 0) {
+                            const selectionOffsetInFirstLine = start - lineStart;
+                            if (selectionOffsetInFirstLine > 0) {
+                                newSelectionStart = Math.max(lineStart, start - Math.min(removed, selectionOffsetInFirstLine));
+                            }
+                        }
+                        totalRemoved += removed;
+                        return newline;
+                    });
+                    updatedTextToIndent = updatedLines.join('\n');
+                    newSelectionEnd = end - totalRemoved;
+                } else {
+                    // Tab: 들여쓰기 추가 (\t)
+                    const updatedLines = lines.map((line) => '\t' + line);
+                    updatedTextToIndent = updatedLines.join('\n');
+                    
+                    newSelectionStart = start + 1;
+                    newSelectionEnd = end + lines.length;
+                }
+
+                const updated = text.substring(0, lineStart) + updatedTextToIndent + afterSelection;
+                setForm({ content: updated });
+                onChange(updated);
+
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(newSelectionStart, newSelectionEnd);
+                }, 0);
+            }
+            return;
+        }
+
         if (e.ctrlKey) {
             const key = e.key.toLowerCase();
             if (key === 's') {

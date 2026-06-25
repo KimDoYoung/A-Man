@@ -286,20 +286,14 @@ const DocUserMain: React.FC = () => {
   const handleSave = async (skipNavigate = false): Promise<boolean> => {
     if (!page) return false
 
-    const hasExistingAka = page.aka && page.aka.trim() !== ''
     let trimmedAka = pageAka.trim()
     const isCurrentAkaEmpty = !trimmedAka
 
     if (isCurrentAkaEmpty) {
-      if (hasExistingAka) {
-        alert('별칭(AKA)은 빈 값으로 저장할 수 없습니다. 기존 별칭을 유지하거나 새로운 별칭을 입력해주세요.')
-        return false
-      }
-
       setSaving(true)
       try {
         const response = await axios.get('/aman/manual/new-aka')
-        trimmedAka = response.data.trim()
+        trimmedAka = response.data.toString().trim()
         setPageAka(trimmedAka)
       } catch (error) {
         console.error('새로운 AKA 발급 실패:', error)

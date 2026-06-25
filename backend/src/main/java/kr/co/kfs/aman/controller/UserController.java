@@ -37,6 +37,9 @@ public class UserController {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이미 존재하는 아이디입니다.");
         }
+        if (user.getEmail() != null && userRepository.findByEmail(user.getEmail().trim()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이미 존재하는 이메일입니다.");
+        }
         user.setIsActive(1);
         User savedUser = userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
@@ -50,6 +53,16 @@ public class UserController {
         // 활성화된 유저뿐만 아니라 전체 목록을 보거나 조건별 처리
         List<User> users = userRepository.findAll();
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile() {
+        String username = getLoginUsername();
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (!userOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 사용자입니다.");
+        }
+        return ResponseEntity.ok(userOpt.get());
     }
 
     @GetMapping("/{user_id}")
@@ -81,17 +94,25 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("수정 권한이 없습니다.");
         }
 
+        // 비밀번호 수정
+        if (fields.containsKey("password")) user.setPassword(fields.get("password"));
+        
+        // 이메일 수정 (중복 검증 추가)
+        if (fields.containsKey("email")) {
+            String newEmail = fields.get("email").trim();
+            if (!newEmail.equalsIgnoreCase(user.getEmail())) {
+                if (userRepository.findByEmail(newEmail).isPresent()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이미 존재하는 이메일입니다.");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
         if (isAdmin) {
             // 관리자는 전체 정보 수정 가능
-            if (fields.containsKey("password")) user.setPassword(fields.get("password"));
-            if (fields.containsKey("email")) user.setEmail(fields.get("email"));
             if (fields.containsKey("name")) user.setName(fields.get("name"));
             if (fields.containsKey("role")) user.setRole(fields.get("role"));
             if (fields.containsKey("isActive")) user.setIsActive(Integer.parseInt(fields.get("isActive")));
-        } else {
-            // 일반 사용자는 본인 패스워드와 이메일만 수정 가능
-            if (fields.containsKey("password")) user.setPassword(fields.get("password"));
-            if (fields.containsKey("email")) user.setEmail(fields.get("email"));
         }
 
         User updatedUser = userRepository.save(user);

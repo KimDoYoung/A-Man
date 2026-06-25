@@ -74,6 +74,27 @@ public class AssetController {
         asset.setName(asset.getName().trim());
         asset.setValue(asset.getValue().trim());
 
+        if ("EMOJI".equals(asset.getAtype()) || "SYMBOL".equals(asset.getAtype())) {
+            String[] items = asset.getValue().split(",");
+            java.util.List<String> cleanedItems = new java.util.ArrayList<>();
+            for (String item : items) {
+                String trimmed = item.trim();
+                if (!trimmed.isEmpty()) {
+                    if (trimmed.length() > 10) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body("이모지 및 기호의 각 개별 요소는 10자 이하여야 합니다: '" + trimmed + "'");
+                    }
+                    if (!cleanedItems.contains(trimmed)) {
+                        cleanedItems.add(trimmed);
+                    }
+                }
+            }
+            if (cleanedItems.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("유효한 이모지/기호 요소가 없습니다.");
+            }
+            asset.setValue(String.join(", ", cleanedItems));
+        }
+
         Asset savedAsset;
         if (asset.getId() != null) {
             Optional<Asset> existingOpt = assetRepository.findById(asset.getId());

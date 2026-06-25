@@ -226,40 +226,10 @@ DELETE FROM assets;
 DELETE FROM sqlite_sequence WHERE name='assets';
 
 -- EMOJIs
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Double Exclamation', '‼️');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Exclamation', '❗');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Checkmark Thin', '✔️');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Flag', '🚩');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Right Arrow', '➡️');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Memo', '📝');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Play Button', '▶️');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Red Circle', '🔴');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Blue Diamond', '🔷');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Blue Circle', '🔵');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Point Right', '👉');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Prohibited', '🚫');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Question Mark', '❓');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Light Bulb', '💡');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Fire', '🔥');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Sparkles', '✨');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Tada', '🎉');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Pin', '📌');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Warning Triangle', '⚠️');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Checkmark Thick', '✅');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Cross Mark', '❌');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Speech Balloon', '💬');
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Thumbs Up', '👍');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', '기본 이모지', '‼️, ❗, ✔️, 🚩, ➡️, 📝, ▶️, 🔴, 🔷, 🔵, 👉, 🚫, ❓, 💡, 🔥, ✨, 🎉, 📌, ⚠️, ✅, ❌, 💬, 👍');
 
 -- SYMBOLs
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Reference Sign (※)', '※');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Square (■)', '■');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Right-Pointing Triangle (▶)', '▶');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'White Circle (○)', '○');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Circle (●)', '●');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Star (★)', '★');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'White Star (☆)', '☆');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Right Arrow (➔)', '➔');
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Checkmark (✓)', '✓');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', '기본 특수기호', '※, ■, ▶, ○, ●, ★, ☆, ➔, ✓');
 
 -- PHRASEs
 INSERT INTO assets (atype, name, value) VALUES ('PHRASE', '임시 비밀번호 정책', '최초 생성 시 임시 비밀번호는 안전한 채널을 통해 사원에게 전달하며, 사원은 최초 로그인 시 비밀번호를 변경해야 합니다.');

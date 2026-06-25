@@ -89,13 +89,44 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     axios.get<Asset[]>('/aman/assets')
       .then(res => {
         const data = res.data
-        const em = data.filter(x => x.atype === 'EMOJI')
-        const sy = data.filter(x => x.atype === 'SYMBOL')
+        
+        // EMOJI: split comma-separated values
+        const emRaw = data.filter(x => x.atype === 'EMOJI')
+        let emParsed: Asset[] = []
+        if (emRaw.length > 0) {
+          emRaw.forEach(asset => {
+            const parts = asset.value.split(',').map(s => s.trim()).filter(Boolean)
+            parts.forEach((val, idx) => {
+              emParsed.push({
+                atype: 'EMOJI',
+                name: `${asset.name}-${idx}`,
+                value: val
+              })
+            })
+          })
+        }
+
+        // SYMBOL: split comma-separated values
+        const syRaw = data.filter(x => x.atype === 'SYMBOL')
+        let syParsed: Asset[] = []
+        if (syRaw.length > 0) {
+          syRaw.forEach(asset => {
+            const parts = asset.value.split(',').map(s => s.trim()).filter(Boolean)
+            parts.forEach((val, idx) => {
+              syParsed.push({
+                atype: 'SYMBOL',
+                name: `${asset.name}-${idx}`,
+                value: val
+              })
+            })
+          })
+        }
+
         const ph = data.filter(x => x.atype === 'PHRASE')
         const tm = data.filter(x => x.atype === 'TEMPLATE')
 
-        setEmojis(em.length > 0 ? em : FALLBACK_EMOJIS)
-        setSymbols(sy.length > 0 ? sy : FALLBACK_SYMBOLS)
+        setEmojis(emParsed.length > 0 ? emParsed : FALLBACK_EMOJIS)
+        setSymbols(syParsed.length > 0 ? syParsed : FALLBACK_SYMBOLS)
         setPhrases(ph)
         setTemplates(tm)
       })
@@ -265,9 +296,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             <FileText className="w-3.5 h-3.5" />
           </button>
           {phraseOpen && (
-            <div className="absolute left-0 mt-1 p-1.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-72 z-50">
+            <div className="absolute left-0 mt-1 p-2.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-80 z-50 flex flex-wrap gap-1.5">
               {phrases.length === 0 ? (
-                <div className="p-3 text-xs text-gray-400 text-center">등록된 상용구가 없습니다.</div>
+                <div className="w-full text-center text-xs text-gray-400 py-2">등록된 상용구가 없습니다.</div>
               ) : (
                 phrases.map((item) => (
                   <button
@@ -276,10 +307,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                       insertMarkdown(item.value)
                       setPhraseOpen(false)
                     }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer border-b border-gray-50 last:border-b-0 flex flex-col"
+                    className="px-2 py-0.5 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded text-purple-700 text-xs font-semibold cursor-pointer transition-colors max-w-[130px] truncate"
+                    title={`${item.name}\n---\n${item.value}`}
                   >
-                    <span className="font-semibold text-xs text-gray-700 truncate">{item.name}</span>
-                    <span className="text-gray-400 truncate text-[10px] mt-0.5">{item.value}</span>
+                    {item.name}
                   </button>
                 ))
               )}
@@ -297,9 +328,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             <Layout className="w-3.5 h-3.5" />
           </button>
           {templateOpen && (
-            <div className="absolute left-0 mt-1 p-1.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-72 z-50">
+            <div className="absolute left-0 mt-1 p-2.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-80 z-50 flex flex-wrap gap-1.5">
               {templates.length === 0 ? (
-                <div className="p-3 text-xs text-gray-400 text-center">등록된 템플릿이 없습니다.</div>
+                <div className="w-full text-center text-xs text-gray-400 py-2">등록된 템플릿이 없습니다.</div>
               ) : (
                 templates.map((item) => (
                   <button
@@ -308,10 +339,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                       insertMarkdown(item.value)
                       setTemplateOpen(false)
                     }}
-                    className="w-full text-left px-2 py-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer border-b border-gray-50 last:border-b-0 flex flex-col"
+                    className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded text-indigo-750 text-xs font-semibold cursor-pointer transition-colors max-w-[130px] truncate"
+                    title={`${item.name}\n---\n${item.value}`}
                   >
-                    <span className="font-semibold text-xs text-indigo-600 truncate">{item.name}</span>
-                    <span className="text-gray-400 truncate text-[10px] mt-0.5">{item.value.substring(0, 50)}...</span>
+                    {item.name}
                   </button>
                 ))
               )}
