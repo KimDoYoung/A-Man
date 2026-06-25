@@ -91,7 +91,7 @@ CREATE INDEX idx_assets_atype_name ON assets(atype, name);
 
 
 CREATE TABLE settings (
-    id BIGSERIAL PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     setting_key VARCHAR(50) NOT NULL,
     setting_value TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
