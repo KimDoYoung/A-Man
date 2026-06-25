@@ -154,4 +154,15 @@ public class FolderController {
             childIndex++;
         }
     }
+
+    @PostMapping("/clear-all-nums")
+    @Transactional
+    public ResponseEntity<?> clearAllNumbers() {
+        List<Folder> folders = folderRepository.findAll();
+        for (Folder folder : folders) {
+            folder.setNums("");
+            folderRepository.save(folder);
+        }
+        return ResponseEntity.ok("전체 메뉴의 번호(nums)가 성공적으로 초기화(비우기)되었습니다.");
+    }
 }

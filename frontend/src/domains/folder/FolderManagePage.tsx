@@ -370,6 +370,35 @@ const FolderManagePage: React.FC = () => {
     }
   }
 
+  // Clear all folder numbers recursively on the backend
+  const handleClearAllNumbers = async () => {
+    if (!confirm('⚠️ 전체 메뉴의 번호(nums)를 일괄 비우시겠습니까?\n이 작업은 데이터베이스에 즉시 반영되며 되돌릴 수 없습니다.')) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      const response = await axios.post('/aman/folder/clear-all-nums')
+      showStatus('success', response.data || '전체 번호가 성공적으로 비워졌습니다.')
+      
+      // Reload left tree and current grid view
+      await fetchTreeData()
+      if (selectedFolder) {
+        // Load latest version of selected folder to update grid context
+        const latestResponse = await axios.get(`/aman/docs/folders/${selectedFolder.id}`)
+        setSelectedFolder(latestResponse.data)
+        loadSubFolders(selectedFolder.id)
+      } else {
+        loadRootFolders()
+      }
+    } catch (err: any) {
+      console.error(err)
+      showStatus('error', err.response?.data || '전체 번호 비우기 중 오류가 발생했습니다.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Render tree node recursively
   const renderTreeNode = (node: FolderNode) => {
     const isExpanded = !!expandedFolders[node.id]
@@ -446,14 +475,23 @@ const FolderManagePage: React.FC = () => {
                 {statusMsg.text}
               </div>
             )}
-            <button
-              onClick={handleRegenerateAllNumbers}
-              className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
-              title="데이터베이스 내의 전체 메뉴 번호(nums) 및 정렬 순서를 재정리합니다."
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>전체번호 재생성</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleClearAllNumbers}
+                className="px-3.5 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+                title="데이터베이스 내의 전체 메뉴 번호(nums)를 삭제합니다."
+              >
+                <span>전체번호 비우기</span>
+              </button>
+              <button
+                onClick={handleRegenerateAllNumbers}
+                className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+                title="데이터베이스 내의 전체 메뉴 번호(nums) 및 정렬 순서를 재정리합니다."
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>전체번호 재생성</span>
+              </button>
+            </div>
           </div>
         </div>
 
