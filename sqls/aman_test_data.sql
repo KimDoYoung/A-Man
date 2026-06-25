@@ -98,7 +98,7 @@ DELETE FROM pages;
 DELETE FROM sqlite_sequence WHERE name='pages';
 
 -- 1. 사용자 관리 (folder_id=4)
-INSERT INTO pages (folder_id, title, content, sort_order) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
     4,
     '사원 계정 생성 및 권한 부여 안내',
     '# 사원 계정 생성 및 권한 부여 가이드
@@ -124,10 +124,11 @@ INSERT INTO pages (folder_id, title, content, sort_order) VALUES (
 - **부서 이동**: 새로운 직무에 필요한 롤을 추가하고 기존 권한 중 불필요한 부분은 제거합니다.
 - **퇴사**: 사용자의 활성화 상태(`is_active`)를 `0` (비활성)으로 변경하여 시스템 접속을 원천 차단합니다. (Soft Delete)
 ',
-    1
+    1,
+    'page-1'
 );
 
-INSERT INTO pages (folder_id, title, content, sort_order) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
     4,
     '사용자 목록 조회 및 활성/비활성화 처리 가이드',
     '# 사용자 목록 조회 및 활성/비활성화 가이드
@@ -153,11 +154,12 @@ A-Man 시스템은 보안 및 데이터 이력 추적을 위해 물리적으로 
 1. 검색 필터에서 `상태: 전체` 또는 `상태: 비활성`을 선택하여 해당 사용자를 찾습니다.
 2. 상세 화면에서 `[활성화]` 버튼을 누르면 즉시 상태가 `활성`으로 복구되어 정상 로그인이 가능해집니다.
 ',
-    2
+    2,
+    'page-2'
 );
 
 -- 2. 사원 정보 등록 (folder_id=13)
-INSERT INTO pages (folder_id, title, content, sort_order) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
     13,
     '신규 사원 등록 프로세스 및 입력 항목 상세',
     '# 신규 사원 등록 가이드
@@ -182,11 +184,12 @@ INSERT INTO pages (folder_id, title, content, sort_order) VALUES (
 ## 3. 등록 완료 후 후속 작업
 사원 정보 저장이 성공적으로 완료되면 자동으로 `사번`을 기반으로 한 임시 시스템 계정이 생성 대기 상태가 됩니다. 관리자는 즉시 **사용자 관리** 메뉴를 통해 로그인 계정을 연계 발급하십시오.
 ',
-    1
+    1,
+    'page-3'
 );
 
 -- 3. 일반 전표 입력 (folder_id=30)
-INSERT INTO pages (folder_id, title, content, sort_order) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
     30,
     '재무 전표 작성 및 확정 절차 안내',
     '# 재무 전표 작성 및 확정 절차
@@ -212,6 +215,71 @@ graph TD
 > [!WARNING]
 > 확정 완료된 전표는 원칙적으로 수정이나 삭제가 불가능합니다. 오등록된 경우 반대 분개를 가지는 **마이너스 취소 전표**를 추가 발행하여 보정해야 합니다.
 ',
-    1
+    1,
+    'page-4'
 );
+
+-- -------------------------------------------------------------
+-- assets
+-- -------------------------------------------------------------
+DELETE FROM assets;
+DELETE FROM sqlite_sequence WHERE name='assets';
+
+-- EMOJIs
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Double Exclamation', '‼️');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Exclamation', '❗');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Checkmark Thin', '✔️');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Flag', '🚩');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Right Arrow', '➡️');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Memo', '📝');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Play Button', '▶️');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Red Circle', '🔴');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Blue Diamond', '🔷');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Blue Circle', '🔵');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Point Right', '👉');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Prohibited', '🚫');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Question Mark', '❓');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Light Bulb', '💡');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Fire', '🔥');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Sparkles', '✨');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Tada', '🎉');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Pin', '📌');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Warning Triangle', '⚠️');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Checkmark Thick', '✅');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Cross Mark', '❌');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Speech Balloon', '💬');
+INSERT INTO assets (atype, name, value) VALUES ('EMOJI', 'Thumbs Up', '👍');
+
+-- SYMBOLs
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Reference Sign (※)', '※');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Square (■)', '■');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Right-Pointing Triangle (▶)', '▶');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'White Circle (○)', '○');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Circle (●)', '●');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Black Star (★)', '★');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'White Star (☆)', '☆');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Right Arrow (➔)', '➔');
+INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', 'Checkmark (✓)', '✓');
+
+-- PHRASEs
+INSERT INTO assets (atype, name, value) VALUES ('PHRASE', '임시 비밀번호 정책', '최초 생성 시 임시 비밀번호는 안전한 채널을 통해 사원에게 전달하며, 사원은 최초 로그인 시 비밀번호를 변경해야 합니다.');
+INSERT INTO assets (atype, name, value) VALUES ('PHRASE', '전표 수정 불가 안내', '확정 완료된 전표는 원칙적으로 수정이나 삭제가 불가능합니다. 오등록된 경우 반대 분개를 가지는 마이너스 취소 전표를 추가 발행하여 보정해야 합니다.');
+
+-- TEMPLATEs
+INSERT INTO assets (atype, name, value) VALUES ('TEMPLATE', '표준 도움말 템플릿', '# [메뉴명] 도움말
+
+이 문서는 [메뉴명] 화면의 기능과 사용법에 대해 설명합니다.
+
+## 1. 개요
+[메뉴에 대한 간단한 개요 및 비즈니스 목적 기술]
+
+## 2. 주요 기능 및 업무 절차
+1. **[기능 1]**: [기능 상세 설명]
+2. **[기능 2]**: [기능 상세 설명]
+
+## 3. 주의사항
+> [!WARNING]
+> [사용자가 자주 실수하거나 유의해야 할 정책 기술]
+');
+
 

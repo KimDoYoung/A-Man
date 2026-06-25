@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Menu, UserCheck, LogOut } from 'lucide-react'
 import axios from 'axios'
 
@@ -13,6 +13,8 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   setSidebarOpen
 }) => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isAdminAssetsPage = location.pathname === '/admin/assets'
   const [version, setVersion] = useState('0.0.1')
 
   useEffect(() => {
@@ -48,17 +50,30 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
     <header className="h-14 bg-gray-700 text-white px-6 flex items-center justify-between border-b border-gray-800 shrink-0 select-none">
       {/* 좌측 토글 및 로고 타이틀 */}
       <div className="flex items-center space-x-3">
-        <button 
-          onClick={() => setSidebarOpen(!sidebarOpen)} 
-          className="p-1.5 rounded-md hover:bg-gray-800 text-gray-400 transition-colors cursor-pointer"
-          title="메뉴 영역 토글"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        {!isAdminAssetsPage && (
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)} 
+            className="p-1.5 rounded-md hover:bg-gray-800 text-gray-400 transition-colors cursor-pointer"
+            title="메뉴 영역 토글"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
         <div className="flex items-center space-x-2">
-          <span className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50">
+          <span 
+            className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50 cursor-pointer"
+            onClick={() => navigate('/admin')}
+            title="문서 편집으로 이동"
+          >
             A-Man ({version})
           </span>
+          <button
+            onClick={() => navigate(isAdminAssetsPage ? '/admin' : '/admin/assets')}
+            className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
+            title={isAdminAssetsPage ? '문서 편집 화면으로 이동' : '공통 자산 관리 화면으로 이동'}
+          >
+            {isAdminAssetsPage ? '문서 편집' : '자산 관리'}
+          </button>
         </div>
       </div>
       

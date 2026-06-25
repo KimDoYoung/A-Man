@@ -1,11 +1,50 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile } from 'lucide-react'
+import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout } from 'lucide-react'
+import axios from 'axios'
 
-const EMOJIS = [
-  '‼️', '❗', '✔️', '🚩', '➡️', '📝', '▶️', '🔴', '🔷', '🔵', 
-  '👉', '🚫', '❓', '💡', '🔥', '✨', '🎉', '📌', '⚠️', '✅', 
-  '❌', '💬', '😀', '😃', '👍', '✒️​', '📌​', '❤️​',
-  '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣'
+interface Asset {
+  id?: number
+  atype: 'EMOJI' | 'PHRASE' | 'TEMPLATE' | 'SYMBOL'
+  name: string
+  value: string
+}
+
+const FALLBACK_EMOJIS: Asset[] = [
+  { atype: 'EMOJI', name: 'Double Exclamation', value: '‼️' },
+  { atype: 'EMOJI', name: 'Exclamation', value: '❗' },
+  { atype: 'EMOJI', name: 'Checkmark Thin', value: '✔️' },
+  { atype: 'EMOJI', name: 'Flag', value: '🚩' },
+  { atype: 'EMOJI', name: 'Right Arrow', value: '➡️' },
+  { atype: 'EMOJI', name: 'Memo', value: '📝' },
+  { atype: 'EMOJI', name: 'Play Button', value: '▶️' },
+  { atype: 'EMOJI', name: 'Red Circle', value: '🔴' },
+  { atype: 'EMOJI', name: 'Blue Diamond', value: '🔷' },
+  { atype: 'EMOJI', name: 'Blue Circle', value: '🔵' },
+  { atype: 'EMOJI', name: 'Point Right', value: '👉' },
+  { atype: 'EMOJI', name: 'Prohibited', value: '🚫' },
+  { atype: 'EMOJI', name: 'Question Mark', value: '❓' },
+  { atype: 'EMOJI', name: 'Light Bulb', value: '💡' },
+  { atype: 'EMOJI', name: 'Fire', value: '🔥' },
+  { atype: 'EMOJI', name: 'Sparkles', value: '✨' },
+  { atype: 'EMOJI', name: 'Tada', value: '🎉' },
+  { atype: 'EMOJI', name: 'Pin', value: '📌' },
+  { atype: 'EMOJI', name: 'Warning Triangle', value: '⚠️' },
+  { atype: 'EMOJI', name: 'Checkmark Thick', value: '✅' },
+  { atype: 'EMOJI', name: 'Cross Mark', value: '❌' },
+  { atype: 'EMOJI', name: 'Speech Balloon', value: '💬' },
+  { atype: 'EMOJI', name: 'Thumbs Up', value: '👍' }
+]
+
+const FALLBACK_SYMBOLS: Asset[] = [
+  { atype: 'SYMBOL', name: 'Reference Sign (※)', value: '※' },
+  { atype: 'SYMBOL', name: 'Black Square (■)', value: '■' },
+  { atype: 'SYMBOL', name: 'Black Right-Pointing Triangle (▶)', value: '▶' },
+  { atype: 'SYMBOL', name: 'White Circle (○)', value: '○' },
+  { atype: 'SYMBOL', name: 'Black Circle (●)', value: '●' },
+  { atype: 'SYMBOL', name: 'Black Star (★)', value: '★' },
+  { atype: 'SYMBOL', name: 'White Star (☆)', value: '☆' },
+  { atype: 'SYMBOL', name: 'Right Arrow (➔)', value: '➔' },
+  { atype: 'SYMBOL', name: 'Checkmark (✓)', value: '✓' }
 ]
 
 interface EditorToolbarProps {
@@ -31,22 +70,64 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   previewOpen,
   setPreviewOpen
 }) => {
+  const [emojis, setEmojis] = useState<Asset[]>([])
+  const [symbols, setSymbols] = useState<Asset[]>([])
+  const [phrases, setPhrases] = useState<Asset[]>([])
+  const [templates, setTemplates] = useState<Asset[]>([])
+
   const [emojiOpen, setEmojiOpen] = useState(false)
+  const [symbolOpen, setSymbolOpen] = useState(false)
+  const [phraseOpen, setPhraseOpen] = useState(false)
+  const [templateOpen, setTemplateOpen] = useState(false)
+
   const emojiPanelRef = useRef<HTMLDivElement>(null)
+  const symbolPanelRef = useRef<HTMLDivElement>(null)
+  const phrasePanelRef = useRef<HTMLDivElement>(null)
+  const templatePanelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    axios.get<Asset[]>('/aman/assets')
+      .then(res => {
+        const data = res.data
+        const em = data.filter(x => x.atype === 'EMOJI')
+        const sy = data.filter(x => x.atype === 'SYMBOL')
+        const ph = data.filter(x => x.atype === 'PHRASE')
+        const tm = data.filter(x => x.atype === 'TEMPLATE')
+
+        setEmojis(em.length > 0 ? em : FALLBACK_EMOJIS)
+        setSymbols(sy.length > 0 ? sy : FALLBACK_SYMBOLS)
+        setPhrases(ph)
+        setTemplates(tm)
+      })
+      .catch(err => {
+        console.error('Failed to load assets:', err)
+        setEmojis(FALLBACK_EMOJIS)
+        setSymbols(FALLBACK_SYMBOLS)
+      })
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (emojiPanelRef.current && !emojiPanelRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (emojiPanelRef.current && !emojiPanelRef.current.contains(target)) {
         setEmojiOpen(false)
       }
+      if (symbolPanelRef.current && !symbolPanelRef.current.contains(target)) {
+        setSymbolOpen(false)
+      }
+      if (phrasePanelRef.current && !phrasePanelRef.current.contains(target)) {
+        setPhraseOpen(false)
+      }
+      if (templatePanelRef.current && !templatePanelRef.current.contains(target)) {
+        setTemplateOpen(false)
+      }
     }
-    if (emojiOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [emojiOpen])
+  }, [])
+
   return (
     <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
       <div className="flex items-center space-x-2">
@@ -115,6 +196,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         >
           <Image className="w-3.5 h-3.5" />
         </button>
+        
+        <span className="w-px h-3.5 bg-gray-300"></span>
+
+        {/* 1. 이모지 */}
         <div className="relative" ref={emojiPanelRef}>
           <button
             onClick={() => setEmojiOpen(!emojiOpen)}
@@ -125,21 +210,115 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </button>
           {emojiOpen && (
             <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg grid grid-cols-8 gap-1 w-48 z-50">
-              {EMOJIS.map((emoji, idx) => (
+              {emojis.map((item, idx) => (
                 <button
-                  key={`${emoji}-${idx}`}
+                  key={`${item.id || idx}`}
                   onClick={() => {
-                    insertMarkdown(emoji)
+                    insertMarkdown(item.value)
                     setEmojiOpen(false)
                   }}
                   className="w-5.5 h-5.5 flex items-center justify-center text-base hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                  title={item.name}
                 >
-                  {emoji}
+                  {item.value}
                 </button>
               ))}
             </div>
           )}
         </div>
+
+        {/* 2. 특수기호 */}
+        <div className="relative" ref={symbolPanelRef}>
+          <button
+            onClick={() => setSymbolOpen(!symbolOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${symbolOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            title="특수기호 삽입"
+          >
+            <Type className="w-3.5 h-3.5" />
+          </button>
+          {symbolOpen && (
+            <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg grid grid-cols-6 gap-1 w-40 z-50">
+              {symbols.map((item, idx) => (
+                <button
+                  key={`${item.id || idx}`}
+                  onClick={() => {
+                    insertMarkdown(item.value)
+                    setSymbolOpen(false)
+                  }}
+                  className="w-5.5 h-5.5 flex items-center justify-center text-sm hover:bg-gray-100 rounded transition-colors cursor-pointer font-mono text-gray-700"
+                  title={item.name}
+                >
+                  {item.value}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 3. 상용구 */}
+        <div className="relative" ref={phrasePanelRef}>
+          <button
+            onClick={() => setPhraseOpen(!phraseOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${phraseOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            title="상용구 삽입"
+          >
+            <FileText className="w-3.5 h-3.5" />
+          </button>
+          {phraseOpen && (
+            <div className="absolute left-0 mt-1 p-1.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-72 z-50">
+              {phrases.length === 0 ? (
+                <div className="p-3 text-xs text-gray-400 text-center">등록된 상용구가 없습니다.</div>
+              ) : (
+                phrases.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      insertMarkdown(item.value)
+                      setPhraseOpen(false)
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer border-b border-gray-50 last:border-b-0 flex flex-col"
+                  >
+                    <span className="font-semibold text-xs text-gray-700 truncate">{item.name}</span>
+                    <span className="text-gray-400 truncate text-[10px] mt-0.5">{item.value}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 4. 템플릿 */}
+        <div className="relative" ref={templatePanelRef}>
+          <button
+            onClick={() => setTemplateOpen(!templateOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${templateOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            title="템플릿 삽입"
+          >
+            <Layout className="w-3.5 h-3.5" />
+          </button>
+          {templateOpen && (
+            <div className="absolute left-0 mt-1 p-1.5 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-72 z-50">
+              {templates.length === 0 ? (
+                <div className="p-3 text-xs text-gray-400 text-center">등록된 템플릿이 없습니다.</div>
+              ) : (
+                templates.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      insertMarkdown(item.value)
+                      setTemplateOpen(false)
+                    }}
+                    className="w-full text-left px-2 py-1.5 hover:bg-gray-100 rounded transition-colors cursor-pointer border-b border-gray-50 last:border-b-0 flex flex-col"
+                  >
+                    <span className="font-semibold text-xs text-indigo-600 truncate">{item.name}</span>
+                    <span className="text-gray-400 truncate text-[10px] mt-0.5">{item.value.substring(0, 50)}...</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* 별칭 AKA 입력창 */}
@@ -158,7 +337,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {/* 미리보기 토글 */}
       <button
         onClick={() => setPreviewOpen(!previewOpen)}
-        className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
+        className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
       >
         {previewOpen ? (
           <>

@@ -71,3 +71,20 @@ CREATE INDEX idx_blacklist_token ON token_blacklist(token);
 -- 성능 최적화 및 빠른 토큰 검증을 위한 인덱스 생성
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+
+-- 
+-- 3. 자산(Assets) 테이블: EMOJI, PHRASE, TEMPLATE, SYMBOL 등 다양한 자산을 관리
+--  
+CREATE TABLE assets (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    atype       TEXT NOT NULL,                      -- 자산 타입 (EMOJI, PHRASE, TEMPLATE, SYMBOL)
+    name        TEXT NOT NULL,                      -- 자산 이름 / 이름표
+    value       TEXT NOT NULL,                      -- 실제 데이터 본문 (마크다운, 기호, 텍스트 등)
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- 약속된 키워드 외의 텍스트가 들어오는 것을 방지
+    CONSTRAINT chk_atype CHECK (atype IN ('EMOJI', 'PHRASE', 'TEMPLATE', 'SYMBOL'))
+);
+
+CREATE INDEX idx_assets_atype_name ON assets(atype, name);

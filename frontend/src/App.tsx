@@ -5,6 +5,7 @@ import NormalUserIntro from '@/domains/docs/NormalUserIntro'
 import MarkdownViewer from '@/domains/content/MarkdownViewer'
 import LoginPage from '@/domains/auth/LoginPage'
 import DocUserMain from '@/domains/content/DocUserMain'
+import AssetAdminPage from '@/domains/content/AssetAdminPage'
 import axios from 'axios'
 
 // 1. JWT 토큰 자동 첨부 인터셉터
@@ -69,7 +70,8 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DocUserMain /> },
       { path: 'page/:page_id', element: <DocUserMain /> },
-      { path: 'folder/:folder_id', element: <DocUserMain /> }
+      { path: 'folder/:folder_id', element: <DocUserMain /> },
+      { path: 'assets', element: <AssetAdminPage /> }
     ]
   },
   {
