@@ -11,6 +11,7 @@ interface FolderTreeProps {
 }
 
 const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => {
+  const isContextMenuDisabled = true; // [요구사항 반영] 컨텍스트 메뉴 비활성화 플래그
   const navigate = useNavigate()
   const location = useLocation()
   
@@ -193,7 +194,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
       <li key={node.id} className="space-y-1">
         <div 
           onClick={() => toggleFolder(node, depth)}
-          onContextMenu={contextMenuEnable ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
+          onContextMenu={(contextMenuEnable && !isContextMenuDisabled) ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
           className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${
             isFolderActive
               ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold'
@@ -264,7 +265,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
       </ul>
 
       {/* 우클릭 컨텍스트 메뉴 */}
-      {contextMenuEnable && (
+      {(contextMenuEnable && !isContextMenuDisabled) && (
         <FolderTreeContextMenu
           open={contextMenu.open}
           x={contextMenu.x}
