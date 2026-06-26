@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL (5432)
+  postgres:
+    image: postgres:15
+    container_name: jskn_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: kdy987
+      POSTGRES_PASSWORD: kalpa987!
+      POSTGRES_DB: kdy987_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - /data/docker/database/postgresql:/var/lib/postgresql/data
+
+  # 2. MariaDB (3306)
+  mariadb:
+    image: mariadb:11
+    container_name: jskn_mariadb
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: kalpa987!
+      MARIADB_USER: kdy987
+      MARIADB_PASSWORD: kalpa987!
+      MARIADB_DATABASE: kdy987_db
+    volumes:
+      - /data/docker/database/mariadb:/var/lib/mysql
+
+  # 3. Redis (6379)
+  redis:
+    image: redis:latest
+    container_name: jskn_redis
+    restart: always
+    command: redis-server --requirepass kalpa987!
+    ports:
+      - 6379:6379
+    volumes:
+      - /data/docker/database/redis:/data
+
+  # 4. Tomcat (Java 21 기반)
+  tomcat:
+    image: tomcat:11.0-jdk21-temurin-noble
+    container_name: jskn_tomcat
+    restart: always
+    # Nginx를 통할 예정이므로 8080 포트를 외부에 직접 열지 않아도 되지만, 
+    # 테스트를 위해 일단 열어둡니다.
+    ports:
+      - "8080:8080"
+    user: "1000:1000"
+    environment:
+      - SPRING_PROFILES_ACTIVE=jskn
+      - SOFIA_MODE=jskn
+    env_file:
+      - envs/tomcat.env
+    volumes:
+      - /data/docker/apps/tomcat/webapps:/usr/local/tomcat/webapps
+      - /data/docker/apps/tomcat/logs:/usr/local/tomcat/logs
+      - /data/docker/apps/pcms:/data/docker/apps/pcms
+      - /data/docker/apps/pcms:/data/docker/apps/pcms
+      - /data/pictures:/data/pictures
+
+  # 5. Nginx (80/443)
+  nginx:
+    image: nginx:latest
+    container_name: jskn_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /data/docker/nginx/conf.d:/etc/nginx/conf.d
+      - /data/docker/nginx/certbot/www:/var/www/certbot
+      - /data/docker/apps/kalpadb-api2/uploads:/var/www/uploads:ro
+      
+    depends_on:
+      - tomcat
+  # 6. SVN 서버 추가 (3690 포트)
+  svn:
+    image: garethflowers/svn-server
+    container_name: jskn_svn
+    restart: always
+    ports:
+      - "3690:3690"
+    volumes:
+      - /data/docker/svn:/var/opt/svn
+  # 7. aview 앱 (Java 1.8 + LibreOffice 커스텀 빌드)
+  aview:
+    build:
+      context: ./apps/aview   # Dockerfile과 aview.war가 있는 경로
+      dockerfile: Dockerfile
+    container_name: jskn_aview
+    user: "1000:1000" # kdy987
+    restart: always
+    # Nginx가 내부망(8080)으로 통신하므로 외부 포트는 열지 않아도 되지만, 
+    # 초기 테스트용으로 8081 등을 열어둘 수 있습니다.
+    ports:
+      - "8081:8080"
+    volumes:
+      - /data/docker/apps/aview/repo:/data/docker/apps/aview/repo
+    environment:
+      - TZ=Asia/Seoul
+      - SPRING_PROFILES_ACTIVE=jskn
+  # 8. kiwi7
+  #kiwi7:
+  #  build:
+  #    context: /home/kdy987/work/kiwi7      # 빌드 시 소스 폴더를 참조
+  #    dockerfile: /data/docker/apps/kiwi7/Dockerfile
+  #  image: jskn_kiwi7_img
+  #  container_name: jskn_kiwi7
+  #  restart: always
+  #  user: "1000:1000"
+  #  ports:
+  #    - "8002:8001"
+  #  volumes:
+  #    - /home/kdy987/work/kiwi7:/app
+  #    - /data/docker/apps/kiwi7:/app/data
+  #  env_file:
+  #    - /home/kdy987/work/kiwi7/.env.jskn   # 중요 키값 파일
+  #  environment:
+  #    - TZ=Asia/Seoul
+  #    - PYTHONPATH=/app
+   
+  # 9. kiwi8
+  kiwi8:
+    build:
+      context: /home/kdy987/work/kiwi8
+      dockerfile: /home/kdy987/work/kiwi8/Dockerfile
+    image: jskn_kiwi8_img
+    container_name: jskn_kiwi8
+    restart: always
+    user: "1000:1000"
+    ports:
+      - "8003:8003"
+    volumes:
+      - /data/docker/apps/kiwi8:/app/data
+    env_file:
+      - /home/kdy987/work/kiwi8/.env.jskn
+    environment:
+      - TZ=Asia/Seoul
+      - PYTHONPATH=/app
+      - KIWI8_MODE=jskn
+
+
+  # 10. sofia (Image Management App)
+  sofia:
+    build:
+      context: /home/kdy987/work/python-practice/sofia
+      dockerfile: Dockerfile
+    image: jskn_sofia_img
+    container_name: jskn_sofia
+    restart: always
+    user: "1000:1000"
+    ports:
+      - "8181:8181"
+    volumes:
+      # 통합 데이터 관리 (DB, Logs 포함)
+      - /data/docker/apps/sofia/data:/app/data
+      # 호스트의 이미지 폴더 연결
+      - /data/pictures:/images
+    environment:
+      - TZ=Asia/Seoul
+      - SOFIA_MODE=production
+      - IMAGE_BASE_DIR=/images

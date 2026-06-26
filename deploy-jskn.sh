@@ -8,17 +8,47 @@ REMOTE_WEBAPPS="/data/docker/apps/tomcat/webapps"
 PROJECT_ROOT="$(cd "$(dirname "$0")/." && pwd)"
 STATIC_DIR="$PROJECT_ROOT/backend/src/main/resources/static"
 
+# 기본값: DB 초기화 실행 안 함
+INIT_DB=false
+
+# CLI 인자 검사
+for arg in "$@"; do
+  case $arg in
+    --init-db)
+      INIT_DB=true
+      shift
+      ;;
+  esac
+done
+
 echo "=== A-Man 배포 절차 ==="
 echo ""
 echo "  [1/4] 프론트엔드 빌드          (npm run build)"
 echo "  [2/4] React dist → static 복사  ($STATIC_DIR)"
 echo "  [3/4] 백엔드 WAR 빌드           (gradlew war -x test)"
 echo "  [4/4] Tomcat으로 전송           ($JSKN:$REMOTE_WEBAPPS/aman.war)"
+if [ "$INIT_DB" = true ]; then
+  echo "        (* 옵션 감지: 원격 DB 초기화 및 전송 예정)"
+fi
 echo ""
+
 read -r -p "배포를 진행하시겠습니까? (y/n) " CONFIRM
 if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
   echo "배포를 취소했습니다."
   exit 0
+fi
+
+# --init-db 인자가 들어온 경우에만 재확인 질문 수행
+if [ "$INIT_DB" = true ]; then
+  echo ""
+  echo "⚠️⚠️⚠️ WARNING ⚠️⚠️⚠️"
+  echo "원격 서버의 데이터베이스(aman.db)를 완전히 새로 생성하여 덮어씁니다."
+  echo "기존에 저장된 모든 메뉴와 문서 데이터가 삭제됩니다!"
+  read -r -p "정말 진행하시겠습니까? (y/N) " CONFIRM_DB
+  if [[ "$CONFIRM_DB" != "y" && "$CONFIRM_DB" != "Y" ]]; then
+    echo "DB 초기화를 취소하고 일반 WAR 배포만 진행합니다."
+    INIT_DB=false
+  fi
 fi
 
 echo ""
@@ -37,7 +67,7 @@ cp -r "$PROJECT_ROOT/frontend/dist" "$STATIC_DIR"
 # 3. 백엔드 WAR 빌드
 echo "[3/4] 백엔드 WAR 빌드 (React 포함)..."
 cd "$PROJECT_ROOT/backend"
-./gradlew war -x test
+./gradlew bootWar -x test
 
 WAR_FILE=$(ls build/libs/*.war 2>/dev/null | head -1)
 if [ -z "$WAR_FILE" ]; then
@@ -46,11 +76,34 @@ if [ -z "$WAR_FILE" ]; then
 fi
 echo "  WAR: $WAR_FILE"
 
-# 4. Tomcat webapps로 전송 (이름을 aman.war로 전송)
-echo "[4/4] Tomcat 서버로 전송..."
-sftp -P 2020 "$JSKN" <<EOF
+# DB 초기화가 켜진 경우에만 로컬에서 신규 DB 생성 및 원격 디렉토리 생성
+if [ "$INIT_DB" = true ]; then
+  echo "  [옵션] 원격 데이터베이스 초기화용 임시 DB 생성 중..."
+  TEMP_DB="/tmp/aman_init.db"
+  rm -f "$TEMP_DB"
+  
+  sqlite3 "$TEMP_DB" < "$PROJECT_ROOT/sqls/aman_ddl.sql"
+  sqlite3 "$TEMP_DB" < "$PROJECT_ROOT/sqls/aman_test_data.sql"
+  
+  echo "  로컬 임시 DB 생성 완료: $TEMP_DB"
+  
+  echo "  원격 서버 DB 디렉토리 구조 생성 중..."
+  ssh -p 2020 "$JSKN" "mkdir -p /data/docker/apps/aman/db"
+fi
+
+# 4. Tomcat webapps 및 DB 전송
+echo "[4/4] Tomcat 서버로 파일 전송..."
+if [ "$INIT_DB" = true ]; then
+  sftp -P 2020 "$JSKN" <<EOF
+put $TEMP_DB /data/docker/apps/aman/db/aman.db
 put $WAR_FILE $REMOTE_WEBAPPS/aman.war
 EOF
+  rm -f "$TEMP_DB"
+else
+  sftp -P 2020 "$JSKN" <<EOF
+put $WAR_FILE $REMOTE_WEBAPPS/aman.war
+EOF
+fi
 
 echo ""
 echo "=== 배포 완료 ==="
