@@ -1,10 +1,10 @@
 #!/bin/bash
-# A-Man 배포 스크립트 — ./deploy.sh
+# A-Man 배포 스크립트 — ./deploy-jskn.sh
 set -e
 
 # 배포 환경 설정 (사용자 환경에 따라 변경 필요)
 JSKN="kdy987@jskn.iptime.org"
-REMOTE_WEBAPPS="/data/docker/apps/tomcat/webapps"
+REMOTE_DATA="/data/docker/apps/aman/data"
 PROJECT_ROOT="$(cd "$(dirname "$0")/." && pwd)"
 STATIC_DIR="$PROJECT_ROOT/backend/src/main/resources/static"
 
@@ -25,8 +25,9 @@ echo "=== A-Man 배포 절차 ==="
 echo ""
 echo "  [1/4] 프론트엔드 빌드          (npm run build)"
 echo "  [2/4] React dist → static 복사  ($STATIC_DIR)"
-echo "  [3/4] 백엔드 WAR 빌드           (gradlew war -x test)"
-echo "  [4/4] Tomcat으로 전송           ($JSKN:$REMOTE_WEBAPPS/aman.war)"
+echo "  [3/4] 백엔드 WAR 빌드           (gradlew bootWar -x test)"
+echo "  [4/4] Tomcat 빌드 폴더로 전송    ($JSKN:$REMOTE_DATA/)"
+echo "        (war 파일 및 Dockerfile 전송)"
 if [ "$INIT_DB" = true ]; then
   echo "        (* 옵션 감지: 원격 DB 초기화 및 전송 예정)"
 fi
@@ -76,6 +77,10 @@ if [ -z "$WAR_FILE" ]; then
 fi
 echo "  WAR: $WAR_FILE"
 
+# 원격지의 빌드 데이터 폴더 생성 보장
+echo "  원격 서버 배포용 데이터 디렉토리 생성 중..."
+ssh -p 2020 "$JSKN" "mkdir -p $REMOTE_DATA"
+
 # DB 초기화가 켜진 경우에만 로컬에서 신규 DB 생성 및 원격 디렉토리 생성
 if [ "$INIT_DB" = true ]; then
   echo "  [옵션] 원격 데이터베이스 초기화용 임시 DB 생성 중..."
@@ -91,17 +96,19 @@ if [ "$INIT_DB" = true ]; then
   ssh -p 2020 "$JSKN" "mkdir -p /data/docker/apps/aman/db"
 fi
 
-# 4. Tomcat webapps 및 DB 전송
+# 4. Tomcat 빌드용 데이터(war, Dockerfile) 및 DB 전송
 echo "[4/4] Tomcat 서버로 파일 전송..."
 if [ "$INIT_DB" = true ]; then
   sftp -P 2020 "$JSKN" <<EOF
 put $TEMP_DB /data/docker/apps/aman/db/aman.db
-put $WAR_FILE $REMOTE_WEBAPPS/aman.war
+put $WAR_FILE $REMOTE_DATA/aman.war
+put $PROJECT_ROOT/Dockerfile $REMOTE_DATA/Dockerfile
 EOF
   rm -f "$TEMP_DB"
 else
   sftp -P 2020 "$JSKN" <<EOF
-put $WAR_FILE $REMOTE_WEBAPPS/aman.war
+put $WAR_FILE $REMOTE_DATA/aman.war
+put $PROJECT_ROOT/Dockerfile $REMOTE_DATA/Dockerfile
 EOF
 fi
 
