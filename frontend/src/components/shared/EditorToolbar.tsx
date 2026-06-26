@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download } from 'lucide-react'
+import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -59,6 +59,8 @@ interface EditorToolbarProps {
   setPreviewOpen: (open: boolean) => void
   pageTitle: string
   pageContent: string
+  folderId?: string
+  onImportSuccess?: (importedPage: any) => void
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -72,7 +74,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   previewOpen,
   setPreviewOpen,
   pageTitle,
-  pageContent
+  pageContent,
+  folderId,
+  onImportSuccess
 }) => {
   const [emojis, setEmojis] = useState<Asset[]>([])
   const [symbols, setSymbols] = useState<Asset[]>([])
@@ -88,8 +92,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const symbolPanelRef = useRef<HTMLDivElement>(null)
   const phrasePanelRef = useRef<HTMLDivElement>(null)
   const templatePanelRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [downloading, setDownloading] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   const handleDownloadZip = async () => {
     setDownloading(true)
@@ -116,6 +122,49 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       alert('ZIP 파일을 생성하는 데 실패했습니다.')
     } finally {
       setDownloading(false)
+    }
+  }
+
+  const handleTriggerImport = () => {
+    if (!folderId) {
+      alert('가져오기를 수행할 폴더가 선택되지 않았습니다. 좌측 트리에서 대/중/소 메뉴 폴더를 선택하십시오.')
+      return
+    }
+    fileInputRef.current?.click()
+  }
+
+  const handleImportZip = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!folderId) {
+      alert('가져오기를 수행할 폴더가 선택되지 않았습니다.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folderId', folderId)
+
+    setImporting(true)
+    try {
+      const res = await axios.post('/aman/content/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      alert('도움말 가져오기가 완료되었습니다.')
+      if (onImportSuccess) {
+        onImportSuccess(res.data)
+      }
+    } catch (err: any) {
+      console.error('Import failed:', err)
+      alert(err.response?.data || 'ZIP 파일 가져오기 중 오류가 발생했습니다.')
+    } finally {
+      setImporting(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
@@ -386,8 +435,41 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       </div>
 
-      {/* 별칭 AKA 입력창 */}
-      <div className="flex items-center space-x-1.5 ml-auto mr-4">
+      {/* 액션 및 별칭 영역 */}
+      <div className="flex items-center space-x-2 ml-auto mr-4">
+        {/* 가져오기 (Import) */}
+        <button
+          onClick={handleTriggerImport}
+          disabled={importing}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          title="가져오기 (ZIP 업로드)"
+        >
+          <Upload className={`w-4 h-4 ${importing ? 'text-gray-400 animate-pulse' : 'text-indigo-600'}`} />
+        </button>
+
+        {/* 숨겨진 파일 인풋 */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImportZip}
+          accept=".zip"
+          className="hidden"
+        />
+
+        {/* 내보내기 (Export) */}
+        <button
+          onClick={handleDownloadZip}
+          disabled={downloading}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          title="내보내기 (ZIP 다운로드)"
+        >
+          <Download className={`w-4 h-4 ${downloading ? 'text-gray-400 animate-bounce' : 'text-indigo-600'}`} />
+        </button>
+
+        {/* 세퍼레이터 */}
+        <span className="text-gray-300 select-none px-1">|</span>
+
+        {/* 별칭 AKA 입력창 */}
         <span className="text-[10px] font-semibold text-gray-400">별칭(AKA):</span>
         <input
           type="text"
@@ -398,17 +480,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /aman/manual/1110 으로 접근 가능)"
         />
       </div>
-
-      {/* ZIP 다운로드 */}
-      <button
-        onClick={handleDownloadZip}
-        disabled={downloading}
-        className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        title="이 매뉴얼과 삽입된 이미지들을 ZIP으로 내보내기"
-      >
-        <Download className="w-3.5 h-3.5 text-indigo-600" />
-        <span>{downloading ? '압축 중...' : 'ZIP 다운로드'}</span>
-      </button>
 
       {/* 미리보기 토글 */}
       <button

@@ -140,6 +140,14 @@ public class ManualController {
             "            font-style: italic;\n" +
             "            border-radius: 0 4px 4px 0;\n" +
             "        }\n" +
+            "        img {\n" +
+            "            max-width: 100%;\n" +
+            "            height: auto;\n" +
+            "            display: block;\n" +
+            "            margin: 16px auto;\n" +
+            "            border-radius: 8px;\n" +
+            "            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);\n" +
+            "        }\n" +
             "    </style>\n" +
             "</head>\n" +
             "<body>\n" +

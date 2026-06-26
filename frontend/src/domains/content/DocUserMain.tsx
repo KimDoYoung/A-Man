@@ -373,12 +373,13 @@ const DocUserMain: React.FC = () => {
         isLeavingRef.current = false
       }, 100)
       return true
-    } catch (error) {
+    } catch (error: any) {
       console.error('저장 실패:', error)
-      setSaveStatus({ type: 'error', text: '변경사항 저장 중 오류가 발생했습니다.' })
+      const errorMsg = error.response?.data?.toString() || '변경사항 저장 중 오류가 발생했습니다.'
+      setSaveStatus({ type: 'error', text: errorMsg })
       setTimeout(() => {
-        setSaveStatus((prev) => prev.text === '변경사항 저장 중 오류가 발생했습니다.' ? { type: '', text: '' } : prev)
-      }, 3000)
+        setSaveStatus((prev) => prev.text === errorMsg ? { type: '', text: '' } : prev)
+      }, 5000)
       return false
     } finally {
       setSaving(false)
@@ -472,6 +473,14 @@ const DocUserMain: React.FC = () => {
                     setPreviewOpen={setPreviewOpen}
                     pageTitle={page?.title || page?.folder?.name || 'document'}
                     pageContent={pageContent}
+                    folderId={folder_id || page?.folder?.id?.toString()}
+                    onImportSuccess={(importedPage) => {
+                      isLeavingRef.current = true;
+                      navigate(`/admin/page/${importedPage.id}`);
+                      setTimeout(() => {
+                        isLeavingRef.current = false;
+                      }, 100);
+                    }}
                   />
 
                   {/* 텍스트 편집창 */}
