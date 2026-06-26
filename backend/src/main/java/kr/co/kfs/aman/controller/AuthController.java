@@ -7,6 +7,7 @@ import kr.co.kfs.aman.repository.RefreshTokenRepository;
 import kr.co.kfs.aman.repository.TokenBlacklistRepository;
 import kr.co.kfs.aman.repository.UserRepository;
 import kr.co.kfs.aman.security.JwtTokenProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,12 @@ public class AuthController {
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenBlacklistRepository blacklistRepository;
     private final JwtTokenProvider tokenProvider;
+
+    @Value("${spring.security.jwt.access-expiration:3600000}")
+    private long accessExpirationTime;
+
+    @Value("${spring.security.jwt.refresh-expiration:1209600000}")
+    private long refreshExpirationTime;
 
     public AuthController(UserRepository userRepository,
                           RefreshTokenRepository refreshTokenRepository,
@@ -71,13 +78,13 @@ public class AuthController {
         RefreshToken tokenEntity = RefreshToken.builder()
                 .user(user)
                 .token(refreshToken)
-                .expiresAt(LocalDateTime.now().plusDays(14)) // 14일 만료
+                .expiresAt(LocalDateTime.now().plusSeconds(refreshExpirationTime / 1000))
                 .build();
         refreshTokenRepository.save(tokenEntity);
 
         // 5. 쿠키 설정 (HttpOnly 옵션을 주어 XSS 방어)
-        setCookie(response, "access_token", accessToken, 3600); // 1시간
-        setCookie(response, "refresh_token", refreshToken, 1209600); // 14일
+        setCookie(response, "access_token", accessToken, (int) (accessExpirationTime / 1000));
+        setCookie(response, "refresh_token", refreshToken, (int) (refreshExpirationTime / 1000));
 
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("id", user.getId());
@@ -118,7 +125,7 @@ public class AuthController {
         if (accessToken != null && tokenProvider.validateToken(accessToken)) {
             TokenBlacklist blacklist = TokenBlacklist.builder()
                     .token(accessToken)
-                    .expiresAt(LocalDateTime.now().plusHours(1)) // 대략 1시간 차단
+                    .expiresAt(LocalDateTime.now().plusSeconds(accessExpirationTime / 1000))
                     .build();
             blacklistRepository.save(blacklist);
         }
@@ -165,10 +172,11 @@ public class AuthController {
 
         // 2. 새로운 Access Token 재발급 및 쿠키 저장
         String newAccessToken = tokenProvider.createAccessToken(user.getUsername(), user.getRole());
-        setCookie(response, "access_token", newAccessToken, 3600);
+        setCookie(response, "access_token", newAccessToken, (int) (accessExpirationTime / 1000));
 
         Map<String, String> responseBody = new HashMap<>();
         responseBody.put("message", "토큰 갱신 성공");
+        responseBody.put("accessToken", newAccessToken);
         return ResponseEntity.ok(responseBody);
     }
 

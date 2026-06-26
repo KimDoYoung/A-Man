@@ -54,5 +54,8 @@ EOF
 
 echo ""
 echo "=== 배포 완료 ==="
-echo "접속: https://aview.k-fs.co.kr:7171/aman"
-echo "API:  https://aview.k-fs.co.kr:7171/aman/health"
+echo "접속: https://jskn.iptime.org/aman"
+echo "API:  https://jskn.iptime.org/aman/health"
+
+#echo "접속: https://aview.k-fs.co.kr:7171/aman"
+#echo "API:  https://aview.k-fs.co.kr:7171/aman/health"
