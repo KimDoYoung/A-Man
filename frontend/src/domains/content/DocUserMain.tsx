@@ -592,7 +592,7 @@ const DocUserMain: React.FC = () => {
                     disabled={saving || !isDirty}
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>{saving ? '저장 중...' : '변경사항 저장하기 (Upsert)'}</span>
+                    <span>{saving ? '저장 중...' : '변경사항 저장하기'}</span>
                   </button>
                 </div>
               </div>
