@@ -101,12 +101,12 @@ CREATE TABLE settings (
     CONSTRAINT uk_setting_key UNIQUE (setting_key)
 );
 
-insert into settings (setting_key, setting_value) values ('SITE_NAME', 'A-Man API');
-insert into settings (setting_key, setting_value) values ('SITE_DESCRIPTION', 'AssetERP를 위한 도움말 시스템');
+insert into settings (setting_key, setting_value, note) values ('SITE_NAME', 'A-Man API','Application 명칭');
+insert into settings (setting_key, setting_value, note) values ('SITE_DESCRIPTION', 'AssetERP를 위한 도움말 시스템', 'Application 설명');
 
-insert into settings (setting_key, setting_value) values ('NORMAL_USER_TREE_FORMAT', '{nums} {name}'); -- 일반 사용자용 메뉴 트리 표시 형식
-insert into settings (setting_key, setting_value) values ('DOC_USER_TREE_FORMAT', '{nums} {name} ({sort_order})'); -- 문서편집 사용자용 메뉴 트리 표시 형식
-insert into settings (setting_key, setting_value) values ('NORMAL_USER_TITLE_FORMAT', '{nums} {name}'); -- 일반 사용자용 메뉴 제목 표시 형식
-insert into settings (setting_key, setting_value) values ('DOC_USER_TITLE_FORMAT', '{nums} {name} ({sort_order})'); -- 문서편집 사용자용 메뉴 제목 표시 형식
-insert into settings (setting_key, setting_value) values ('NORMAL_USER_BREADCRUMB_FORMAT', '{nums} {name}'); -- 일반 사용자용 메뉴 제목 표시 형식
-insert into settings (setting_key, setting_value) values ('DOC_USER_BREADCRUMB_FORMAT', '{nums} {name} ({sort_order})'); -- 문서편집 사용자용 메뉴 제목 표시 형식
+insert into settings (setting_key, setting_value, note) values ('NORMAL_USER_TREE_FORMAT', '{nums} {name}','일반 사용자용 메뉴 트리 표시 형식'); 
+insert into settings (setting_key, setting_value, note) values ('DOC_USER_TREE_FORMAT', '{nums} {name} ({sort_order})','문서편집 사용자용 메뉴 트리 표시 형식'); 
+insert into settings (setting_key, setting_value, note) values ('NORMAL_USER_TITLE_FORMAT', '{nums} {name}','일반 사용자용 메뉴 제목 표시 형식'); 
+insert into settings (setting_key, setting_value, note) values ('DOC_USER_TITLE_FORMAT', '{nums} {name} ({sort_order})','문서편집 사용자용 메뉴 제목 표시 형식');
+insert into settings (setting_key, setting_value, note) values ('NORMAL_USER_BREADCRUMB_FORMAT', '{nums} {name}','일반 사용자용 메뉴 제목 표시 형식'); 
+insert into settings (setting_key, setting_value, note) values ('DOC_USER_BREADCRUMB_FORMAT', '{nums} {name} ({sort_order})','문서편집 사용자용 메뉴 제목 표시 형식'); 

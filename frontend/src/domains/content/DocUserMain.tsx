@@ -29,6 +29,7 @@ const DocUserMain: React.FC = () => {
   const [, setPageTitle] = useState('')
   const [pageContent, setPageContent] = useState('')
   const [pageAka, setPageAka] = useState('')
+  const [pageStatus, setPageStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT')
 
   // 폴더 계층 구조 정보 상태 (빵부스러기용)
   const [folderHierarchy, setFolderHierarchy] = useState<any[]>([])
@@ -40,7 +41,11 @@ const DocUserMain: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
   const [copied, setCopied] = useState(false)
 
-  const isDirty = page ? (pageContent !== (page.content || '') || pageAka !== (page.aka || '')) : false
+  const isDirty = page ? (
+    pageContent !== (page.content || '') || 
+    pageAka !== (page.aka || '') ||
+    pageStatus !== (page.status || 'DRAFT')
+  ) : false
 
   // 1. 브라우저 새로고침, 탭 닫기, 외부 페이지 이동 차단 (beforeunload)
   useEffect(() => {
@@ -76,6 +81,7 @@ const DocUserMain: React.FC = () => {
         setPageTitle('')
         setPageContent('')
         setPageAka('')
+        setPageStatus('DRAFT')
         setFolderHierarchy([])
         return
       }
@@ -86,15 +92,16 @@ const DocUserMain: React.FC = () => {
         let targetFolderId: number | null = null
 
         if (page_id) {
-          const response = await axios.get(`/aman/docs/${page_id}`)
+          const response = await axios.get(`/aman/content/${page_id}`)
           const data = response.data
           setPage(data)
           setPageTitle(data.title)
           setPageContent(data.content)
           setPageAka(data.aka || '')
+          setPageStatus(data.status || 'DRAFT')
           targetFolderId = data.folder?.id || null
         } else if (folder_id) {
-          const pagesRes = await axios.get(`/aman/docs/folders/${folder_id}/pages`)
+          const pagesRes = await axios.get(`/aman/content/folders/${folder_id}/pages`)
           const pages = pagesRes.data
 
           const folderRes = await axios.get(`/aman/docs/folders/${folder_id}`)
@@ -107,6 +114,7 @@ const DocUserMain: React.FC = () => {
             setPageTitle(pages[0].title)
             setPageContent(pages[0].content)
             setPageAka(pages[0].aka || '')
+            setPageStatus(pages[0].status || 'DRAFT')
           } else {
             // 페이지가 없는 빈 폴더인 경우 신규 작성을 유도
             setPage({
@@ -119,6 +127,7 @@ const DocUserMain: React.FC = () => {
             setPageTitle('')
             setPageContent('')
             setPageAka('')
+            setPageStatus('DRAFT')
           }
         }
 
@@ -283,8 +292,25 @@ const DocUserMain: React.FC = () => {
   }
 
   // 4. 저장 처리 (Upsert)
+  const handleToggleStatus = () => {
+    if (pageStatus === 'DRAFT') {
+      if (!pageContent.trim()) {
+        alert('내용을 작성한 후에 완료 및 배포 상태로 변경할 수 있습니다.')
+        return
+      }
+      setPageStatus('PUBLISHED')
+    } else {
+      setPageStatus('DRAFT')
+    }
+  }
+
   const handleSave = async (skipNavigate = false): Promise<boolean> => {
     if (!page) return false
+
+    if (pageStatus === 'PUBLISHED' && !pageContent.trim()) {
+      alert('내용이 없는 상태에서는 완료 및 배포(PUBLISHED) 상태로 저장할 수 없습니다.')
+      return false
+    }
 
     let trimmedAka = pageAka.trim()
     const isCurrentAkaEmpty = !trimmedAka
@@ -323,7 +349,8 @@ const DocUserMain: React.FC = () => {
         folderId: folderId,
         title: titleToSave,
         content: trimmedContent,
-        aka: trimmedAka
+        aka: trimmedAka,
+        status: pageStatus
       })
       const savedPage = response.data
       
@@ -338,6 +365,7 @@ const DocUserMain: React.FC = () => {
       setPageTitle(savedPage.title)
       setPageContent(savedPage.content)
       setPageAka(savedPage.aka || '')
+      setPageStatus(savedPage.status || 'DRAFT')
       if (!skipNavigate) {
         navigate(`/admin/folder/${folderId}`, { replace: true })
       }
@@ -524,14 +552,38 @@ const DocUserMain: React.FC = () => {
                   )}
                 </div>
 
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={saving || !isDirty}
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? '저장 중...' : '변경사항 저장하기 (Upsert)'}</span>
-                </button>
+                <div className="flex items-center space-x-3">
+                  {/* 배포 상태 스위치 (작성 중 / 완료 및 배포) */}
+                  <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md select-none">
+                    <span className="text-xs font-bold text-slate-500">배포 상태:</span>
+                    <button
+                      type="button"
+                      onClick={handleToggleStatus}
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        pageStatus === 'PUBLISHED' ? 'bg-indigo-600' : 'bg-slate-400'
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          pageStatus === 'PUBLISHED' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-[11px] font-bold ${pageStatus === 'PUBLISHED' ? 'text-indigo-600' : 'text-slate-500'}`}>
+                      {pageStatus === 'PUBLISHED' ? '완료 및 배포' : '작성 중'}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={saving || !isDirty}
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{saving ? '저장 중...' : '변경사항 저장하기 (Upsert)'}</span>
+                  </button>
+                </div>
               </div>
             </>
           ) : (

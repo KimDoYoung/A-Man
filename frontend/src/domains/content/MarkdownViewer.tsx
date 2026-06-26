@@ -40,9 +40,13 @@ const MarkdownViewer: React.FC = () => {
           setPage(null)
           setTocData([])
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('페이지 로드 실패:', error)
-        setErrorMsg('도움말 문서를 가져오는 도중 오류가 발생했습니다.')
+        if (error.response?.status === 404) {
+          setErrorMsg('존재하지 않거나 아직 작성이 완료되지 않은(DRAFT) 도움말 문서입니다.')
+        } else {
+          setErrorMsg('도움말 문서를 가져오는 도중 오류가 발생했습니다.')
+        }
       } finally {
         setLoading(false)
       }

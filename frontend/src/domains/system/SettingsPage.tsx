@@ -10,6 +10,7 @@ interface SettingItem {
   id: number
   settingKey: string
   settingValue: string
+  note?: string
 }
 
 const SettingsPage: React.FC = () => {
@@ -92,12 +93,20 @@ const SettingsPage: React.FC = () => {
     },
     {
       field: 'settingValue',
-      headerName: '설정 값 (Value) — 더블클릭하여 편집',
-      flex: 1,
-      minWidth: 350,
+      headerName: '설정 값 (Value)',
+      width: 400,
       editable: true,
       cellClass: 'font-medium text-indigo-700 text-[15px] bg-indigo-50/10 focus:bg-white',
       sortable: false
+    },
+    {
+      field: 'note',
+      headerName: '설명 (Note)',
+      flex: 1,
+      minWidth: 300,
+      cellClass: 'text-gray-500 text-[13px] bg-slate-50/30',
+      sortable: false,
+      editable: false
     }
   ]
 
@@ -166,7 +175,7 @@ const SettingsPage: React.FC = () => {
               }}
             />
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+          <div className="mt-3 flex items-center gap-1.5 text-[12px] text-slate-500 font-medium">
             <span>※ 설정 값(Value) 열의 셀을 마우스로 더블클릭하면 텍스트를 인라인으로 직접 수정할 수 있습니다.</span>
           </div>
         </div>

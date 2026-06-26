@@ -53,6 +53,14 @@ public class ContentController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("존재하지 않는 폴더 ID입니다.");
         }
 
+        String status = body.containsKey("status") && body.get("status") != null ? body.get("status").toString().trim() : "DRAFT";
+        if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
+        }
+        if ("PUBLISHED".equals(status) && content.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("내용이 없는 페이지는 완료 및 배포(PUBLISHED) 상태로 설정할 수 없습니다.");
+        }
+
         Page page;
         if (body.containsKey("id") && body.get("id") != null) {
             Long pageId = Long.valueOf(body.get("id").toString());
@@ -64,14 +72,7 @@ public class ContentController {
                 page.setTitle(title);
                 page.setContent(content);
                 page.setSortOrder(sortOrder);
-                
-                if (body.containsKey("status") && body.get("status") != null) {
-                    String status = body.get("status").toString().trim();
-                    if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
-                    }
-                    page.setStatus(status);
-                }
+                page.setStatus(status);
                 
                 if (aka.isEmpty()) {
                     // 기존에 aka가 채워져 있었다면 기존 것 유지, 없었다면 임의 생성
@@ -87,10 +88,6 @@ public class ContentController {
                 if (aka.isEmpty()) {
                     aka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
                 }
-                String status = body.containsKey("status") && body.get("status") != null ? body.get("status").toString().trim() : "DRAFT";
-                if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
-                }
                 page = Page.builder()
                         .id(pageId)
                         .folder(folderOpt.get())
@@ -105,10 +102,6 @@ public class ContentController {
             // Insert 수행
             if (aka.isEmpty()) {
                 aka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-            }
-            String status = body.containsKey("status") && body.get("status") != null ? body.get("status").toString().trim() : "DRAFT";
-            if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
             }
             page = Page.builder()
                     .folder(folderOpt.get())
@@ -131,6 +124,12 @@ public class ContentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 페이지입니다.");
         }
         return ResponseEntity.ok(pageOpt.get());
+    }
+
+    @GetMapping("/folders/{folder_id}/pages")
+    public ResponseEntity<?> getFolderPages(@PathVariable("folder_id") Long folderId) {
+        java.util.List<Page> pages = pageRepository.findByFolderIdOrderBySortOrderAsc(folderId);
+        return ResponseEntity.ok(pages);
     }
 
     @DeleteMapping("/{page_id}")
