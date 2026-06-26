@@ -470,6 +470,8 @@ const DocUserMain: React.FC = () => {
                     onAkaChange={setPageAka}
                     previewOpen={previewOpen}
                     setPreviewOpen={setPreviewOpen}
+                    pageTitle={page?.title || page?.folder?.name || 'document'}
+                    pageContent={pageContent}
                   />
 
                   {/* 텍스트 편집창 */}

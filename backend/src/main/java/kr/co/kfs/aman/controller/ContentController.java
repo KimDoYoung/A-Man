@@ -194,4 +194,97 @@ public class ContentController {
 
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/export")
+    public void exportPageToZip(@RequestBody Map<String, Object> body, javax.servlet.http.HttpServletResponse response) {
+        String title = body.containsKey("title") && body.get("title") != null ? body.get("title").toString() : "document";
+        String content = body.containsKey("content") && body.get("content") != null ? body.get("content").toString() : "";
+        String aka = body.containsKey("aka") && body.get("aka") != null ? body.get("aka").toString() : "doc";
+
+        if (title.trim().isEmpty()) {
+            title = "document";
+        }
+        if (aka.trim().isEmpty()) {
+            aka = "document";
+        }
+
+        // 1. Parse markdown content to extract image paths
+        java.util.List<String> imageRelativePaths = new java.util.ArrayList<>();
+        java.util.List<String> originalMatches = new java.util.ArrayList<>();
+        
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("!\\[.*?\\]\\((.*?)\\)");
+        java.util.regex.Matcher matcher = pattern.matcher(content);
+        
+        while (matcher.find()) {
+            String imageUrl = matcher.group(1);
+            if (imageUrl.contains("/images/")) {
+                int index = imageUrl.indexOf("/images/");
+                String relativePath = imageUrl.substring(index + "/images/".length());
+                if (relativePath.contains("?")) {
+                    relativePath = relativePath.substring(0, relativePath.indexOf("?"));
+                }
+                if (relativePath.contains("#")) {
+                    relativePath = relativePath.substring(0, relativePath.indexOf("#"));
+                }
+                imageRelativePaths.add(relativePath);
+                originalMatches.add(imageUrl);
+            }
+        }
+
+        // 2. Rewrite markdown content to use relative local paths for images
+        String rewrittenContent = content;
+        for (int i = 0; i < originalMatches.size(); i++) {
+            String origUrl = originalMatches.get(i);
+            String relPath = imageRelativePaths.get(i);
+            String filename = relPath;
+            if (filename.contains("/")) {
+                filename = filename.substring(filename.lastIndexOf("/") + 1);
+            }
+            rewrittenContent = rewrittenContent.replace(origUrl, "images/" + filename);
+        }
+
+        // 3. Prepare ZIP file response
+        response.setContentType("application/zip");
+        String safeFileName = aka + ".zip";
+        try {
+            safeFileName = java.net.URLEncoder.encode(safeFileName, "UTF-8").replaceAll("\\+", "%20");
+        } catch (java.io.UnsupportedEncodingException e) {
+            safeFileName = aka + ".zip";
+        }
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + safeFileName + "\"");
+
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(response.getOutputStream())) {
+            // Write Markdown file
+            java.util.zip.ZipEntry mdEntry = new java.util.zip.ZipEntry(title + ".md");
+            zos.putNextEntry(mdEntry);
+            zos.write(rewrittenContent.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            // Write each image file
+            for (String relPath : imageRelativePaths) {
+                String imageFilePath = baseDir + "/data/images/" + relPath;
+                java.io.File imgFile = new java.io.File(imageFilePath);
+                if (imgFile.exists() && imgFile.isFile()) {
+                    String filename = relPath;
+                    if (filename.contains("/")) {
+                        filename = filename.substring(filename.lastIndexOf("/") + 1);
+                    }
+                    java.util.zip.ZipEntry imgEntry = new java.util.zip.ZipEntry("images/" + filename);
+                    zos.putNextEntry(imgEntry);
+                    
+                    try (java.io.FileInputStream fis = new java.io.FileInputStream(imgFile)) {
+                        byte[] buffer = new byte[4096];
+                        int len;
+                        while ((len = fis.read(buffer)) > 0) {
+                            zos.write(buffer, 0, len);
+                        }
+                    }
+                    zos.closeEntry();
+                }
+            }
+            zos.flush();
+        } catch (java.io.IOException e) {
+            System.err.println("Failed to export ZIP: " + e.getMessage());
+        }
+    }
 }

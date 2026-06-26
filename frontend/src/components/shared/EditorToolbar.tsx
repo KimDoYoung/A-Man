@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout } from 'lucide-react'
+import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -57,6 +57,8 @@ interface EditorToolbarProps {
   onAkaChange: (value: string) => void
   previewOpen: boolean
   setPreviewOpen: (open: boolean) => void
+  pageTitle: string
+  pageContent: string
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -68,7 +70,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   aka,
   onAkaChange,
   previewOpen,
-  setPreviewOpen
+  setPreviewOpen,
+  pageTitle,
+  pageContent
 }) => {
   const [emojis, setEmojis] = useState<Asset[]>([])
   const [symbols, setSymbols] = useState<Asset[]>([])
@@ -84,6 +88,36 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const symbolPanelRef = useRef<HTMLDivElement>(null)
   const phrasePanelRef = useRef<HTMLDivElement>(null)
   const templatePanelRef = useRef<HTMLDivElement>(null)
+
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownloadZip = async () => {
+    setDownloading(true)
+    try {
+      const response = await axios.post('/aman/content/export', {
+        title: pageTitle || 'document',
+        content: pageContent,
+        aka: aka
+      }, {
+        responseType: 'blob'
+      })
+      
+      const blob = new Blob([response.data], { type: 'application/zip' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${aka || 'document'}.zip`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('다운로드 오류:', error)
+      alert('ZIP 파일을 생성하는 데 실패했습니다.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   useEffect(() => {
     axios.get<Asset[]>('/aman/assets')
@@ -364,6 +398,17 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /aman/manual/1110 으로 접근 가능)"
         />
       </div>
+
+      {/* ZIP 다운로드 */}
+      <button
+        onClick={handleDownloadZip}
+        disabled={downloading}
+        className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer mr-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        title="이 매뉴얼과 삽입된 이미지들을 ZIP으로 내보내기"
+      >
+        <Download className="w-3.5 h-3.5 text-indigo-600" />
+        <span>{downloading ? '압축 중...' : 'ZIP 다운로드'}</span>
+      </button>
 
       {/* 미리보기 토글 */}
       <button
