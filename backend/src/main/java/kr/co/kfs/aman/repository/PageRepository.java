@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface PageRepository extends JpaRepository<Page, Long> {
     List<Page> findByFolderIdOrderBySortOrderAsc(Long folderId);
+    List<Page> findByFolderIdAndStatusOrderBySortOrderAsc(Long folderId, String status);
     Optional<Page> findByFolderId(Long folderId);
     Optional<Page> findByAka(String aka);
 }

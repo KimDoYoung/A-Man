@@ -38,6 +38,9 @@ public class Setting {
     @Column(name = "setting_value", columnDefinition = "TEXT")
     private String settingValue;
 
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

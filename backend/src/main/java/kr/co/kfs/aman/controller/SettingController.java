@@ -39,6 +39,7 @@ public class SettingController {
 
         Setting existing = existingOpt.get();
         existing.setSettingValue(settingRequest.getSettingValue());
+        existing.setNote(settingRequest.getNote());
 
         Setting saved = settingRepository.save(existing);
         return ResponseEntity.ok(saved);

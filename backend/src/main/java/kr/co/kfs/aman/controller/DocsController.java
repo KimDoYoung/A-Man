@@ -30,7 +30,7 @@ public class DocsController {
     @GetMapping("/{page_id}")
     public ResponseEntity<?> getPageDetail(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
-        if (!pageOpt.isPresent()) {
+        if (!pageOpt.isPresent() || !"PUBLISHED".equals(pageOpt.get().getStatus())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 페이지입니다.");
         }
         return ResponseEntity.ok(pageOpt.get());
@@ -83,7 +83,7 @@ public class DocsController {
     @GetMapping("/folders/{folder_id}/pages")
     public ResponseEntity<?> getFolderPages(@PathVariable("folder_id") Long folderId) {
         // 편의를 위해 특정 폴더 하위의 페이지 리스트 조회 추가
-        List<Page> pages = pageRepository.findByFolderIdOrderBySortOrderAsc(folderId);
+        List<Page> pages = pageRepository.findByFolderIdAndStatusOrderBySortOrderAsc(folderId, "PUBLISHED");
         return ResponseEntity.ok(pages);
     }
 }

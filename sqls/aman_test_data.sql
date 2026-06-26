@@ -98,7 +98,7 @@ DELETE FROM pages;
 DELETE FROM sqlite_sequence WHERE name='pages';
 
 -- 1. 사용자 관리 (folder_id=4)
-INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
     4,
     '사원 계정 생성 및 권한 부여 안내',
     '# 사원 계정 생성 및 권한 부여 가이드
@@ -125,10 +125,11 @@ INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
 - **퇴사**: 사용자의 활성화 상태(`is_active`)를 `0` (비활성)으로 변경하여 시스템 접속을 원천 차단합니다. (Soft Delete)
 ',
     1,
-    'page-1'
+    'page-1',
+    'PUBLISHED'
 );
 
-INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
     4,
     '사용자 목록 조회 및 활성/비활성화 처리 가이드',
     '# 사용자 목록 조회 및 활성/비활성화 가이드
@@ -155,11 +156,12 @@ A-Man 시스템은 보안 및 데이터 이력 추적을 위해 물리적으로 
 2. 상세 화면에서 `[활성화]` 버튼을 누르면 즉시 상태가 `활성`으로 복구되어 정상 로그인이 가능해집니다.
 ',
     2,
-    'page-2'
+    'page-2',
+    'PUBLISHED'
 );
 
 -- 2. 사원 정보 등록 (folder_id=13)
-INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
     13,
     '신규 사원 등록 프로세스 및 입력 항목 상세',
     '# 신규 사원 등록 가이드
@@ -185,11 +187,12 @@ INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
 사원 정보 저장이 성공적으로 완료되면 자동으로 `사번`을 기반으로 한 임시 시스템 계정이 생성 대기 상태가 됩니다. 관리자는 즉시 **사용자 관리** 메뉴를 통해 로그인 계정을 연계 발급하십시오.
 ',
     1,
-    'page-3'
+    'page-3',
+    'PUBLISHED'
 );
 
 -- 3. 일반 전표 입력 (folder_id=30)
-INSERT INTO pages (folder_id, title, content, sort_order, aka) VALUES (
+INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
     30,
     '재무 전표 작성 및 확정 절차 안내',
     '# 재무 전표 작성 및 확정 절차
@@ -216,7 +219,8 @@ graph TD
 > 확정 완료된 전표는 원칙적으로 수정이나 삭제가 불가능합니다. 오등록된 경우 반대 분개를 가지는 **마이너스 취소 전표**를 추가 발행하여 보정해야 합니다.
 ',
     1,
-    'page-4'
+    'page-4',
+    'PUBLISHED'
 );
 
 -- -------------------------------------------------------------

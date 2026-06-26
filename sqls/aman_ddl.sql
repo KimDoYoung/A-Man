@@ -19,6 +19,7 @@ CREATE TABLE pages (
     content     TEXT NOT NULL,                      -- 마크다운(md) 문장 본문 원본 전체
     sort_order  INTEGER DEFAULT 0,                  -- 폴더 내에서 페이지 노출 순서
     aka         TEXT NOT NULL UNIQUE,               -- 페이지 별칭 (URL 경로에 사용될 수 있는 고유한 문자열)
+    status      TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'PUBLISHED')), -- DRAFT(초안), PUBLISHED(발행)
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     
@@ -94,6 +95,7 @@ CREATE TABLE settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     setting_key VARCHAR(50) NOT NULL,
     setting_value TEXT,
+    note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_setting_key UNIQUE (setting_key)

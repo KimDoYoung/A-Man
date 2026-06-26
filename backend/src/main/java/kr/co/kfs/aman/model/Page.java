@@ -53,6 +53,10 @@ public class Page {
     @Builder.Default
     private Integer sortOrder = 0;
 
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private String status = "DRAFT";
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

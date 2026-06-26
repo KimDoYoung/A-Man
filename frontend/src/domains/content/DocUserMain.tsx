@@ -26,7 +26,7 @@ const DocUserMain: React.FC = () => {
 
   // 문서 데이터 상태
   const [page, setPage] = useState<PageData & { folder?: { id: number; name: string; nums?: string } } | null>(null)
-
+  const [, setPageTitle] = useState('')
   const [pageContent, setPageContent] = useState('')
   const [pageAka, setPageAka] = useState('')
 
@@ -34,7 +34,7 @@ const DocUserMain: React.FC = () => {
   const [folderHierarchy, setFolderHierarchy] = useState<any[]>([])
   
   // 피드백 상태
-
+  const [, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })

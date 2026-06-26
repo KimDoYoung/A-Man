@@ -223,17 +223,19 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               사용자 관리
             </button>
           )}
-          <button
-            onClick={() => navigate('/admin/settings')}
-            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
-              isAdminSettingsPage 
-                ? 'bg-purple-600 text-white border-purple-600' 
-                : 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20'
-            }`}
-            title="시스템 환경 설정 화면으로 이동"
-          >
-            설정
-          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin/settings')}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                isAdminSettingsPage 
+                  ? 'bg-purple-600 text-white border-purple-600' 
+                  : 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20'
+              }`}
+              title="시스템 환경 설정 화면으로 이동"
+            >
+              설정
+            </button>
+          )}
         </div>
       </div>
       

@@ -47,11 +47,11 @@ public class ManualController {
     @GetMapping(value = "/{aka}", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
     public ResponseEntity<String> getManualByAka(@PathVariable("aka") String aka) {
         Optional<Page> pageOpt = pageRepository.findByAka(aka);
-        if (!pageOpt.isPresent()) {
+        if (!pageOpt.isPresent() || !"PUBLISHED".equals(pageOpt.get().getStatus())) {
             return ResponseEntity.status(404).body(
                 "<html><body style='font-family:sans-serif; text-align:center; padding:100px; color:#64748b;'>" +
                 "<h2>⚠️ 도움말 페이지를 찾을 수 없습니다.</h2>" +
-                "<p>해당 코드(" + escapeHtml(aka) + ")에 등록된 메뉴얼이 존재하지 않습니다.</p>" +
+                "<p>해당 코드(" + escapeHtml(aka) + ")에 등록된 메뉴얼이 존재하지 않거나 준비 중입니다.</p>" +
                 "</body></html>"
             );
         }

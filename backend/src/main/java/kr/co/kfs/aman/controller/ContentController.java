@@ -65,6 +65,14 @@ public class ContentController {
                 page.setContent(content);
                 page.setSortOrder(sortOrder);
                 
+                if (body.containsKey("status") && body.get("status") != null) {
+                    String status = body.get("status").toString().trim();
+                    if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
+                    }
+                    page.setStatus(status);
+                }
+                
                 if (aka.isEmpty()) {
                     // 기존에 aka가 채워져 있었다면 기존 것 유지, 없었다면 임의 생성
                     if (page.getAka() == null || page.getAka().trim().isEmpty()) {
@@ -79,6 +87,10 @@ public class ContentController {
                 if (aka.isEmpty()) {
                     aka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
                 }
+                String status = body.containsKey("status") && body.get("status") != null ? body.get("status").toString().trim() : "DRAFT";
+                if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
+                }
                 page = Page.builder()
                         .id(pageId)
                         .folder(folderOpt.get())
@@ -86,6 +98,7 @@ public class ContentController {
                         .content(content)
                         .sortOrder(sortOrder)
                         .aka(aka)
+                        .status(status)
                         .build();
             }
         } else {
@@ -93,12 +106,17 @@ public class ContentController {
             if (aka.isEmpty()) {
                 aka = "page-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 12);
             }
+            String status = body.containsKey("status") && body.get("status") != null ? body.get("status").toString().trim() : "DRAFT";
+            if (!"DRAFT".equals(status) && !"PUBLISHED".equals(status)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("올바르지 않은 상태 값입니다. (허용 값: DRAFT, PUBLISHED)");
+            }
             page = Page.builder()
                     .folder(folderOpt.get())
                     .title(title)
                     .content(content)
                     .sortOrder(sortOrder)
                     .aka(aka)
+                    .status(status)
                     .build();
         }
 
