@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, Save, RotateCcw, Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown, ListOrdered, RefreshCw, Layers } from 'lucide-react'
+import { Plus, Trash2, Save, Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown, ListOrdered, RefreshCw, Layers } from 'lucide-react'
 import axios from 'axios'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { AgGridReact } from 'ag-grid-react'

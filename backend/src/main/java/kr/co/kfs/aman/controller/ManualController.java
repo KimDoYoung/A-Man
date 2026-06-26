@@ -28,13 +28,12 @@ public class ManualController {
 
     @GetMapping(value = "/new-aka", produces = "text/plain;charset=UTF-8")
     public ResponseEntity<String> generateNewAka() {
-        java.util.Random random = new java.util.Random();
         String candidate;
         int maxAttempts = 100;
         int attempts = 0;
         
         do {
-            int num = 1000 + random.nextInt(9000); // 1000 ~ 9999
+            int num = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000); // 1000 ~ 9999
             candidate = String.valueOf(num);
             attempts++;
             if (attempts > maxAttempts) {

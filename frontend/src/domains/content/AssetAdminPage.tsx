@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Trash2, Save, RotateCcw, Smile, Type, FileText, Layout, Info, AlertTriangle } from 'lucide-react'
+import { Plus, Search, Trash2, Save, RotateCcw, FileText, Layout, Info } from 'lucide-react'
 import axios from 'axios'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { renderMarkdownToHtml } from '@/utils/markdownRenderer'

@@ -106,18 +106,19 @@ spotbugs {
     toolVersion = "4.7.3"
     ignoreFailures = true
     showStackTraces = true
+    excludeFilter = file("spotbugs-exclude.xml")
 }
 
 spotbugsMain {
     reports {
-        xml.required = false
+        xml.required = true
         html.required = true
     }
 }
 
 spotbugsTest {
     reports {
-        xml.required = false
+        xml.required = true
         html.required = true
     }
 }

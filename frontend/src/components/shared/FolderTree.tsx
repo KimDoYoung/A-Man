@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Folder, FolderOpen, ChevronDown, FileText } from 'lucide-react'
 import axios from 'axios'
-import { FolderNode, TocItem } from '@/types'
+import { FolderNode } from '@/types'
 import FolderTreeContextMenu from '@/components/shared/FolderTreeContextMenu'
 import FilterInput from '@/components/shared/FilterInput'
 
@@ -152,7 +152,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
   };
 
   // 특정 폴더 토글 및 경로 이동
-  const toggleFolder = (folder: FolderNode, depth: number) => {
+  const toggleFolder = (folder: FolderNode) => {
     const isOpen = !!expandedFolders[folder.id]
     setExpandedFolders(prev => ({ ...prev, [folder.id]: !isOpen }))
 
@@ -193,7 +193,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
     return (
       <li key={node.id} className="space-y-1">
         <div 
-          onClick={() => toggleFolder(node, depth)}
+          onClick={() => toggleFolder(node)}
           onContextMenu={(contextMenuEnable && !isContextMenuDisabled) ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
           className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${
             isFolderActive

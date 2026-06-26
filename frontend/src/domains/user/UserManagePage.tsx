@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Trash2, Save, RotateCcw, User, Mail, Shield, ToggleLeft, ToggleRight, Info } from 'lucide-react'
+import { Plus, Search, Trash2, Save, RotateCcw, User, Mail, Shield, Info } from 'lucide-react'
 import axios from 'axios'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 

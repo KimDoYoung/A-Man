@@ -92,7 +92,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         
         // EMOJI: split comma-separated values
         const emRaw = data.filter(x => x.atype === 'EMOJI')
-        let emParsed: Asset[] = []
+        const emParsed: Asset[] = []
         if (emRaw.length > 0) {
           emRaw.forEach(asset => {
             const parts = asset.value.split(',').map(s => s.trim()).filter(Boolean)
@@ -108,7 +108,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
         // SYMBOL: split comma-separated values
         const syRaw = data.filter(x => x.atype === 'SYMBOL')
-        let syParsed: Asset[] = []
+        const syParsed: Asset[] = []
         if (syRaw.length > 0) {
           syRaw.forEach(asset => {
             const parts = asset.value.split(',').map(s => s.trim()).filter(Boolean)

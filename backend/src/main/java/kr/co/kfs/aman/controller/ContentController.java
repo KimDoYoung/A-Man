@@ -46,7 +46,7 @@ public class ContentController {
         Long folderId = Long.valueOf(body.get("folderId").toString());
         String title = body.get("title").toString();
         String content = body.get("content").toString().trim();
-        Integer sortOrder = body.containsKey("sortOrder") ? Integer.valueOf(body.get("sortOrder").toString()) : 0;
+        Integer sortOrder = body.containsKey("sortOrder") ? Integer.valueOf(body.get("sortOrder").toString()) : Integer.valueOf(0);
         String aka = body.containsKey("aka") && body.get("aka") != null ? body.get("aka").toString().trim() : "";
         Optional<Folder> folderOpt = folderRepository.findById(folderId);
         if (!folderOpt.isPresent()) {
@@ -143,8 +143,8 @@ public class ContentController {
         // 2. 저장 폴더 생성 (BASE_DIR/data/images/yyyy/MM/dd)
         String saveDirPath = baseDir + "/data/images/" + datePath;
         File saveDir = new File(saveDirPath);
-        if (!saveDir.exists()) {
-            saveDir.mkdirs();
+        if (!saveDir.exists() && !saveDir.mkdirs()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("이미지 저장 폴더를 생성할 수 없습니다: " + saveDirPath);
         }
 
         // 3. 파일 포맷 그대로 사용(요구사항 반영) 및 UUID 명명

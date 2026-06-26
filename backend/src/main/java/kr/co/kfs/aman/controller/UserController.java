@@ -95,7 +95,9 @@ public class UserController {
         }
 
         // 비밀번호 수정
-        if (fields.containsKey("password")) user.setPassword(fields.get("password"));
+        if (fields.containsKey("password")) {
+            user.setPassword(fields.get("password"));
+        }
         
         // 이메일 수정 (중복 검증 추가)
         if (fields.containsKey("email")) {
@@ -110,9 +112,15 @@ public class UserController {
 
         if (isAdmin) {
             // 관리자는 전체 정보 수정 가능
-            if (fields.containsKey("name")) user.setName(fields.get("name"));
-            if (fields.containsKey("role")) user.setRole(fields.get("role"));
-            if (fields.containsKey("isActive")) user.setIsActive(Integer.parseInt(fields.get("isActive")));
+            if (fields.containsKey("name")) {
+                user.setName(fields.get("name"));
+            }
+            if (fields.containsKey("role")) {
+                user.setRole(fields.get("role"));
+            }
+            if (fields.containsKey("isActive")) {
+                user.setIsActive(Integer.parseInt(fields.get("isActive")));
+            }
         }
 
         User updatedUser = userRepository.save(user);
