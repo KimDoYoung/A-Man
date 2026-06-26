@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Menu, BookOpen, Pin, Key } from 'lucide-react'
+import axios from 'axios'
 
 interface NormalUserTopBarProps {
   sidebarOpen: boolean;
@@ -16,6 +17,40 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
   setTocOpen
 }) => {
   const navigate = useNavigate()
+  const [siteName, setSiteName] = useState('AssetERP Docs')
+  const [siteDescription, setSiteDescription] = useState('AssetERP 도움말 시스템')
+
+  useEffect(() => {
+    axios.get('/aman/health')
+      .then(res => {
+        if (res.data) {
+          if (res.data.siteName) {
+            setSiteName(res.data.siteName)
+          }
+          if (res.data.siteDescription) {
+            setSiteDescription(res.data.siteDescription)
+          }
+        }
+      })
+      .catch(err => {
+        console.error('사이트 정보 조회 실패:', err)
+      })
+  }, [])
+
+  const renderSiteName = (name: string) => {
+    const trimmed = name.trim()
+    const lastSpaceIndex = trimmed.lastIndexOf(' ')
+    if (lastSpaceIndex === -1) {
+      return <span>{trimmed}</span>
+    }
+    const firstPart = trimmed.substring(0, lastSpaceIndex)
+    const lastWord = trimmed.substring(lastSpaceIndex + 1)
+    return (
+      <>
+        {firstPart} <span className="text-indigo-600">{lastWord}</span>
+      </>
+    )
+  }
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between bg-white border-b border-gray-200 px-6 py-3 shadow-xs shrink-0">
@@ -26,10 +61,14 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/docs')}>
+        <div 
+          className="flex items-center space-x-2 cursor-pointer" 
+          onClick={() => navigate('/docs')}
+          title={siteDescription}
+        >
           <BookOpen className="w-5 h-5 text-indigo-600" />
           <span className="text-base font-bold tracking-tight">
-            AssetERP <span className="text-indigo-600">Docs</span>
+            {renderSiteName(siteName)}
           </span>
         </div>
       </div>

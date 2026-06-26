@@ -402,7 +402,7 @@ const DocUserMain: React.FC = () => {
           style={{ width: `${sidebarWidth}px` }}
         >
           {/* 관리자 모드이므로 contextMenuEnable={true} 전달 */}
-          <FolderTree contextMenuEnable={true} />
+          <FolderTree contextMenuEnable={true} isDocUser={true} />
         </aside>
 
         {/* 2.2 1번 스플리터 (사이드바 - 본문용) */}

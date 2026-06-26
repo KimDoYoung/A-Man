@@ -75,7 +75,7 @@ const NormalUserMain: React.FC = () => {
           style={{ width: `${sidebarWidth}px` }}
         >
           {/* FolderTree 컴포넌트 마운트 */}
-          <FolderTree contextMenuEnable={false} />
+          <FolderTree contextMenuEnable={false} isDocUser={false} />
         </aside>
 
         {/* 2.2 사이드바 폭 드래그 리사이저 */}

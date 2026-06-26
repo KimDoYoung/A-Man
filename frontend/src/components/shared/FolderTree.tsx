@@ -8,9 +8,10 @@ import FilterInput from '@/components/shared/FilterInput'
 
 interface FolderTreeProps {
   contextMenuEnable?: boolean;
+  isDocUser?: boolean;
 }
 
-const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => {
+const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDocUser = false }) => {
   const isContextMenuDisabled = true; // [요구사항 반영] 컨텍스트 메뉴 비활성화 플래그
   const navigate = useNavigate()
   const location = useLocation()
@@ -21,6 +22,43 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
   // 데이터 피드백 상태
   const [folders, setFolders] = useState<FolderNode[]>([])
   const [filterText, setFilterText] = useState('')
+  const [settings, setSettings] = useState<Record<string, string>>({})
+
+  // 사이트 포맷 설정 로드
+  useEffect(() => {
+    axios.get('/aman/health')
+      .then(res => {
+        if (res.data && res.data.settings) {
+          setSettings(res.data.settings)
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load settings in FolderTree:', err)
+      })
+  }, [])
+
+  const formatNodeName = (node: FolderNode) => {
+    const defaultFormat = isDocUser 
+      ? '{nums} {name} ({sort_order})' 
+      : '{nums} {name}'
+    const fmt = isDocUser 
+      ? (settings.DOC_USER_TREE_FORMAT || defaultFormat)
+      : (settings.NORMAL_USER_TREE_FORMAT || defaultFormat)
+
+    const numsVal = node.nums || ''
+    const nameVal = node.name || ''
+    const sortOrderVal = String(node.sortOrder || 0)
+
+    let result = fmt
+      .replace('{nums}', numsVal)
+      .replace('{name}', nameVal)
+      .replace('{sort_order}', sortOrderVal)
+
+    if (!numsVal) {
+      result = result.replace(/^\s+/, '').replace(/\s+/g, ' ')
+    }
+    return result.trim()
+  }
 
   // 컨텍스트 메뉴 상태
   const [contextMenu, setContextMenu] = useState<{
@@ -215,7 +253,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true }) => 
               <Folder className="w-3.5 h-3.5 mr-2 text-gray-400" />
             )}
             <span>
-              {node.name}{node.nums ? `(${node.nums})` : ''}
+              {formatNodeName(node)}
             </span>
           </div>
           {hasChildren && (
