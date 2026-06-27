@@ -1,11 +1,47 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Info, Server, Cpu, Layers, Terminal, ShieldCheck, FileText, Sparkles, Database, Code, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Info, Server, Cpu, Layers, Terminal, ShieldCheck, FileText, Sparkles, Code, CheckCircle, ArrowLeft, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import axios from 'axios'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
+
+interface HistoryItem {
+  version: string
+  date: string
+  description: string[]
+}
 
 const AboutPage: React.FC = () => {
   const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [historyList, setHistoryList] = useState<HistoryItem[]>([])
+  const [historyOpen, setHistoryOpen] = useState(true)
+
+  useEffect(() => {
+    axios.get<HistoryItem[]>('/aman/history')
+      .then(res => {
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          setHistoryList(res.data)
+        } else {
+          setHistoryList([
+            {
+              version: "0.0.1",
+              date: "2026-06-28",
+              description: ["최초 배포"]
+            }
+          ])
+        }
+      })
+      .catch(err => {
+        console.error('히스토리 정보를 불러오는 중 오류가 발생했습니다:', err)
+        setHistoryList([
+          {
+            version: "0.0.1",
+            date: "2026-06-28",
+            description: ["최초 배포"]
+          }
+        ])
+      })
+  }, [])
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
@@ -15,7 +51,7 @@ const AboutPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto">
         <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
           
-          {/* 히어로 헤더 섹션 (라이트 모드 그라데이션 포인트) */}
+          {/* 히어로 헤더 섹션 */}
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-800 text-white border border-indigo-500/20 p-8 shadow-xl">
             <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -63,6 +99,75 @@ const AboutPage: React.FC = () => {
                 <span className="font-semibold text-emerald-300">SQLite3 (Single File)</span>
               </div>
             </div>
+          </div>
+
+          {/* 시스템 변경 이력 (Release History) - 접기/펼치기 포함 */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-6 transition-all">
+            <div 
+              onClick={() => setHistoryOpen(!historyOpen)}
+              className="flex items-center justify-between border-b border-slate-100 pb-4 cursor-pointer select-none group"
+              title={historyOpen ? "히스토리 접기" : "히스토리 펼치기"}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-100 transition-colors">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 flex flex-wrap items-center gap-2">
+                    <span>시스템 업데이트 히스토리 (Release History)</span>
+                    <span className="text-xs font-semibold px-2.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200/60 rounded-full">
+                      총 {historyList.length}개 버전
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-500 font-medium">A-Man 시스템의 버전별 주요 변경 및 배포 이력 (클릭 시 토글)</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0 cursor-pointer"
+              >
+                {historyOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {historyOpen && (
+              <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200 pt-1">
+                {historyList.map((item, index) => (
+                  <div key={`${item.version}-${index}`} className="relative group">
+                    {/* 타임라인 노드 아이콘 */}
+                    <div className="absolute -left-[1.625rem] top-1.5 w-3.5 h-3.5 rounded-full bg-indigo-600 ring-4 ring-indigo-100 group-hover:scale-125 transition-transform" />
+                    
+                    <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/40 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-slate-900 font-mono bg-white px-2 py-0.5 border border-slate-200 rounded-md shadow-2xs">
+                            v{item.version}
+                          </span>
+                          {index === 0 && (
+                            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                              Latest
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {item.date}
+                        </span>
+                      </div>
+
+                      <ul className="text-xs text-slate-700 space-y-1.5 pt-1 pl-1">
+                        {item.description && item.description.map((desc, dIdx) => (
+                          <li key={dIdx} className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                            <span className="leading-relaxed font-normal">{desc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* 2컬럼 레이아웃: 주요 목적 & 기술 스택 */}
@@ -181,7 +286,7 @@ const AboutPage: React.FC = () => {
                 <div className="pl-4 text-slate-300">├── docs/ <span className="text-slate-500">// 시스템 상세 설계서</span></div>
                 <div className="pl-4 text-slate-300">├── sqls/ <span className="text-slate-500">// SQLite 데이터베이스 DDL</span></div>
                 <div className="pl-4 text-slate-100 font-semibold">├── backend/ <span className="text-slate-500 font-normal">// Spring Boot 백엔드 프로젝트</span></div>
-                <div className="pl-8 text-slate-400">└── src/main/java/kr/co/kfs/aman/</div>
+                <div className="pl-8 text-slate-400">└── src/main/resources/history.json</div>
                 <div className="pl-4 text-slate-100 font-semibold">└── frontend/ <span className="text-slate-500 font-normal">// React TypeScript 프론트엔드</span></div>
                 <div className="pl-8 text-slate-400">└── src/domains/ & components/</div>
               </div>

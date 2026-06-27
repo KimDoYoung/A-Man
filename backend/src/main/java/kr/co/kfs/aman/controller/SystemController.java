@@ -49,5 +49,19 @@ public class SystemController {
 
         return status;
     }
+
+    @GetMapping("/history")
+    public Object getHistory() {
+        try {
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.ClassPathResource("history.json");
+            if (resource.exists()) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                return mapper.readValue(resource.getInputStream(), Object.class);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return java.util.Collections.emptyList();
+    }
 }
 
