@@ -512,8 +512,8 @@ const DocUserMain: React.FC = () => {
                         LIVE PREVIEW
                       </span>
                     </div>
-                    <div className="flex-1 p-5 overflow-y-auto custom-scroll bg-slate-50/50">
-                      <div className="prose max-w-none bg-white p-6 border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
+                    <div className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
+                      <div className="prose max-w-none bg-white p-2 border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
                         {renderMarkdownToHtml(pageContent)}
                       </div>
                     </div>
