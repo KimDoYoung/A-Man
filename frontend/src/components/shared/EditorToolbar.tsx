@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload } from 'lucide-react'
+import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -87,11 +87,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const [symbolOpen, setSymbolOpen] = useState(false)
   const [phraseOpen, setPhraseOpen] = useState(false)
   const [templateOpen, setTemplateOpen] = useState(false)
+  const [colorOpen, setColorOpen] = useState(false)
 
   const emojiPanelRef = useRef<HTMLDivElement>(null)
   const symbolPanelRef = useRef<HTMLDivElement>(null)
   const phrasePanelRef = useRef<HTMLDivElement>(null)
   const templatePanelRef = useRef<HTMLDivElement>(null)
+  const colorPanelRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [downloading, setDownloading] = useState(false)
@@ -235,6 +237,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       if (templatePanelRef.current && !templatePanelRef.current.contains(target)) {
         setTemplateOpen(false)
       }
+      if (colorPanelRef.current && !colorPanelRef.current.contains(target)) {
+        setColorOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
@@ -281,6 +286,54 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         >
           <Code className="w-3.5 h-3.5" />
         </button>
+
+        {/* 글자 색상 드롭다운 */}
+        <div className="relative" ref={colorPanelRef}>
+          <button
+            onClick={() => setColorOpen(!colorOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${colorOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            title="글자 색상 변경"
+          >
+            <Palette className="w-3.5 h-3.5" />
+          </button>
+          {colorOpen && (
+            <div className="absolute left-0 mt-1 p-1.5 bg-white border border-gray-200 rounded-lg shadow-lg w-36 z-50 space-y-1">
+              {[
+                { name: '빨강 (Red)', value: 'red', colorClass: 'text-red-500', bgDot: 'bg-red-500' },
+                { name: '파랑 (Blue)', value: 'blue', colorClass: 'text-blue-500', bgDot: 'bg-blue-500' },
+                { name: '주황 (Orange)', value: 'orange', colorClass: 'text-orange-500', bgDot: 'bg-orange-500' },
+                { name: '초록 (Green)', value: 'green', colorClass: 'text-green-500', bgDot: 'bg-green-500' },
+              ].map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => {
+                    insertMarkdown(`<font color="${c.value}">`, '</font>')
+                    setColorOpen(false)
+                  }}
+                  className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded text-xs transition-colors cursor-pointer text-left font-medium"
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${c.bgDot} shrink-0 inline-block`} />
+                  <span className={c.colorClass}>{c.name}</span>
+                </button>
+              ))}
+              <div className="pt-1 border-t border-gray-100 mt-1">
+                <label className="w-full flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded text-xs transition-colors cursor-pointer font-medium text-gray-700">
+                  <span>직접 선택</span>
+                  <input
+                    type="color"
+                    defaultValue="#6366f1"
+                    onChange={(e) => {
+                      insertMarkdown(`<font color="${e.target.value}">`, '</font>')
+                      setColorOpen(false)
+                    }}
+                    className="w-5 h-5 rounded cursor-pointer border border-gray-300 p-0 bg-transparent shrink-0"
+                    title="사용자 지정 색상 선택"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
         <span className="w-px h-3.5 bg-gray-300"></span>
         <button
           onClick={insertBullet}

@@ -20,6 +20,7 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
   const navigate = useNavigate()
   const [siteName, setSiteName] = useState('AssetERP Docs')
   const [siteDescription, setSiteDescription] = useState('AssetERP 도움말 시스템')
+  const [version, setVersion] = useState('0.0.1')
 
   useEffect(() => {
     axios.get('/aman/health')
@@ -30,6 +31,9 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
           }
           if (res.data.siteDescription) {
             setSiteDescription(res.data.siteDescription)
+          }
+          if (res.data.version) {
+            setVersion(res.data.version)
           }
         }
       })
@@ -69,7 +73,7 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
         >
           <img src={faviconImg} alt="Logo" className="w-5 h-5 shrink-0 object-contain" />
           <span className="text-base font-bold tracking-tight shrink-0">
-            {renderSiteName(siteName)}
+            {renderSiteName(siteName)} <span className="text-xs font-semibold text-gray-400 font-mono ml-0.5">(v{version})</span>
           </span>
           {siteDescription && (
             <span className="text-xs text-gray-500 font-normal truncate hidden sm:inline ml-1">
