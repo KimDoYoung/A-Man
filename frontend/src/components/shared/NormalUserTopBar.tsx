@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, BookOpen, Pin, Key } from 'lucide-react'
+import { Menu, Pin, Key, ShieldAlert } from 'lucide-react'
 import axios from 'axios'
+import faviconImg from '../../assets/favicon.png'
 
 interface NormalUserTopBarProps {
   sidebarOpen: boolean;
@@ -66,25 +67,26 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
           onClick={() => navigate('/docs')}
           title={siteDescription}
         >
-          <BookOpen className="w-5 h-5 text-indigo-600" />
-          <span className="text-base font-bold tracking-tight">
+          <img src={faviconImg} alt="Logo" className="w-5 h-5 shrink-0 object-contain" />
+          <span className="text-base font-bold tracking-tight shrink-0">
             {renderSiteName(siteName)}
           </span>
+          {siteDescription && (
+            <span className="text-xs text-gray-500 font-normal truncate hidden sm:inline ml-1">
+              - {siteDescription}
+            </span>
+          )}
         </div>
       </div>
       
       <div className="flex items-center space-x-4">
-        <span className="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-sm">
-          Public Manual API
-        </span>
         {/* 어드민으로 이동 */}
         <button
           onClick={() => navigate('/admin')}
           className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-all cursor-pointer"
           title="관리자 모드로 이동"
         >
-          <Key className="w-3.5 h-3.5" />
-          <span>Admin</span>
+          <ShieldAlert className="w-3.5 h-3.5" />
         </button>
 
         {!tocOpen && (
