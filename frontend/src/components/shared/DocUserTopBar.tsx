@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Menu, UserCheck, LogOut } from 'lucide-react'
+import { Menu, UserCheck, LogOut, Info } from 'lucide-react'
 import axios from 'axios'
 
 interface DocUserTopBarProps {
@@ -18,12 +18,14 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const isAdminUsersPage = location.pathname === '/admin/users'
   const isAdminFoldersPage = location.pathname === '/admin/folders'
   const isAdminSettingsPage = location.pathname === '/admin/settings'
+  const isAdminAboutPage = location.pathname === '/admin/about'
   const isDocEditPage = location.pathname === '/admin' || 
     (location.pathname.startsWith('/admin/') && 
      !location.pathname.startsWith('/admin/assets') && 
      !location.pathname.startsWith('/admin/users') && 
      !location.pathname.startsWith('/admin/folders') &&
-     !location.pathname.startsWith('/admin/settings'))
+     !location.pathname.startsWith('/admin/settings') &&
+     !location.pathname.startsWith('/admin/about'))
   const [version, setVersion] = useState('0.0.1')
 
   // Profile Edit Modal States
@@ -248,6 +250,18 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         >
           <UserCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform animate-pulse" />
           <span className="font-medium border-b border-dashed border-gray-400 group-hover:border-white">{displayName}</span>
+        </button>
+        <button
+          onClick={() => navigate('/admin/about')}
+          className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-xs font-bold border ${
+            isAdminAboutPage 
+              ? 'bg-sky-600 text-white border-sky-600' 
+              : 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20'
+          }`}
+          title="시스템 정보 (About)"
+        >
+          <Info className="w-3.5 h-3.5" />
+          <span>About</span>
         </button>
         <button 
           onClick={handleLogout}
