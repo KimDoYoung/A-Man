@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, Pin, Key, ShieldAlert } from 'lucide-react'
+import { Menu, Pin, ShieldAlert } from 'lucide-react'
 import axios from 'axios'
 import faviconImg from '../../assets/favicon.png'
 
