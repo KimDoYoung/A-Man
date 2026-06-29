@@ -114,3 +114,6 @@ insert into settings (setting_key, setting_value, note) values ('DOC_USER_BREADC
 --  번호 조정
 insert into settings (setting_key, setting_value, note) values ('AUTO_NUMS', 'false', '자동번호부여고나련 버튼들 활성화 여부[true: 버튼들 보임, false: 버튼들 감춤]');
 insert into settings (setting_key, setting_value, note) values ('AKA_NUMS_FIRST', 'true', 'AKA번호에 nums를 우선적으로 먼저 부여한다.');
+
+-- LINK BLANK
+insert into settings (setting_key, setting_value, note) values ('LINK_BLANK', 'true', '마크다운 링크표현을 blank로 띄울지 여부, true: _blank, false: _self');
