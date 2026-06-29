@@ -23,11 +23,11 @@ done
 
 echo "=== A-Man 배포 절차 ==="
 echo ""
-echo "  [1/4] 프론트엔드 빌드          (npm run build)"
-echo "  [2/4] React dist → static 복사  ($STATIC_DIR)"
-echo "  [3/4] 백엔드 WAR 빌드           (gradlew bootWar -x test)"
-echo "  [4/4] Tomcat 빌드 폴더로 전송    ($JSKN:$REMOTE_DATA/)"
-echo "        (war 파일 및 Dockerfile 전송)"
+echo "  [1/5] 프론트엔드 빌드          (npm run build)"
+echo "  [2/5] React dist → static 복사  ($STATIC_DIR)"
+echo "  [3/5] 백엔드 WAR 빌드           (gradlew bootWar -x test)"
+echo "  [4/5] Tomcat 빌드 폴더로 전송    ($JSKN:$REMOTE_DATA/)"
+echo "  [5/5] 원격 서버 컨테이너 재빌드 (docker compose up -d --build aman)"
 if [ "$INIT_DB" = true ]; then
   echo "        (* 옵션 감지: 원격 DB 초기화 및 전송 예정)"
 fi
@@ -56,17 +56,17 @@ echo ""
 echo "=== A-Man 배포 시작 ==="
 
 # 1. 프론트엔드 빌드
-echo "[1/4] 프론트엔드 빌드..."
+echo "[1/5] 프론트엔드 빌드..."
 cd "$PROJECT_ROOT/frontend"
 npm run build
 
 # 2. dist → backend/src/main/resources/static 복사
-echo "[2/4] React dist → Spring Boot static 복사..."
+echo "[2/5] React dist → Spring Boot static 복사..."
 rm -rf "$STATIC_DIR"
 cp -r "$PROJECT_ROOT/frontend/dist" "$STATIC_DIR"
 
 # 3. 백엔드 WAR 빌드
-echo "[3/4] 백엔드 WAR 빌드 (React 포함)..."
+echo "[3/5] 백엔드 WAR 빌드 (React 포함)..."
 cd "$PROJECT_ROOT/backend"
 ./gradlew bootWar -x test
 
@@ -97,7 +97,7 @@ if [ "$INIT_DB" = true ]; then
 fi
 
 # 4. Tomcat 빌드용 데이터(war, Dockerfile) 및 DB 전송
-echo "[4/4] Tomcat 서버로 파일 전송..."
+echo "[4/5] Tomcat 서버로 파일 전송..."
 if [ "$INIT_DB" = true ]; then
   sftp "$JSKN" <<EOF
 put $TEMP_DB /data/docker/apps/aman/db/aman.db
@@ -112,10 +112,12 @@ put $PROJECT_ROOT/Dockerfile $REMOTE_DATA/Dockerfile
 EOF
 fi
 
+# 5. 원격 서버 컨테이너 재빌드 및 재시작
+echo "[5/5] 원격 서버 Docker 컨테이너 재빌드 및 재시작..."
+ssh "$JSKN" "cd /data/docker && docker compose up -d --build aman"
+
 echo ""
-echo "=== 배포 완료 ==="
+echo "=== 배포가 성공적으로 완료되었습니다 ==="
 echo "접속: https://jskn.iptime.org/aman"
 echo "API:  https://jskn.iptime.org/aman/health"
 
-#echo "접속: https://aview.k-fs.co.kr:7171/aman"
-#echo "API:  https://aview.k-fs.co.kr:7171/aman/health"
