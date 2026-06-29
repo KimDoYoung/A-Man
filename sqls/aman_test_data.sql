@@ -3,93 +3,7 @@
 -- -------------------------------------------------------------
 DELETE FROM users;
 DELETE FROM sqlite_sequence WHERE name='users';
-insert into users (username, password, email, name, role) values ('admin', '1111', 'kdy987@gmail.com', '관리자', 'admin');
-
-
-
--- -------------------------------------------------------------
--- folders
--- -------------------------------------------------------------
--- 외래 키 제약 조건 활성화
-PRAGMA foreign_keys = ON;
-
--- 기존 데이터 청소 (테스트용)
-DELETE FROM folders;
-DELETE FROM sqlite_sequence WHERE name='folders'; -- ID 자동 증가 초기화
-
--- ====================================================================
--- 1. 시스템 설정 (대분류 - Level 1)
--- ====================================================================
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (1, '1', '시스템 설정', NULL, 1, 1);
-
--- [중분류 - Level 2]
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (2, '1.1', '권한 및 보안', 1, 2, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (3, '1.2', '시스템 로그', 1, 2, 2);
-
--- [소분류 - Level 3] 권한 및 보안 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (4, '1.1.1', '사용자 관리', 2, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (5, '1.1.2', '메뉴 권한 설정', 2, 3, 2);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (6, '1.1.3', '접근 제어 정책', 2, 3, 3);
-
--- [소분류 - Level 3] 시스템 로그 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (7, '1.2.1', '로그인 이력 조회', 3, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (8, '1.2.2', '데이터 변경 이력', 3, 3, 2);
-
-
--- ====================================================================
--- 2. 인사/급여 관리 (대분류 - Level 1)
--- ====================================================================
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (9, '2', '인사/급여 관리', NULL, 1, 2);
-
--- [중분류 - Level 2]
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (10, '2.1', '인사 기본 관리', 9, 2, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (11, '2.2', '근태 관리', 9, 2, 2);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (12, '2.3', '급여 정산', 9, 2, 3);
-
--- [소분류 - Level 3] 인사 기본 관리 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (13, '2.1.1', '사원 정보 등록', 10, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (14, '2.1.2', '부서/직급 관리', 10, 3, 2);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (15, '2.1.3', '인사 발령 기록', 10, 3, 3);
-
--- [소분류 - Level 3] 근태 관리 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (16, '2.2.1', '일일 근태 현황', 11, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (17, '2.2.2', '휴가/연차 신청', 11, 3, 2);
-
--- [소분류 - Level 3] 급여 정산 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (18, '2.3.1', '월별 급여 대장', 12, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (19, '2.3.2', '상여금 관리', 12, 3, 2);
-
-
--- ====================================================================
--- 3. 영업/구매 관리 (대분류 - Level 1)
--- ====================================================================
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (20, '3', '영업/구매 관리', NULL, 1, 3);
-
--- [중분류 - Level 2]
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (21, '3.1', '영업/매출 관리', 20, 2, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (22, '3.2', '구매/매입 관리', 20, 2, 2);
-
--- [소분류 - Level 3] 영업/매출 관리 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (23, '3.1.1', '고객사 정보 관리', 21, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (24, '3.1.2', '수주 등록/조회', 21, 3, 2);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (25, '3.1.3', '출고 및 매출 세금계산서', 21, 3, 3);
-
--- [소분류 - Level 3] 구매/매입 관리 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (26, '3.2.1', '공급사(거래처) 관리', 22, 3, 1);
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (27, '3.2.2', '발주서 작성', 22, 3, 2);
-
-
--- ====================================================================
--- 4. 재무/회계 관리 (대분류 - Level 1)
--- ====================================================================
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (28, '4', '재무/회계 관리', NULL, 1, 4);
-
--- [중분류 - Level 2]
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (29, '4.1', '전표 관리', 28, 2, 1);
-
--- [소분류 - Level 3] 전표 관리 하위
-INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (30, '4.1.1', '일반 전표 입력', 29, 3, 1);
-
+INSERT INTO users (username, password, email, name, role) VALUES ('admin', '1111', 'kdy987@gmail.com', '관리자', 'admin');
 
 -- -------------------------------------------------------------
 -- pages
@@ -97,163 +11,555 @@ INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (30, '
 DELETE FROM pages;
 DELETE FROM sqlite_sequence WHERE name='pages';
 
--- 1. 사용자 관리 (folder_id=4)
-INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
-    4,
-    '사원 계정 생성 및 권한 부여 안내',
-    '# 사원 계정 생성 및 권한 부여 가이드
-
-이 문서는 AssetERP 시스템에서 새로운 사원 계정을 생성하고 적절한 메뉴 권한을 할당하는 방법에 대해 설명합니다.
-
-## 1. 개요
-보안 관리를 위해 모든 사용자는 개별 계정을 할당받아야 하며, 직무에 맞는 최소 권한의 원칙에 따라 권한을 세분화하여 부여해야 합니다.
-
-## 2. 계정 생성 프로세스
-신규 사원이 입사한 경우 다음 절차에 따라 계정을 생성합니다.
-1. **인사 기본 관리** 메뉴에서 사원 정보를 선등록합니다.
-2. **사용자 관리** 화면으로 이동하여 우측 상단의 `[신규 등록]` 버튼을 클릭합니다.
-3. 해당 사원의 `사번`, `사용자ID`, `초기 비밀번호`, `이메일` 등의 필수 입력 요소를 입력합니다.
-4. **역할(Role)** 필드에서 `일반 사용자(USER)` 또는 `시스템 관리자(ADMIN)`를 선택합니다.
-5. `[저장]` 버튼을 누르면 계정이 활성화 상태로 생성됩니다.
-
-> [!IMPORTANT]
-> 최초 생성 시 임시 비밀번호는 안전한 채널을 통해 사원에게 전달하며, 사원은 최초 로그인 시 비밀번호를 변경해야 합니다.
-
-## 3. 권한 변경 및 회수
-사원의 부서 이동 또는 퇴사 등의 변동 사항이 발생하면 즉시 권한을 변경하거나 회수해야 합니다.
-- **부서 이동**: 새로운 직무에 필요한 롤을 추가하고 기존 권한 중 불필요한 부분은 제거합니다.
-- **퇴사**: 사용자의 활성화 상태(`is_active`)를 `0` (비활성)으로 변경하여 시스템 접속을 원천 차단합니다. (Soft Delete)
-',
-    1,
-    'page-1',
-    'PUBLISHED'
-);
-
-INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
-    4,
-    '사용자 목록 조회 및 활성/비활성화 처리 가이드',
-    '# 사용자 목록 조회 및 활성/비활성화 가이드
-
-본 가이드는 관리자 메뉴를 통해 등록된 사용자 계정들의 전체 목록을 모니터링하고, 필요 시 특정 계정을 활성화하거나 비활성화 처리하는 방법에 대해 기술합니다.
-
-## 1. 사용자 목록 조회
-* **메뉴 경로**: `시스템 설정 > 권한 및 보안 > 사용자 관리`
-* **기능 요약**: 
-  - 현재 시스템에 등록된 전체 사용자 목록을 조회할 수 있습니다.
-  - 검색 필터(아이디, 이름, 부서)를 통해 특정 사용자를 빠르게 검색할 수 있습니다.
-  - AG Grid 테이블을 사용하여 정렬, 필터링 및 엑셀 내보내기가 가능합니다.
-
-## 2. 계정 비활성화 (Soft Delete)
-A-Man 시스템은 보안 및 데이터 이력 추적을 위해 물리적으로 데이터를 삭제(Hard Delete)하지 않고, **Soft Delete(is_active = 0)** 처리 방식을 취합니다.
-1. 목록에서 비활성화하고자 하는 사용자의 행을 클릭합니다.
-2. 상세 화면 하단의 `[비활성화]` 버튼을 누릅니다.
-3. 팝업 확인 창이 표시되면 사유를 간략히 입력한 후 `[확인]`을 클릭합니다.
-4. 해당 계정의 상태가 `비활성`으로 변경되며, 이후 이 계정으로는 API 요청 시 JWT 인증 단계에서 접근이 거부됩니다.
-
-## 3. 계정 활성화 (복구)
-휴직 후 복직 등으로 계정을 재사용해야 하는 경우:
-1. 검색 필터에서 `상태: 전체` 또는 `상태: 비활성`을 선택하여 해당 사용자를 찾습니다.
-2. 상세 화면에서 `[활성화]` 버튼을 누르면 즉시 상태가 `활성`으로 복구되어 정상 로그인이 가능해집니다.
-',
-    2,
-    'page-2',
-    'PUBLISHED'
-);
-
--- 2. 사원 정보 등록 (folder_id=13)
-INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
-    13,
-    '신규 사원 등록 프로세스 및 입력 항목 상세',
-    '# 신규 사원 등록 가이드
-
-인사 정보의 근간이 되는 신규 사원 정보를 등록하는 양식 및 절차에 대한 매뉴얼입니다.
-
-## 1. 사전 준비 사항
-사원을 등록하기 전에 다음 기본 코드가 선행 등록되어 있어야 합니다.
-- **부서 코드**: 사원이 소속될 부서가 조직도에 존재해야 합니다.
-- **직급 코드**: 사원에게 부여될 직급(부장, 과장, 대리 등)이 정의되어 있어야 합니다.
-
-## 2. 입력 항목 상세 안내
-| 항목명 | 필수 여부 | 설명 | 제약 조건 |
-| :--- | :---: | :--- | :--- |
-| **사번** | 필수 | 회사 고유의 사원 번호 | 중복 불가, 숫자 6자리 |
-| **성명** | 필수 | 사원의 본명 | 한글 2~10자 |
-| **부서** | 필수 | 소속 부서 선택 | 검색 팝업에서 선택 |
-| **직급** | 필수 | 직무 등급 | 드롭다운에서 선택 |
-| **입사일자** | 필수 | 공식 입사일 | YYYY-MM-DD 포맷 |
-| **휴대폰** | 필수 | 연락처 번호 | 하이픈(-) 포함 |
-
-## 3. 등록 완료 후 후속 작업
-사원 정보 저장이 성공적으로 완료되면 자동으로 `사번`을 기반으로 한 임시 시스템 계정이 생성 대기 상태가 됩니다. 관리자는 즉시 **사용자 관리** 메뉴를 통해 로그인 계정을 연계 발급하십시오.
-',
-    1,
-    'page-3',
-    'PUBLISHED'
-);
-
--- 3. 일반 전표 입력 (folder_id=30)
-INSERT INTO pages (folder_id, title, content, sort_order, aka, status) VALUES (
-    30,
-    '재무 전표 작성 및 확정 절차 안내',
-    '# 재무 전표 작성 및 확정 절차
-
-일상적인 거래 내역을 회계 장부에 기입하기 위한 재무 전표 작성 가이드라인입니다.
-
-## 1. 전표 작성의 3단계
-회계 처리의 투명성을 확보하기 위해 전표는 **임시저장 -> 상신 -> 확정(승인)**의 3단계 프로세스를 따릅니다.
-
-```mermaid
-graph TD
-    A[1. 전표 작성 및 임시저장] --> B[2. 결재 상신]
-    B --> C{결재자 승인 여부}
-    C -- 승인 --> D[3. 전표 확정 및 분개 반영]
-    C -- 반려 --> A
-```
-
-## 2. 전표 입력 항목
-* **차변/대변 일치 법칙**: 한 전표 내의 차변 금액 합계와 대변 금액 합계는 반드시 **0**으로 일치해야 저장이 가능합니다.
-* **계정과목**: 적절한 계정과목 코드를 검색하여 매핑하십시오. (예: 81100 - 복리후생비)
-* **적요**: 거래 내용을 육하원칙에 맞게 명확하게 작성합니다.
-
-> [!WARNING]
-> 확정 완료된 전표는 원칙적으로 수정이나 삭제가 불가능합니다. 오등록된 경우 반대 분개를 가지는 **마이너스 취소 전표**를 추가 발행하여 보정해야 합니다.
-',
-    1,
-    'page-4',
-    'PUBLISHED'
-);
-
 -- -------------------------------------------------------------
--- assets
+-- folders
 -- -------------------------------------------------------------
-DELETE FROM assets;
-DELETE FROM sqlite_sequence WHERE name='assets';
+PRAGMA foreign_keys = ON;
+DELETE FROM folders;
+DELETE FROM sqlite_sequence WHERE name='folders';
 
--- EMOJIs
-INSERT INTO assets (atype, name, value) VALUES ('EMOJI', '기본 이모지', '‼️, ❗, ✔️, 🚩, ➡️, 📝, ▶️, 🔴, 🔷, 🔵, 👉, 🚫, ❓, 💡, 🔥, ✨, 🎉, 📌, ⚠️, ✅, ❌, 💬, 👍');
-
--- SYMBOLs
-INSERT INTO assets (atype, name, value) VALUES ('SYMBOL', '기본 특수기호', '※, ■, ▶, ○, ●, ★, ☆, ➔, ✓');
-
--- PHRASEs
-INSERT INTO assets (atype, name, value) VALUES ('PHRASE', '임시 비밀번호 정책', '최초 생성 시 임시 비밀번호는 안전한 채널을 통해 사원에게 전달하며, 사원은 최초 로그인 시 비밀번호를 변경해야 합니다.');
-INSERT INTO assets (atype, name, value) VALUES ('PHRASE', '전표 수정 불가 안내', '확정 완료된 전표는 원칙적으로 수정이나 삭제가 불가능합니다. 오등록된 경우 반대 분개를 가지는 마이너스 취소 전표를 추가 발행하여 보정해야 합니다.');
-
--- TEMPLATEs
-INSERT INTO assets (atype, name, value) VALUES ('TEMPLATE', '표준 도움말 템플릿', '# [메뉴명] 도움말
-
-이 문서는 [메뉴명] 화면의 기능과 사용법에 대해 설명합니다.
-
-## 1. 개요
-[메뉴에 대한 간단한 개요 및 비즈니스 목적 기술]
-
-## 2. 주요 기능 및 업무 절차
-1. **[기능 1]**: [기능 상세 설명]
-2. **[기능 2]**: [기능 상세 설명]
-
-## 3. 주의사항
-> [!WARNING]
-> [사용자가 자주 실수하거나 유의해야 할 정책 기술]
-');
-
-
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (1, '9910', 'I/F', NULL, 1, 9910);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (2, '9700', '기초자료', NULL, 1, 9700);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (3, '3000', '준법감시', NULL, 1, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (4, '7300', '관리회계', NULL, 1, 7300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (5, '6000', '경영관리', NULL, 1, 6000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (6, '1000', '문서작성', NULL, 1, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (7, '9900', 'KFS', NULL, 1, 9900);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (8, '9500', '관리자', NULL, 1, 9500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (9, '5000', '펀드관리', NULL, 1, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (10, '7000', '고유자산', NULL, 1, 7000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (11, '4000', '스케줄', NULL, 1, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (12, '8000', '커뮤니티', NULL, 1, 8000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (13, '6500', '자금관리', NULL, 1, 6500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (14, '7500', '신청', NULL, 1, 7500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (15, '1500', '책무', NULL, 1, 1500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (16, '9922', '사무수탁사정보 관리(관리자)', NULL, 1, 9922);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (17, '9923', '수탁은행정보 관리(관리자)', NULL, 1, 9923);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (18, '7120', '매매처정보관리', NULL, 1, 7120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (19, '7110', '물건정보관리', NULL, 1, 7110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (20, '7130', '비용관리', NULL, 1, 7130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (21, '7140', '임대계약정보등록', NULL, 1, 7140);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (22, '7150', '임대보증금 입출금관리', NULL, 1, 7150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (23, '7160', '예상 현금흐름표조회', NULL, 1, 7160);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (24, '7170', '수익/비용 입출금관리', NULL, 1, 7170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (25, '7210', '채권정보 관리', NULL, 1, 7210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (26, '9921', '수탁사정보 관리(관리자)', NULL, 1, 9921);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (27, '1000', '지출결의서', NULL, 1, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (28, '5300', '03. 일임(자문)관리', 9, 2, 5300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (29, '2170', '12. 대외활동', 3, 2, 2170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (30, '2000', '대외활동 신청내역', 29, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (31, '0010', '01. I/F 관리', 1, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (32, '0010', 'I/F 설정', 31, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (33, '6500', '40. 예금관리', 10, 2, 6500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (34, '6100', '10. 고유자산 등록', 10, 2, 6100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (35, '1500', '예금잔고대사', 33, 2, 1500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (36, '2000', '예금잔고조회', 33, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (37, '2500', '40. 이익제공/수령 현황', 3, 2, 2500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (38, '6530', '11. 특수회계처리', 4, 2, 6530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (39, '9540', '02. 시스템관리', 8, 2, 9540);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (40, '9200', '92. 법인카드 등록', 5, 2, 9200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (41, '6535', '22. 재무제표', 4, 2, 6535);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (42, '2600', '05. 책무관리현황', 15, 2, 2600);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (43, '2000', '책무조회', 42, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (44, '8000', '80. 펀드자산', 9, 2, 8000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (45, '9705', '10. 책무', 2, 2, 9705);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (46, '9760', '40. 관리회계', 2, 2, 9760);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (47, '9790', '90. 기타', 2, 2, 9790);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (48, '1000', '회사규정 등', 45, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (49, '6533', '20. 결산', 4, 2, 6533);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (50, '3000', '매뉴얼 규정/양식 연결', 42, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (51, '5000', '06. 근태관리', 5, 2, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (52, '4000', '근태현황', 51, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (53, '1200', '책무체계도 재생성', 45, 2, 1200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (54, '8000', '10. 차량관리', 5, 2, 8000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (55, '6534', '21. 회계장부', 4, 2, 6534);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (56, '1000', '대외활동신청', 29, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (57, '1000', '일일자금관리', 33, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (58, '3000', '예금/예치금 이자수령', 33, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (59, '5100', '01. 상품기획', 9, 2, 5100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (60, '1000', '법인카드 및 사용자등록', 40, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (61, '6520', '10. 전표입력', 4, 2, 6520);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (62, '1000', '조치대상조회(변화관리)', 42, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (63, '6550', '30. 사무보수관리', 4, 2, 6550);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (64, '1300', '03. 파일 및 양식관리', 6, 2, 1300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (65, '9990', '90. ICAM', 1, 2, 9990);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (66, '2000', '법인카드 내역 업로드', 40, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (67, '3000', '30. 법인카드관리', 13, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (68, '9900', '책무관리 시스템설정', 42, 2, 9900);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (69, '2100', '01. 법규관리', 3, 2, 2100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (70, '9710', '20. 문서(전자결재)', 2, 2, 9710);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (71, '2150', '10. 임직원매매', 3, 2, 2150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (72, '9750', '30. 자산&경영', 2, 2, 9750);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (73, '9780', '50. 권한', 2, 2, 9780);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (74, '6400', '30. 고유자산 현황', 10, 2, 6400);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (75, '1400', '04. 전자결재', 6, 2, 1400);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (76, '2000', '01. 조직 및 사원관리', 5, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (77, '1100', '01. 문서작성', 6, 2, 1100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (78, '9900', '91. AssetERP', 12, 2, 9900);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (79, '9000', '90. 기타신청', 14, 2, 9000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (80, '1200', '02. 문서검색', 6, 2, 1200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (81, '1600', '06. 문서작성현황', 6, 2, 1600);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (82, '9565', '05. 관리회계', 8, 2, 9565);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (83, '1500', '05. 메일관리', 6, 2, 1500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (84, '1000', '01. 외출/출장/휴가', 14, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (85, '5200', '02. 펀드관리', 9, 2, 5200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (86, '9590', '09. 기타', 8, 2, 9590);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (87, '9520', '01. 화면권한관리', 8, 2, 9520);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (88, '9000', '90. 기관정보관리', 9, 2, 9000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (89, '5100', '01. 업무일정', 11, 2, 5100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (90, '9510', '01. 고객관리', 8, 2, 9510);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (91, '9550', '03. 코드관리', 8, 2, 9550);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (92, '2000', '02. 회의실 예약관리', 14, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (93, '1000', '01. 회사규정', 12, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (94, '8500', '04. 업무보고', 12, 2, 8500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (95, '6531', '12. 특수회계처리(외화)', 4, 2, 6531);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (96, '9530', '02. 문서권한관리', 8, 2, 9530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (97, '9550', '03. 문서관리', 8, 2, 9550);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (98, '2300', '30. 내부통제 체크리스트', 3, 2, 2300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (99, '9560', '04. 전자결재', 8, 2, 9560);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (100, '6555', '30. 펀드운용보수관리', 4, 2, 6555);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (101, '9970', '10. ICAM 계약사관리', 7, 2, 9970);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (102, '4500', '04. 급여관리', 5, 2, 4500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (103, '6000', '10. 펀드회계 일일점검', 9, 2, 6000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (104, '5400', '04. 공모주청약', 9, 2, 5400);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (105, '9000', '90. 신청서관리', 5, 2, 9000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (106, '9570', '06. 경영관리', 8, 2, 9570);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (107, '9920', '02. 배포관리', 7, 2, 9920);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (108, '9930', '03. 프로그램 관리', 7, 2, 9930);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (109, '4000', '03. 연봉관리', 5, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (110, '6200', '20. 고유자산 거래처리', 10, 2, 6200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (111, '9910', '01. 시스템 개발', 7, 2, 9910);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (112, '6200', '20. 운용현황', 9, 2, 6200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (113, '1000', '00. 경영정보', 5, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (114, '9940', '04. ICAM 사용자ID 관리', 7, 2, 9940);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (115, '8500', '20. 대외보고서', 5, 2, 8500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (116, '9921', '배포처리', 107, 2, 9921);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (117, '9100', '91. 법인서류', 5, 2, 9100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (118, '2200', '20. 임직원 내부통제 준수', 3, 2, 2200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (119, '1000', '10. 자금관리', 13, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (120, '9701', '00. 내부통제', 2, 2, 9701);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (121, '2010', '00. 법규정보', 3, 2, 2010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (122, '3000', '02. 휴가/출장 관리', 5, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (123, '8600', '05. 게시판', 12, 2, 8600);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (124, '2000', '02. 공지사항', 12, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (125, '5200', '02. 업무일정 체크', 11, 2, 5200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (126, '3000', '03. 업무활동', 12, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (127, '9000', '90. 기타', 12, 2, 9000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (128, '5500', '05. 부동산PF 용역수행', 9, 2, 5500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (129, '2500', '04. 책무이행점검', 15, 2, 2500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (130, '2200', '02. 책무구조도', 15, 2, 2200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (131, '4600', '05. 인사평가', 5, 2, 4600);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (132, '2400', '03. 부서책무매뉴얼', 15, 2, 2400);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (133, '2000', '20. 사업비관리', 13, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (134, '2151', '11. 임직원매매(준감인)', 3, 2, 2151);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (135, '9980', '11. ERP 계약사관리', 7, 2, 9980);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (136, '1000', '01. 기본정보', 15, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (137, '8000', '80. 사업비 신청', 14, 2, 8000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (138, '5000', '화환 신청', 79, 2, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (139, '1000', '부동산PF 수수료', 128, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (140, '2000', '용역계약체결', 128, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (141, '9000', '90. 기타', 3, 2, 9000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (142, '9913', 'ICAM 연계정보(관리자용)', 65, 2, 9913);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (143, '7140', '조직별 사원조회(관리자)', 106, 2, 7140);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (144, '6513', '거래유형 등록', 82, 2, 6513);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (145, '4520', '이익제공(법인카드)', 37, 2, 4520);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (146, '9999', '작업용', 65, 2, 9999);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (147, '0021', '법규보고 서식파일 등록', 120, 2, 21);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (148, '6512', '대표계정 관리', 82, 2, 6512);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (149, '0003', '연봉조회', 109, 2, 3);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (150, '7420', '법인카드 내역 업로드', 67, 2, 7420);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (151, '2450', '임직원매매 정기보고', 71, 2, 2450);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (152, '4000', '급여/카드 회계처리', 133, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (153, '4530', '법인카드 사용내역 조회', 37, 2, 4530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (154, '4570', '이익제공/수령 초과현황', 37, 2, 4570);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (155, '9565', '로그인내역 조회', 39, 2, 9565);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (156, '6530', '계좌이체', 38, 2, 6530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (157, '2460', '임직원매매내역', 71, 2, 2460);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (158, '6330', '감가상각대장', 74, 2, 6330);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (159, '6521', '미수/미지급', 38, 2, 6521);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (160, '6531', '계좌이체(외화)', 95, 2, 6531);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (161, '2476', '임직원매매 위반내역(준감인)', 134, 2, 2476);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (162, '6551', '분개장(외화)', 55, 2, 6551);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (163, '6560', '계정별원장', 55, 2, 6560);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (164, '6532', '외화예금 환평가처리', 49, 2, 6532);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (165, '6514', '거래유형별 분개맵핑', 82, 2, 6514);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (166, '7260', '연월차휴가 지정통보', 84, 2, 7260);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (167, '1190', '폐기문서 복구', 97, 2, 1190);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (168, '6531', '예금잔고대사', 49, 2, 6531);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (169, '9763', '거래유형 관리(관리자)', 46, 2, 9763);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (170, '4560', '이익제공/수령 사전신청', 37, 2, 4560);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (171, '7150', '증명서 발급', 76, 2, 7150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (172, '9753', '거래처 관리', 72, 2, 9753);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (173, '6540', '금융상품 평가처리', 110, 2, 6540);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (174, '9530', '비밀번호 초기화', 86, 2, 9530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (175, '7525', '공용차량 예약관리', 54, 2, 7525);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (176, '9765', '실계정맵핑', 46, 2, 9765);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (177, '6365', 'PC장비상세', 74, 2, 6365);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (178, '0002', '연봉계약현황', 109, 2, 2);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (179, '6515', '실계정맵핑', 82, 2, 6515);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (180, '0010', '일일자금관리', 119, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (181, '6110', '고유자산 기본등록 ①', 34, 2, 6110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (182, '8160', '사원별 문자발송', 127, 2, 8160);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (183, '9561', '개선사항 및 오류 통보', 39, 2, 9561);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (184, '9791', '일자관리', 47, 2, 9791);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (185, '7530', '공용차량 운행등록', 54, 2, 7530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (186, '2451', '임직원매매 정기보고현황', 134, 2, 2451);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (187, '9762', '대표계정 관리', 46, 2, 9762);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (188, '2470', '임직원매매 보유내역', 71, 2, 2470);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (189, '2461', '임직원매매내역(준감인)', 134, 2, 2461);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (190, '4525', '이익제공/수령(현금,물품)', 37, 2, 4525);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (191, '4590', '이익제공/수령 상세현황', 37, 2, 4590);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (192, '9761', '계정코드 관리', 46, 2, 9761);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (193, '9771', '권한그룹 관리', 73, 2, 9771);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (194, '6720', '펀드자산 종목상세', 44, 2, 6720);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (195, '7560', '차량 운행일지', 54, 2, 7560);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (196, '6532', 'ICAM 펀드보수 월말잔액', 63, 2, 6532);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (197, '6551', '손익계산서', 41, 2, 6551);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (198, '6525', '미수/미지급(외화)', 95, 2, 6525);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (199, '6539', '펀드보수 결산처리', 49, 2, 6539);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (200, '6360', '전산장비관리', 74, 2, 6360);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (201, '6521', '고유자산 거래처리(외화)', 95, 2, 6521);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (202, '7510', '차량정보관리', 54, 2, 7510);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (203, '2471', '임직원매매 보유내역(준감인)', 134, 2, 2471);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (204, '6520', '고유자산 거래처리', 38, 2, 6520);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (205, '7520', '전용차량 운행등록', 54, 2, 7520);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (206, '9585', 'Admin 로그인내역 조회', 39, 2, 9585);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (207, '7430', '법인카드 내역관리', 67, 2, 7430);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (208, '5330', '펀드별 자산 조회(ICAM)', 85, 2, 5330);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (209, '9920', 'ICAM 보수(관리자용)', 65, 2, 9920);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (210, '6320', '금융상품 보유내역', 74, 2, 6320);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (211, '9580', 'Admin 사용자 관리', 39, 2, 9580);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (212, '7550', '공용차량 운행변경(경영관리팀)', 54, 2, 7550);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (213, '6545', '감가상각처리', 110, 2, 6545);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (214, '1100', '세금/4대보험 등록', 133, 2, 1100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (215, '6548', '회계마감', 49, 2, 6548);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (216, '6521', '전표입력', 61, 2, 6521);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (217, '6570', '계정과목집계표', 55, 2, 6570);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (218, '6550', '분개장', 55, 2, 6550);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (219, '7120', '사원정보 관리', 76, 2, 7120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (220, '1310', '문서양식등록', 64, 2, 1310);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (221, '0001', '연봉계약관리', 109, 2, 1);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (222, '7410', '법인카드 및 사용자등록', 67, 2, 7410);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (223, '1140', '문서이동', 97, 2, 1140);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (224, '2130', '법규별 문서작성', 77, 2, 2130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (225, '9911', 'ICAM 연계정보구분 관리', 65, 2, 9911);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (226, '1410', '운영현황표', 81, 2, 1410);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (227, '1210', '펀드별 문서검색', 80, 2, 1210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (228, '7130', '조직별 사원조회', 76, 2, 7130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (229, '2430', '매도 사전신고', 71, 2, 2430);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (230, '5930', '수탁은행정보 관리', 88, 2, 5930);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (231, '1110', '문서분류', 97, 2, 1110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (232, '3140', '대결자 지정(관리자)', 99, 2, 3140);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (233, '7220', '휴가관리(경영관리팀)', 122, 2, 7220);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (234, '2410', '계좌신고', 71, 2, 2410);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (235, '2440', '준법감시인 사전승인', 134, 2, 2440);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (236, '7210', '휴가신청', 84, 2, 7210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (237, '2420', '매수 사전신고', 71, 2, 2420);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (238, '6525', '금융상품 거래처리', 110, 2, 6525);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (239, '3170', '발신메일 목록(관리자)', 99, 2, 3170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (240, '1420', '건별명세', 81, 2, 1420);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (241, '3217', '발신메일목록', 83, 2, 3217);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (242, '3220', '사용인감등록', 75, 2, 3220);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (243, '0020', '법규관리(관리자)', 120, 2, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (244, '1201', '통합 문서검색', 80, 2, 1201);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (245, '3210', '주소록 관리', 83, 2, 3210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (246, '7240', '연월차휴가 현황', 122, 2, 7240);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (247, '6120', '고유자산 상세등록 ②', 34, 2, 6120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (248, '5110', '신규기획펀드 등록', 59, 2, 5110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (249, '9915', 'ICAM 펀드정보', 65, 2, 9915);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (250, '4510', '이익제공 기준관리(준감인)', 37, 2, 4510);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (251, '9531', '일자관리', 86, 2, 9531);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (252, '5920', '사무수탁사정보 관리', 88, 2, 5920);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (253, '8150', '개선사항 및 오류 통보', 127, 2, 8150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (254, '9912', 'ICAM 연계정보', 65, 2, 9912);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (255, '93300', 'PDF 생성 테스트', 86, 2, 93300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (256, '9120', '권한그룹별 메뉴 맵핑', 87, 2, 9120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (257, '9521', '시스템 공통코드 관리', 91, 2, 9521);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (258, '9160', '조직별 문서분류 맵핑', 96, 2, 9160);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (259, '8210', '회의실 예약관리', 92, 2, 8210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (260, '5120', '신규기획펀드 권한설정', 59, 2, 5120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (261, '2490', '임직원매매 기준관리', 134, 2, 2490);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (262, '5310', '펀드 조회', 85, 2, 5310);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (263, '4550', '판촉물 구매 및 제공내역', 37, 2, 4550);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (264, '5110', '업무일정 등록', 89, 2, 5110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (265, '5250', '펀드 권한설정', 85, 2, 5250);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (266, '6323', '금융상품 보유내역(기간조회)', 74, 2, 6323);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (267, '9751', '자산상세 항목관리(관리자)', 72, 2, 9751);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (268, '0010', '문서분류', 70, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (269, '9501', '고객별 시스템정보 관리', 90, 2, 9501);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (270, '9515', '회사별 메뉴맵핑', 90, 2, 9515);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (271, '8140', '공지사항', 124, 2, 8140);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (272, '5990', '(X) 스케줄 등록', 11, 2, 5990);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (273, '8130', '사내공지등록', 124, 2, 8130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (274, '5991', '(X) 주간 스케줄', 11, 2, 5991);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (275, '5210', '펀드 등록 및 변경', 85, 2, 5210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (276, '2303', '내부통제내역 확인(부서장)', 98, 2, 2303);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (277, '6516', '결산회기관리', 82, 2, 6516);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (278, '5501', '일일점검내역 관리', 103, 2, 5501);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (279, '6527', '예금/예치금 이자수령', 38, 2, 6527);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (280, '6534', '보수원장(기간조회)', 63, 2, 6534);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (281, '2311', '내부통제내역 상세(준감인)', 98, 2, 2311);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (282, '2302', '내부통제 체크리스트 작성', 98, 2, 2302);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (283, '1130', '업무별 문서작성(관리자)', 97, 2, 1130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (284, '0041', '원천징수영수증 업로드', 102, 2, 41);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (285, '1000', '계약사 관리', 101, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (286, '6553', '금감원보고용 재무제표', 41, 2, 6553);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (287, '3211', '공용주소록 관리', 83, 2, 3211);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (288, '3216', '공용메일 관리', 83, 2, 3216);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (289, '9530', '고객별 문자사용량', 90, 2, 9530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (290, '1240', '통합 첨부파일 검색', 80, 2, 1240);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (291, '8302', '기간별 업무확인', 94, 2, 8302);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (292, '3000', '최저보수 청구', 101, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (293, '6535', '금융상품 계좌대체', 110, 2, 6535);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (294, '5401', '공모주 일정조회', 104, 2, 5401);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (295, '6535', '펀드별 보수입금계좌 등록', 63, 2, 6535);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (296, '7275', '포상휴가관리', 122, 2, 7275);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (297, '9570', 'KFS공지등록', 124, 2, 9570);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (298, '2000', '펀드보수원장', 100, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (299, '6525', '전표승인처리', 61, 2, 6525);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (300, '0020', '예금잔고조회', 119, 2, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (301, '5405', '공모주 운용지시', 104, 2, 5405);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (302, '1000', 'ICAM 운용보수 발생내역', 100, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (303, '0080', '일일점검내역 관리(관리자)', 120, 2, 80);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (304, '2150', '법규 관리그룹 등록', 69, 2, 2150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (305, '8301', '일일업무 입력', 94, 2, 8301);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (306, '0040', '원천징수영수증(사본)', 102, 2, 40);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (307, '0070', '일일점검내역 분류(관리자)', 120, 2, 70);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (308, '5503', '일일점검내역 작성', 103, 2, 5503);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (309, '5507', '일일점검내역', 103, 2, 5507);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (310, '2310', '내부통제내역 현황(준감인)', 98, 2, 2310);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (311, '8000', '출장관리', 122, 2, 8000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (312, '3000', '운용보수 입금계좌 관리', 100, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (313, '1010', 'ICAM 운용보수 월말잔액', 100, 2, 1010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (314, '7270', '공동연차관리', 122, 2, 7270);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (315, '5170', '기간별 업무일정 조회', 89, 2, 5170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (316, '9110', '권한그룹 관리', 87, 2, 9110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (317, '0020', '월별 법규조회', 121, 2, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (318, '9915', '시스템 개발', 111, 2, 9915);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (319, '3500', '이관펀드 등록', 100, 2, 3500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (320, '8170', '업무공유', 126, 2, 8170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (321, '9950', 'ICAM DB Source Get', 65, 2, 9950);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (322, '9931', '프로그램 관리', 108, 2, 9931);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (323, '9917', '시스템 QA/UAT', 111, 2, 9917);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (324, '0070', '급여공제정보', 102, 2, 70);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (325, '0061', '4대보험 정산내역', 102, 2, 61);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (326, '0010', '급여관리', 102, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (327, '1120', '문서결재선 그룹 관리', 97, 2, 1120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (328, '0090', '임직원매매 종목유형관리', 120, 2, 90);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (329, '9155', '사원별 메뉴권한 조회', 87, 2, 9155);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (330, '7010', '경영공지', 113, 2, 7010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (331, '0020', '급여항목조회', 102, 2, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (332, '0040', '내부통제 체크리스트(관리자)', 120, 2, 40);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (333, '0100', '문서분류지정', 70, 2, 100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (334, '1330', '법규보고 서식파일', 121, 2, 1330);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (335, '1120', '업무별 문서작성', 77, 2, 1120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (336, '9911', '시스템 개발 의뢰', 111, 2, 9911);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (337, '3125', '참조내역 조회', 75, 2, 3125);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (338, '9150', '메뉴별 그룹권한 조회', 87, 2, 9150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (339, '3120', '상신내역 조회', 75, 2, 3120);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (340, '5603', '펀드별 운용보수현황', 112, 2, 5603);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (341, '6536', '이관펀드 등록', 63, 2, 6536);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (342, '0011', '급여관리(항목별)', 102, 2, 11);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (343, '5000', '운용보수 회계처리', 100, 2, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (344, '0015', '급여대장', 102, 2, 15);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (345, '0035', '퇴직정산', 102, 2, 35);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (346, '0030', '급여명세서', 102, 2, 30);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (347, '0031', '급여명세서(경영관리팀)', 102, 2, 31);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (348, '0071', '급여기초정보', 102, 2, 71);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (349, '0010', '법규관리', 69, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (350, '9130', '권한그룹별 사용자 맵핑', 87, 2, 9130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (351, '9150', '문서분류별 조직 맵핑', 96, 2, 9150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (352, '9540', '공통코드', 86, 2, 9540);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (353, '0030', '법규개정내역', 121, 2, 30);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (354, '8305', '월간회의자료', 94, 2, 8305);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (355, '9913', '시스템 개발 관리', 111, 2, 9913);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (356, '3000', '기간별 입퇴사현황', 115, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (357, '0300', '사용자ID 처리결과 등록', 114, 2, 300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (358, '4000', '인력현황', 115, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (359, '1110', '신규 문서작성', 77, 2, 1110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (360, '0015', '법규조회', 121, 2, 15);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (361, '6150', '자기자본/투자한도 등록', 34, 2, 6150);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (362, '0005', '법규공지', 121, 2, 5);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (363, '6210', '청약처리', 110, 2, 6210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (364, '1000', '내부통제 준수확인서 작성', 118, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (365, '7125', '임원정보 관리', 76, 2, 7125);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (366, '2000', '내부통제 준수점검(준감인)', 118, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (367, '0002', 'AssetERP 자문위원', 78, 2, 2);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (368, '0003', 'AssetERP 관리팀 등록', 86, 2, 3);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (369, '0010', '급여기초정보관리', 72, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (370, '0100', '사용자ID 신청서 작성', 114, 2, 100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (371, '0200', '미사용ID 권한정지 신청', 114, 2, 200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (372, '0050', '공모주 일정등록', 72, 2, 50);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (373, '5002', '(s)이익제공/수령(현금,물품)', 37, 2, 5002);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (374, '5201', '데일리 체크리스트 상신', 125, 2, 5201);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (375, '0020', '금감원 업무보고서', 72, 2, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (376, '6209', '공모주일정', 110, 2, 6209);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (377, '9764', '거래별 분개맵핑', 46, 2, 9764);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (378, '9531', '고객별 서버사용량', 90, 2, 9531);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (379, '9502', '사용자정보 조회', 90, 2, 9502);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (380, '0030', '법규개정내역 등록', 120, 2, 30);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (381, '5001', '(s)이익제공(카드)', 37, 2, 5001);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (382, '5010', '(s)법인카드 사용내역', 37, 2, 5010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (383, '0001', 'AssetERP 매뉴얼', 78, 2, 1);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (384, '5490', '공모주 참여계좌 관리', 104, 2, 5490);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (385, '6536', '금융상품 시세관리', 110, 2, 6536);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (386, '6325', '금융상품 운용내역', 74, 2, 6325);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (387, '6533', '보수원장', 63, 2, 6533);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (388, '0400', '미사용ID 기록관리', 114, 2, 400);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (389, '5011', '(s)이익제공/수령 상세현황', 37, 2, 5011);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (390, '9532', 'Table Spec,(Model)Properties', 86, 2, 9532);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (391, '9522', '고객사 공통코드', 91, 2, 9522);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (392, '0001', 'AssetERP 매뉴얼 등록', 86, 2, 1);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (393, '0002', 'AssetERP 자문의원 등록', 86, 2, 2);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (394, '1250', '문서 다운로드', 80, 2, 1250);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (395, '3000', '내부통제 준수보고(준감인)', 118, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (396, '3000', '대외활동 신청서 작성', 79, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (397, '7250', '연월차휴가 사용촉진', 122, 2, 7250);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (398, '5403', '공모주 수요예측', 104, 2, 5403);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (399, '7521', '전용차량 운행변경(경영관리팀)', 54, 2, 7521);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (400, '9774', '고객사 권한그룹별 사용자등록', 73, 2, 9774);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (401, '0010', '법인서류 및 날인 신청', 79, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (402, '0050', '법규보고 점검', 121, 2, 50);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (403, '9773', '고객사 권한그룹별 메뉴등록', 73, 2, 9773);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (404, '3130', '대결자 지정', 75, 2, 3130);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (405, '6531', 'ICAM 펀드보수 발생내역', 63, 2, 6531);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (406, '8180', 'RemoteView 사용기록', 127, 2, 8180);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (407, '0016', '내규조회', 121, 2, 16);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (408, '0020', '내규관리', 69, 2, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (409, '9061', '기타신청서 확인', 105, 2, 9061);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (410, '8101', '회사규정', 93, 2, 8101);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (411, '1380', '공유파일등록', 64, 2, 1380);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (412, '1390', '공유파일조회', 64, 2, 1390);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (413, '9000', '기타신청서 작성', 79, 2, 9000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (414, '7110', '조직정보 등록', 76, 2, 7110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (415, '7299', '연차휴가 결산기준', 122, 2, 7299);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (416, '0016', '여비교통비 신청', 137, 2, 16);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (417, '2170', '법규보고 점검(관리자)', 69, 2, 2170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (418, '3110', '결재내역 조회', 75, 2, 3110);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (419, '1000', '업무보고서', 115, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (420, '0015', '복리후생비 신청', 137, 2, 15);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (421, '5321', '펀드 조회(일변동)', 85, 2, 5321);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (422, '0010', '법인서류 매수관리', 117, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (423, '7450', '법인카드 현황', 67, 2, 7450);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (424, '5505', '일일점검내역 확인', 103, 2, 5505);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (425, '5605', '일별 펀드평잔 조회', 112, 2, 5605);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (426, '5910', '수탁사정보 관리', 88, 2, 5910);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (427, '6710', '펀드자산 종목기본', 44, 2, 6710);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (428, '6512', '전표입력(외화)', 95, 2, 6512);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (429, '6590', '계정과목', 55, 2, 6590);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (430, '6552', '재무상태표', 41, 2, 6552);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (431, '2160', '법규등록신청', 69, 2, 2160);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (432, '0095', '법규등록신청확인', 120, 2, 95);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (433, '7460', '법인카드 접대비 현황', 67, 2, 7460);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (434, '8102', '회사규정(관리자)', 93, 2, 8102);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (435, '6580', '선급금/선급비용 조회', 55, 2, 6580);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (436, '6195', '거래처(관리) 등록', 86, 2, 6195);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (437, '1200', '복리후생비 관리', 133, 2, 1200);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (438, '1000', '임직원매매 사용순서', 71, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (439, '5210', '업무일정 체크내역', 125, 2, 5210);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (440, '8310', '주간업무보고', 94, 2, 8310);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (441, '5180', '부서별 업무일정 조회', 89, 2, 5180);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (442, '9599', '미사용 파일조회', 39, 2, 9599);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (443, '7270', '외출등록', 84, 2, 7270);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (444, '7280', '출장품의 및 결과보고', 84, 2, 7280);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (445, '9587', '화면안내등록', 39, 2, 9587);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (446, '9006', '화환신청 확인', 105, 2, 9006);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (447, '2301', '내부통제 체크리스트 관리', 98, 2, 2301);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (448, '1000', '게시판', 123, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (449, '2000', '자금집행결의서', 133, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (450, '2475', '임직원매매 위반내역', 71, 2, 2475);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (451, '0060', '4대보험신고(EDI)', 102, 2, 60);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (452, '7230', '휴가신청조회', 84, 2, 7230);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (453, '0030', '인감날인본 업로드확인', 117, 2, 30);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (454, '2455', '임직원매매 계좌대체', 71, 2, 2455);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (455, '8311', '주간업무보고 확인', 94, 2, 8311);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (456, '1000', '지출결의서(경영관리)', 133, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (457, '9793', '법인카드 업로드 기초자료(관리자)', 72, 2, 9793);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (458, '6321', '금융상품 보유내역(외화)', 74, 2, 6321);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (459, '6530', '금융상품 거래처리(외화)', 110, 2, 6530);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (460, '9560', '고객별 문자발송', 90, 2, 9560);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (461, '9794', '복리후생비 코드관리', 72, 2, 9794);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (462, '5000', '임직원 정보통신수단', 115, 2, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (463, '9767', '마감검증 체크항목', 46, 2, 9767);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (464, '3500', '용역수행내역 승인', 128, 2, 3500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (465, '2485', '임직원매매 현황', 134, 2, 2485);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (466, '3000', '용역수행내역 등록', 128, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (467, '4000', '용역결과보고서', 128, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (468, '1000', '일임(자문)계좌 등록', 28, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (469, '1100', '일임(자문)계좌 권한설정', 28, 2, 1100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (470, '3000', '사업비 회계처리', 133, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (471, '0037', '갑근세확인서 발급', 102, 2, 37);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (472, '5000', '미지급반제처리', 133, 2, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (473, '2000', '펀드예정일정보', 101, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (474, '6329', '비품관리대장', 74, 2, 6329);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (475, '1300', '여비교통비 관리', 133, 2, 1300);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (476, '0010', '사업비 지출요청', 137, 2, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (477, '0011', '사업비 지출승인(부서장)', 137, 2, 11);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (478, '1000', '인사평가 항목', 131, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (479, '8000', '인사평가 결과조회', 131, 2, 8000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (480, '9795', '인사평가 항목(Admin)', 72, 2, 9795);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (481, '6000', '사업비발생현황', 133, 2, 6000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (482, '2000', '인사평가 대상자', 131, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (483, '3000', '인사평가수행(평가자)', 131, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (484, '4000', '인사평가결과(인사부)', 131, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (485, '4100', '인사평가보고(대표이사)', 131, 2, 4100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (486, '2010', '펀드보수당월증감', 100, 2, 2010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (487, '1000', 'AssetERP 계약사관리', 135, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (488, '5000', 'AssetERP 사용료청구', 135, 2, 5000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (489, '2100', '자금집행결의서 조회', 133, 2, 2100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (490, '1000', '업무활동등록', 126, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (491, '1010', '업무활동등록(관리자)', 126, 2, 1010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (492, '9170', '특정화면 사용요청', 87, 2, 9170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (493, '9570', '고객별 특정화면 관리', 90, 2, 9570);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (494, '1000', '임원 등록', 136, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (495, '2000', '임원별 책무기술서', 130, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (496, '3000', '책무체계도', 130, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (497, '3000', '매뉴얼(점검항목) 작성', 132, 2, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (498, '7440', '법인카드 실사용자 배분', 67, 2, 7440);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (499, '9566', '로그아웃 알림 관리', 39, 2, 9566);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (500, '2000', '책무 등록', 136, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (501, '2010', '관리의무 등록', 136, 2, 2010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (502, '4000', '회의체 등록', 136, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (503, '6000', '직책별 책무 등록', 136, 2, 6000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (504, '1000', '임원별 직책배정', 130, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (505, '1000', '매뉴얼 작업대상 선정', 132, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (506, '1000', '준감인 사전확인대장', 141, 2, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (507, '6000', '펀드보유주식등록(타사무)', 85, 2, 6000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (508, '2000', '일임보유주식등록(타사무)', 28, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (509, '3126', '공람내역 조회', 75, 2, 3126);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (510, '0012', '지출결의서', 137, 2, 12);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (511, '2000', '매뉴얼 부서지정', 132, 2, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (512, '4000', '매뉴얼 보고(부서별)', 132, 2, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (513, '9580', '고객별 메뉴사용기록', 90, 2, 9580);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (514, '4500', '매뉴얼 관리(관리자)', 132, 2, 4500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (515, '0003', 'AssetERP 관리팀', 78, 3, 3);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (516, '9500', '이행점검 연관양식 등록', 42, 3, 9500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (517, '8010', '외출관리', 122, 3, 8010);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (518, '2487', '임직원매매 책임자보고', 134, 3, 2487);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (519, '7121', '사원정보 변경조회', 76, 3, 7121);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (520, '5601', '펀드별 기준가 현황', 112, 3, 5601);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (521, '1100', '책무기술서 재생성', 45, 3, 1100);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (522, '7000', '책무담당자 등록', 136, 3, 7000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (523, '0020', '인감날인대장', 117, 3, 20);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (524, '1000', '이행점검 작업지시 및 보고', 129, 3, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (525, '0015', '근로시간기준관리', 72, 3, 15);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (526, '4000', '책무구조도 제출', 130, 3, 4000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (527, '2000', '업무점검자 지정 및 보고', 129, 3, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (528, '0010', '내부통제 준수리스트 관리', 118, 3, 10);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (529, '0050', '임직원 내부통제 준수리스트', 120, 3, 50);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (530, '1000', '근태관리(관리자)', 51, 3, 1000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (531, '2000', '연장근무관리', 51, 3, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (532, '3000', '근태현황(관리자)', 51, 3, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (533, '2456', '임직원매매 권리행사 등', 71, 3, 2456);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (534, '1180', '폐기문서 승인(관리자)', 97, 3, 1180);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (535, '1245', '폐기문서 승인', 80, 3, 1245);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (536, '9170', '조회권한 예외사원 등록', 96, 3, 9170);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (537, '9772', '권한그룹 메뉴권한 복사', 73, 3, 9772);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (538, '2020', '월별 펀드보수현황', 100, 3, 2020);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (539, '9520', '메뉴 관리', 90, 3, 9520);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (540, '3000', '책무이행점검', 129, 3, 3000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (541, '6500', '직책별 부서승인선 등록', 136, 3, 6500);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (542, '2000', '문서양식등록', 70, 3, 2000);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (543, '0021', '부서 인감날인대장', 117, 3, 21);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (544, '3700', '책무이행점검 승인', 129, 3, 3700);
+INSERT INTO folders (id, nums, name, parent_id, level, sort_order) VALUES (545, '3900', '미흡내역 조치', 129, 3, 3900);

@@ -28,7 +28,11 @@
 - bm.sh : backend run, lint 등 
 - fm.sh : frontend run, lint 등
 - db.sh : db조회 등
-- deploy.sh : war생성 및 서버에 배포
+  - db.sh init 로 초기화 데이터를 만들 수 있다.
+  - 이때 sqls/aman_ddl.sql과 aman_test_data.sql을 수행한다.
+- deploy-jskn.sh : jskn서버에서 war생성 및 서버에 배포
+  - http://jskn.iptime.org/aman 으로 접속
+
 
 
 ## API
