@@ -5,6 +5,10 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',
+  build: {
+    assetsDir: 'static-assets',
+  },
   plugins: [
     react(),
     tailwindcss(),

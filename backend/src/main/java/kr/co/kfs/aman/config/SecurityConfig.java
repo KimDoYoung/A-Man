@@ -42,10 +42,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-                // /health 및 정적 이미지 경로 등 Free Pass 설정
-                .antMatchers("/health", "/images/**", "/auth/**", "/docs/**", "/manual/**").permitAll()
-                // 그 외 모든 /admin, /user, /content 등의 API는 인증 필요
-                .anyRequest().authenticated()
+                // /admin 경로는 JWT 인증 필요
+                .antMatchers("/admin/**").authenticated()
+                // 그 외 모든 요청(일반 도움말, static 자원, /health, /history 등)은 접근 허용
+                .anyRequest().permitAll()
             .and()
             .addFilterBefore(new JwtAuthenticationFilter(tokenProvider, blacklistRepository), UsernamePasswordAuthenticationFilter.class);
     }

@@ -3,7 +3,7 @@
 set -e
 
 # 배포 환경 설정 (사용자 환경에 따라 변경 필요)
-JSKN="kdy987@jskn.iptime.org"
+JSKN="jskn"
 REMOTE_DATA="/data/docker/apps/aman/data"
 PROJECT_ROOT="$(cd "$(dirname "$0")/." && pwd)"
 STATIC_DIR="$PROJECT_ROOT/backend/src/main/resources/static"
@@ -79,7 +79,7 @@ echo "  WAR: $WAR_FILE"
 
 # 원격지의 빌드 데이터 폴더 생성 보장
 echo "  원격 서버 배포용 데이터 디렉토리 생성 중..."
-ssh -p 2020 "$JSKN" "mkdir -p $REMOTE_DATA"
+ssh "$JSKN" "mkdir -p $REMOTE_DATA"
 
 # DB 초기화가 켜진 경우에만 로컬에서 신규 DB 생성 및 원격 디렉토리 생성
 if [ "$INIT_DB" = true ]; then
@@ -93,20 +93,20 @@ if [ "$INIT_DB" = true ]; then
   echo "  로컬 임시 DB 생성 완료: $TEMP_DB"
   
   echo "  원격 서버 DB 디렉토리 구조 생성 중..."
-  ssh -p 2020 "$JSKN" "mkdir -p /data/docker/apps/aman/db"
+  ssh "$JSKN" "mkdir -p /data/docker/apps/aman/db"
 fi
 
 # 4. Tomcat 빌드용 데이터(war, Dockerfile) 및 DB 전송
 echo "[4/4] Tomcat 서버로 파일 전송..."
 if [ "$INIT_DB" = true ]; then
-  sftp -P 2020 "$JSKN" <<EOF
+  sftp "$JSKN" <<EOF
 put $TEMP_DB /data/docker/apps/aman/db/aman.db
 put $WAR_FILE $REMOTE_DATA/aman.war
 put $PROJECT_ROOT/Dockerfile $REMOTE_DATA/Dockerfile
 EOF
   rm -f "$TEMP_DB"
 else
-  sftp -P 2020 "$JSKN" <<EOF
+  sftp "$JSKN" <<EOF
 put $WAR_FILE $REMOTE_DATA/aman.war
 put $PROJECT_ROOT/Dockerfile $REMOTE_DATA/Dockerfile
 EOF
