@@ -27,7 +27,7 @@ public class DocsController {
         this.pageRepository = pageRepository;
     }
 
-    @GetMapping("/{page_id}")
+    @GetMapping("/{page_id:\\d+}")
     public ResponseEntity<?> getPageDetail(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
         if (!pageOpt.isPresent() || !"PUBLISHED".equals(pageOpt.get().getStatus())) {

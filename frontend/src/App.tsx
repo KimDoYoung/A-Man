@@ -38,7 +38,7 @@ axios.interceptors.response.use(
     if (!isLoginRequest && error.response && (error.response.status === 401 || error.response.status === 403)) {
       localStorage.removeItem('aman_user')
       alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
-      window.location.href = '/login'
+      window.location.href = '/aman/login'
     }
     return Promise.reject(error)
   }
@@ -105,7 +105,9 @@ const router = createBrowserRouter([
     path: '*',
     element: <Navigate to="/docs" replace />
   }
-])
+], {
+  basename: '/aman'
+})
 
 function App() {
   useEffect(() => {

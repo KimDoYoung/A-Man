@@ -10,6 +10,33 @@ import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
 import { renderMarkdownToHtml } from '@/utils/markdownRenderer'
 import { PageData } from '@/types'
 
+const copyTextToClipboard = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch (err) {
+      console.warn('navigator.clipboard.writeText failed, using fallback:', err)
+    }
+  }
+  try {
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    textArea.style.position = 'fixed'
+    textArea.style.left = '-999999px'
+    textArea.style.top = '-999999px'
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+    const successful = document.execCommand('copy')
+    document.body.removeChild(textArea)
+    return successful
+  } catch (err) {
+    console.error('Fallback copy failed:', err)
+    return false
+  }
+}
+
 const DocUserMain: React.FC = () => {
   const { page_id, folder_id } = useParams<{ page_id?: string; folder_id?: string }>()
   const navigate = useNavigate()
@@ -541,11 +568,15 @@ const DocUserMain: React.FC = () => {
                       <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] bg-slate-200 px-1 py-0.5 rounded mr-1">URL</span>
                       <span className="font-mono text-slate-700 select-all">{`${window.location.origin}/aman/manual/${page.aka}`}</span>
                       <button
-                        onClick={() => {
-                          const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`;
-                          navigator.clipboard.writeText(fullUrl);
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 2000);
+                        onClick={async () => {
+                          const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`
+                          const ok = await copyTextToClipboard(fullUrl)
+                          if (ok) {
+                            setCopied(true)
+                            setTimeout(() => setCopied(false), 2000)
+                          } else {
+                            alert('클립보드 복사에 실패했습니다. URL을 직접 선택하여 복사해주세요.')
+                          }
                         }}
                         className="p-1 hover:bg-slate-200 rounded text-slate-500 cursor-pointer hover:text-slate-800 transition-colors flex items-center justify-center"
                         title="URL 복사"
