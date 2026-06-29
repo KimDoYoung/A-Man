@@ -14,7 +14,7 @@ const AboutPage: React.FC = () => {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [historyList, setHistoryList] = useState<HistoryItem[]>([])
-  const [historyOpen, setHistoryOpen] = useState(true)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     axios.get<HistoryItem[]>('/aman/history')

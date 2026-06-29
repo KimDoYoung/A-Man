@@ -523,7 +523,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <span className="text-gray-300 select-none px-1">|</span>
 
         {/* 별칭 AKA 입력창 */}
-        <span className="text-[10px] font-semibold text-gray-400">별칭(AKA):</span>
+        <span className="text-[10px] font-semibold text-gray-400">별칭:</span>
         <input
           type="text"
           value={aka || ''}
@@ -542,12 +542,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         {previewOpen ? (
           <>
             <EyeOff className="w-3.5 h-3.5" />
-            <span>숨기기</span>
+            {/* <span>숨기기</span> */}
           </>
         ) : (
           <>
             <Eye className="w-3.5 h-3.5" />
-            <span>보이기</span>
+            {/* <span>보이기</span> */}
           </>
         )}
       </button>
