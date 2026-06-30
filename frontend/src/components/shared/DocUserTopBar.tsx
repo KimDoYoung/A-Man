@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Menu, UserCheck, LogOut, Info } from 'lucide-react'
+import { Menu, UserCheck, LogOut, Info, HelpCircle } from 'lucide-react'
 import axios from 'axios'
 
 interface DocUserTopBarProps {
@@ -262,6 +262,14 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         >
           <Info className="w-3.5 h-3.5" />
           <span>About</span>
+        </button>
+        <button
+          onClick={() => window.open('/aman/manual/help', '_blank')}
+          className="flex items-center space-x-1 px-2.5 py-1 bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20 rounded-md transition-all cursor-pointer text-xs font-bold"
+          title="문서 작성자 도움말 (Help)"
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          <span>Help</span>
         </button>
         <button 
           onClick={handleLogout}

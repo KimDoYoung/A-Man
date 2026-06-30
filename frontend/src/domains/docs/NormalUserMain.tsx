@@ -97,7 +97,10 @@ const NormalUserMain: React.FC = () => {
 
           {/* 2.4 우측 목차 사이드바 (TOC) */}
           {tocOpen && tocData.length > 0 && (
-            <aside className="w-64 bg-white border-l border-gray-200 p-4 shrink-0 flex flex-col h-full sticky top-0 z-40">
+            <aside 
+              className="w-64 bg-white border-l border-gray-200 p-4 shrink-0 flex flex-col sticky z-40"
+              style={{ top: '72px', maxHeight: 'calc(100vh - 90px)' }}
+            >
               <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-3 shrink-0">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">이 페이지의 목차</p>
                 <button 
@@ -134,11 +137,24 @@ const NormalUserMain: React.FC = () => {
 
       </div>
 
-      {/* 3. 탑 플로팅 버튼 */}
+      {/* 3. 탑 플로팅 버튼 (우측 하단 - 본문 뷰어 영역 기준) */}
       {showTopBtn && (
         <button 
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 right-6 z-50 p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-all border border-indigo-500 cursor-pointer animate-bounce"
+          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 hover:bg-gray-300/90 text-gray-700/40 hover:text-gray-800 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 hover:border-gray-400 cursor-pointer"
+          style={{ right: (tocOpen && tocData.length > 0) ? '280px' : '24px' }}
+          title="맨 위로 스크롤"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* 4. 탑 플로팅 버튼 (좌측 하단 - 본문 뷰어 영역 기준) */}
+      {showTopBtn && (
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 hover:bg-gray-300/90 text-gray-700/40 hover:text-gray-800 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 hover:border-gray-400 cursor-pointer"
+          style={{ left: sidebarOpen ? `${sidebarWidth + 24}px` : '24px' }}
           title="맨 위로 스크롤"
         >
           <ArrowUp className="w-5 h-5" />
