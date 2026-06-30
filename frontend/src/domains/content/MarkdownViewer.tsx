@@ -12,6 +12,7 @@ const MarkdownViewer: React.FC = () => {
   const [page, setPage] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
+  const [settings, setSettings] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -59,6 +60,19 @@ const MarkdownViewer: React.FC = () => {
       setTocData([])
     }
   }, [page_id, folder_id, setTocData])
+
+  // 사이트 제어 설정 로드
+  useEffect(() => {
+    axios.get('/aman/health')
+      .then(res => {
+        if (res.data && res.data.settings) {
+          setSettings(res.data.settings)
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load settings in MarkdownViewer:', err)
+      })
+  }, [])
 
   // 마크다운에서 헤더(#, ##, ###)를 추출하는 헬퍼 함수
   const extractTocFromMarkdown = (md: string): TocItem[] => {
@@ -199,17 +213,20 @@ const MarkdownViewer: React.FC = () => {
               <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm" {...props} />
             </div>
           ),
-          a: ({ href, children, ...props }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-indigo-600 hover:text-indigo-800 underline font-medium"
-              {...props}
-            >
-              {children}
-            </a>
-          )
+          a: ({ href, children, ...props }) => {
+            const isBlank = settings.LINK_BLANK !== 'false';
+            return (
+              <a
+                href={href}
+                target={isBlank ? "_blank" : undefined}
+                rel={isBlank ? "noopener noreferrer" : undefined}
+                className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+                {...props}
+              >
+                {children}
+              </a>
+            );
+          }
         }}
       >
         {md}

@@ -8,7 +8,7 @@ export const parseInlineStyles = (text: string): React.ReactNode => {
   return text;
 }
 
-export const renderMarkdownToHtml = (md: string): React.ReactNode => {
+export const renderMarkdownToHtml = (md: string, settings?: Record<string, string>): React.ReactNode => {
   if (!md || !md.trim()) {
     return <p className="text-gray-400 italic">내용이 비어있습니다.</p>;
   }
@@ -104,11 +104,20 @@ export const renderMarkdownToHtml = (md: string): React.ReactNode => {
             <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm" {...props} />
           </div>
         ),
-        a: ({ href, children, ...props }) => (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline font-medium" {...props}>
-            {children}
-          </a>
-        )
+        a: ({ href, children, ...props }) => {
+          const isBlank = !settings || settings.LINK_BLANK !== 'false';
+          return (
+            <a
+              href={href}
+              target={isBlank ? "_blank" : undefined}
+              rel={isBlank ? "noopener noreferrer" : undefined}
+              className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+              {...props}
+            >
+              {children}
+            </a>
+          );
+        }
       }}
     >
       {md}

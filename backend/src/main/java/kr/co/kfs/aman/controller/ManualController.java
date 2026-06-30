@@ -79,6 +79,18 @@ public class ManualController {
         String title = page.getTitle();
         String parsedBody = parseMarkdownToHtml(page.getContent());
 
+        boolean isBlank = systemSettings.getBoolean("LINK_BLANK", true);
+        String targetBlankScript = isBlank ?
+            "    <script>\n" +
+            "        document.addEventListener('DOMContentLoaded', function() {\n" +
+            "            var links = document.querySelectorAll('.container a');\n" +
+            "            for (var i = 0; i < links.length; i++) {\n" +
+            "                links[i].setAttribute('target', '_blank');\n" +
+            "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
+            "            }\n" +
+            "        });\n" +
+            "    </script>\n" : "";
+
         String fullHtml = 
             "<!DOCTYPE html>\n" +
             "<html lang=\"ko\">\n" +
@@ -175,15 +187,7 @@ public class ManualController {
             "            text-decoration: underline;\n" +
             "        }\n" +
             "    </style>\n" +
-            "    <script>\n" +
-            "        document.addEventListener('DOMContentLoaded', function() {\n" +
-            "            var links = document.querySelectorAll('.container a');\n" +
-            "            for (var i = 0; i < links.length; i++) {\n" +
-            "                links[i].setAttribute('target', '_blank');\n" +
-            "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
-            "            }\n" +
-            "        });\n" +
-            "    </script>\n" +
+            targetBlankScript +
             "</head>\n" +
             "<body>\n" +
             "    <div class=\"container\">\n" +

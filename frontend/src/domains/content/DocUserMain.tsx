@@ -68,6 +68,7 @@ const DocUserMain: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('')
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
   const [copied, setCopied] = useState(false)
+  const [settings, setSettings] = useState<Record<string, string>>({})
 
   const isDirty = page ? (
     pageContent !== (page.content || '') || 
@@ -209,6 +210,19 @@ const DocUserMain: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp)
     }
   }, [resizingSidebar, resizingPreview])
+
+  // 사이트 포맷 및 제어 설정 로드
+  useEffect(() => {
+    axios.get('/aman/health')
+      .then(res => {
+        if (res.data && res.data.settings) {
+          setSettings(res.data.settings)
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load settings in DocUserMain:', err)
+      })
+  }, [])
 
   // 스크롤 동기화 (Scroll Sync) 효과
   useEffect(() => {
@@ -630,7 +644,7 @@ const DocUserMain: React.FC = () => {
                     </div>
                     <div ref={previewContainerRef} className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
                       <div className="prose max-w-none bg-white p-2 border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
-                        {renderMarkdownToHtml(pageContent)}
+                        {renderMarkdownToHtml(pageContent, settings)}
                       </div>
                     </div>
                   </div>
