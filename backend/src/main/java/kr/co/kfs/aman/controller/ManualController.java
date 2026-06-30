@@ -38,21 +38,38 @@ public class ManualController {
     public ResponseEntity<String> generateNewAka(
             @RequestParam(value = "folderId", required = false) Long folderId) {
         
-        // 1. AKA_NUMS_FIRST가 true이고 folderId가 전송되었을 경우, 해당 폴더의 nums 값을 AKA로 우선 반환
+        // 1. AKA_NUMS_FIRST가 true이고 folderId가 전송되었을 경우
         if (folderId != null && systemSettings.getBoolean("AKA_NUMS_FIRST", false)) {
             Optional<Folder> folderOpt = folderRepository.findById(folderId);
-            if (folderOpt.isPresent() && folderOpt.get().getNums() != null && !folderOpt.get().getNums().trim().isEmpty()) {
-                return ResponseEntity.ok(folderOpt.get().getNums().trim());
+            if (folderOpt.isPresent()) {
+                Folder folder = folderOpt.get();
+                if (folder.getNums() != null && !folder.getNums().trim().isEmpty()) {
+                    return ResponseEntity.ok(folder.getNums().trim());
+                } else {
+                    // nums가 없는 폴더는 5자리 고유 난수 번호 발급 (10000 ~ 99999)
+                    String candidate;
+                    int maxAttempts = 100;
+                    int attempts = 0;
+                    do {
+                        int num = java.util.concurrent.ThreadLocalRandom.current().nextInt(10000, 100000);
+                        candidate = String.valueOf(num);
+                        attempts++;
+                        if (attempts > maxAttempts) {
+                            return ResponseEntity.status(500).body("고유한 AKA 코드를 생성할 수 없습니다.");
+                        }
+                    } while (pageRepository.findByAka(candidate).isPresent());
+                    return ResponseEntity.ok(candidate);
+                }
             }
         }
 
-        // 2. 기본값: 4자리 고유 난수 번호 발급
+        // 2. 기본값: 4자리 고유 난수 번호 발급 (1000 ~ 9999)
         String candidate;
         int maxAttempts = 100;
         int attempts = 0;
         
         do {
-            int num = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000); // 1000 ~ 9999
+            int num = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 10000);
             candidate = String.valueOf(num);
             attempts++;
             if (attempts > maxAttempts) {
