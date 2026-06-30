@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useBlocker } from 'react-router-dom'
-import { Save } from 'lucide-react'
+import { Save, ExternalLink } from 'lucide-react'
 import axios from 'axios'
 import FolderTree from '@/components/shared/FolderTree'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
@@ -98,6 +98,7 @@ const DocUserMain: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const previewContainerRef = useRef<HTMLDivElement>(null)
   const isLeavingRef = useRef(false)
 
   // 1. 문서 상세 데이터 또는 폴더 기준 데이터 로드
@@ -207,6 +208,46 @@ const DocUserMain: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp)
     }
   }, [resizingSidebar, resizingPreview])
+
+  // 스크롤 동기화 (Scroll Sync) 효과
+  useEffect(() => {
+    const textarea = textareaRef.current
+    const preview = previewContainerRef.current
+    if (!textarea || !preview) return
+
+    let activeElement: 'editor' | 'preview' | null = null
+
+    const handleEditorScroll = () => {
+      if (activeElement === 'preview') return
+      const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight)
+      preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight)
+    }
+
+    const handlePreviewScroll = () => {
+      if (activeElement === 'editor') return
+      const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
+      textarea.scrollTop = percentage * (textarea.scrollHeight - textarea.clientHeight)
+    }
+
+    const setEditorActive = () => { activeElement = 'editor' }
+    const setPreviewActive = () => { activeElement = 'preview' }
+
+    textarea.addEventListener('mouseenter', setEditorActive)
+    textarea.addEventListener('focus', setEditorActive)
+    textarea.addEventListener('scroll', handleEditorScroll)
+
+    preview.addEventListener('mouseenter', setPreviewActive)
+    preview.addEventListener('scroll', handlePreviewScroll)
+
+    return () => {
+      textarea.removeEventListener('mouseenter', setEditorActive)
+      textarea.removeEventListener('focus', setEditorActive)
+      textarea.removeEventListener('scroll', handleEditorScroll)
+
+      preview.removeEventListener('mouseenter', setPreviewActive)
+      preview.removeEventListener('scroll', handlePreviewScroll)
+    }
+  }, [pageContent, previewOpen])
 
   // 3. 마크다운 태그 추가 헬퍼
   const insertMarkdown = (prefix: string, suffix = '') => {
@@ -539,7 +580,7 @@ const DocUserMain: React.FC = () => {
                         LIVE PREVIEW
                       </span>
                     </div>
-                    <div className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
+                    <div ref={previewContainerRef} className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
                       <div className="prose max-w-none bg-white p-2 border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
                         {renderMarkdownToHtml(pageContent)}
                       </div>
@@ -584,6 +625,23 @@ const DocUserMain: React.FC = () => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                         </svg>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (pageStatus === 'PUBLISHED') {
+                            const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`
+                            window.open(fullUrl, '_blank')
+                          }
+                        }}
+                        disabled={pageStatus !== 'PUBLISHED'}
+                        className={`p-1 rounded transition-colors flex items-center justify-center ${
+                          pageStatus === 'PUBLISHED'
+                            ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer'
+                            : 'text-slate-300 cursor-not-allowed opacity-50'
+                        }`}
+                        title={pageStatus === 'PUBLISHED' ? "새 창에서 열기" : "배포 상태일 때만 새 창에서 열 수 있습니다."}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
                       </button>
                       {copied && (
                         <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-sm transition-all duration-200 select-none">

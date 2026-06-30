@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Folder, FolderOpen, ChevronDown, FileText } from 'lucide-react'
 import axios from 'axios'
@@ -12,6 +12,7 @@ interface FolderTreeProps {
 }
 
 const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDocUser = false }) => {
+  const filterInputRef = useRef<HTMLInputElement>(null)
   const isContextMenuDisabled = true; // [요구사항 반영] 컨텍스트 메뉴 비활성화 플래그
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,6 +23,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
   // 데이터 피드백 상태
   const [folders, setFolders] = useState<FolderNode[]>([])
   const [filterText, setFilterText] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [settings, setSettings] = useState<Record<string, string>>({})
 
   // 사이트 포맷 설정 로드
@@ -35,6 +37,33 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
       .catch(err => {
         console.error('Failed to load settings in FolderTree:', err)
       })
+  }, [])
+
+  // Listen for global '+' key to clear search and focus
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '+') {
+        const activeEl = document.activeElement
+        const isEditing = activeEl && (
+          activeEl.tagName === 'INPUT' || 
+          activeEl.tagName === 'TEXTAREA' || 
+          activeEl.getAttribute('contenteditable') === 'true'
+        )
+
+        // If the active element is our search input, or if the user is not focusing any editable element:
+        if (activeEl === filterInputRef.current || !isEditing) {
+          e.preventDefault()
+          setSearchInput('')
+          setFilterText('')
+          filterInputRef.current?.focus()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+    }
   }, [])
 
   const formatNodeName = (node: FolderNode) => {
@@ -105,6 +134,8 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
 
   // 1. 폴더 목록 데이터 로드 (필터 변경 시 재로드)
   useEffect(() => {
+    let active = true
+
     const fetchFolders = async () => {
       try {
         let url = '/aman/docs/folders'
@@ -112,6 +143,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
           url += `?filter=${encodeURIComponent(filterText)}`
         }
         const response = await axios.get(url)
+        if (!active) return
         const rawData = response.data
 
         // 2. 계층형 트리(대-중-소) 구조 생성 조립
@@ -127,11 +159,17 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
           setExpandedFolders(autoExpanded)
         }
       } catch (error) {
-        console.error('Folders 로딩 실패:', error)
+        if (active) {
+          console.error('Folders 로딩 실패:', error)
+        }
       }
     }
 
     fetchFolders()
+
+    return () => {
+      active = false
+    }
   }, [filterText])
 
   // Flat 리스트 또는 이미 트리인 데이터를 안전하게 3 depth 계층형 트리로 변환하는 함수
@@ -182,6 +220,12 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
             parent.children.push(node)
           }
           parent.children.sort((a, b) => a.sortOrder - b.sortOrder)
+        } else {
+          // 필터링 등으로 인해 부모 노드가 목록에 없는 경우,
+          // 노드가 유실되지 않도록 최상위(roots)로 노출시킵니다.
+          if (!roots.some(r => r.id === node.id)) {
+            roots.push(node)
+          }
         }
       }
     })
@@ -278,7 +322,12 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
       <div className="mb-3 pb-2 border-b border-gray-100 shrink-0">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">메뉴 내비게이션</p>
         <div className="flex items-center space-x-1.5">
-            <FilterInput value={filterText} onChange={setFilterText} />
+            <FilterInput 
+              value={searchInput} 
+              onChange={setSearchInput} 
+              onSearch={(val) => setFilterText(val)} 
+              inputRef={filterInputRef}
+            />
           
           <button 
             onClick={expandAll} 

@@ -40,7 +40,7 @@ public class DocsController {
     public ResponseEntity<?> getFolders(@RequestParam(value = "filter", required = false) String filter) {
         List<Folder> folders;
         if (filter != null && !filter.trim().isEmpty()) {
-            folders = folderRepository.findByNameContaining(filter);
+            folders = folderRepository.findByNameContainingOrNumsContaining(filter, filter);
         } else {
             // 필터가 없으면 최상위(대분류) 목록 반환
             folders = folderRepository.findByParentIsNullOrderBySortOrderAsc();

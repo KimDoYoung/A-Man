@@ -16,4 +16,6 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     List<Folder> findByParentIdOrderBySortOrderAsc(@Param("parentId") Long parentId);
 
     List<Folder> findByNameContaining(String keyword);
+
+    List<Folder> findByNameContainingOrNumsContaining(String name, String nums);
 }
