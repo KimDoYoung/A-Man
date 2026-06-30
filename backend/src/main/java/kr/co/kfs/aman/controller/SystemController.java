@@ -1,14 +1,12 @@
 package kr.co.kfs.aman.controller;
 
-import kr.co.kfs.aman.model.Setting;
-import kr.co.kfs.aman.repository.SettingRepository;
+import kr.co.kfs.aman.config.SystemSettings;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 public class SystemController {
@@ -18,10 +16,10 @@ public class SystemController {
     @Value("${spring.application.version:1.0.0}")
     private String version;
 
-    private final SettingRepository settingRepository;
+    private final SystemSettings systemSettings;
 
-    public SystemController(SettingRepository settingRepository) {
-        this.settingRepository = settingRepository;
+    public SystemController(SystemSettings systemSettings) {
+        this.systemSettings = systemSettings;
     }
 
     @GetMapping("/health")
@@ -32,20 +30,9 @@ public class SystemController {
         status.put("message", "A-Man System is running normally.");
         status.put("timestamp", System.currentTimeMillis());
 
-        Optional<Setting> siteNameOpt = settingRepository.findBySettingKey("SITE_NAME");
-        status.put("siteName", siteNameOpt.isPresent() ? siteNameOpt.get().getSettingValue() : "A-Man");
-
-        Optional<Setting> siteDescOpt = settingRepository.findBySettingKey("SITE_DESCRIPTION");
-        status.put("siteDescription", siteDescOpt.isPresent() ? siteDescOpt.get().getSettingValue() : "AssetERP를 위한 도움말 시스템");
-
-        java.util.List<Setting> allSettings = settingRepository.findAll();
-        Map<String, String> settingsMap = new HashMap<>();
-        for (Setting s : allSettings) {
-            if (s.getSettingKey() != null) {
-                settingsMap.put(s.getSettingKey(), s.getSettingValue());
-            }
-        }
-        status.put("settings", settingsMap);
+        status.put("siteName", systemSettings.getOrDefault("SITE_NAME", "A-Man"));
+        status.put("siteDescription", systemSettings.getOrDefault("SITE_DESCRIPTION", "AssetERP를 위한 도움말 시스템"));
+        status.put("settings", systemSettings.getAll());
 
         return status;
     }

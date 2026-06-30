@@ -28,6 +28,7 @@ const FolderManagePage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
+  const [settings, setSettings] = useState<Record<string, string>>({})
   
   const gridRef = useRef<AgGridReact>(null)
 
@@ -76,6 +77,21 @@ const FolderManagePage: React.FC = () => {
       document.removeEventListener('mouseup', handleMouseUp)
     }
   }, [])
+
+  // 사이트 포맷 및 제어 설정 로드
+  useEffect(() => {
+    axios.get('/aman/health')
+      .then(res => {
+        if (res.data && res.data.settings) {
+          setSettings(res.data.settings)
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load settings in FolderManagePage:', err)
+      })
+  }, [])
+
+  const isAutoNums = settings.AUTO_NUMS !== 'false'
 
   // Fetch folders and build tree
   const fetchTreeData = async () => {
@@ -542,23 +558,25 @@ const FolderManagePage: React.FC = () => {
                 {statusMsg.text}
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleClearAllNumbers}
-                className="px-3.5 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
-                title="데이터베이스 내의 전체 메뉴 번호(nums)를 삭제합니다."
-              >
-                <span>전체번호 비우기</span>
-              </button>
-              <button
-                onClick={handleRegenerateAllNumbers}
-                className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
-                title="데이터베이스 내의 전체 메뉴 번호(nums) 및 정렬 순서를 재정리합니다."
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>전체번호 재생성</span>
-              </button>
-            </div>
+            {isAutoNums && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleClearAllNumbers}
+                  className="px-3.5 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+                  title="데이터베이스 내의 전체 메뉴 번호(nums)를 삭제합니다."
+                >
+                  <span>전체번호 비우기</span>
+                </button>
+                <button
+                  onClick={handleRegenerateAllNumbers}
+                  className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+                  title="데이터베이스 내의 전체 메뉴 번호(nums) 및 정렬 순서를 재정리합니다."
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>전체번호 재생성</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -640,14 +658,16 @@ const FolderManagePage: React.FC = () => {
 
               {/* Grid Actions */}
               <div className="flex items-center gap-1.5 text-xs">
-                <button
-                  onClick={handleAutoCalcNums}
-                  className="px-2.5 py-1.5 bg-sky-500/10 text-sky-600 hover:bg-sky-500/20 border border-sky-500/20 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1"
-                  title="현재 그리드 내 하위 메뉴들의 번호를 일괄 계산합니다."
-                >
-                  <ListOrdered className="w-3.5 h-3.5" />
-                  <span>선택 레벨 번호계산</span>
-                </button>
+                {isAutoNums && (
+                  <button
+                    onClick={handleAutoCalcNums}
+                    className="px-2.5 py-1.5 bg-sky-500/10 text-sky-600 hover:bg-sky-500/20 border border-sky-500/20 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1"
+                    title="현재 그리드 내 하위 메뉴들의 번호를 일괄 계산합니다."
+                  >
+                    <ListOrdered className="w-3.5 h-3.5" />
+                    <span>선택 레벨 번호계산</span>
+                  </button>
+                )}
 
                 <button
                   onClick={handleAddChildRow}

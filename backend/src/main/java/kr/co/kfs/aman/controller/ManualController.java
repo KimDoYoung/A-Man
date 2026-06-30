@@ -1,12 +1,16 @@
 package kr.co.kfs.aman.controller;
 
+import kr.co.kfs.aman.config.SystemSettings;
+import kr.co.kfs.aman.model.Folder;
 import kr.co.kfs.aman.model.Page;
+import kr.co.kfs.aman.repository.FolderRepository;
 import kr.co.kfs.aman.repository.PageRepository;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.vladsch.flexmark.html.HtmlRenderer;
@@ -21,13 +25,28 @@ import java.util.Optional;
 public class ManualController {
 
     private final PageRepository pageRepository;
+    private final FolderRepository folderRepository;
+    private final SystemSettings systemSettings;
 
-    public ManualController(PageRepository pageRepository) {
+    public ManualController(PageRepository pageRepository, FolderRepository folderRepository, SystemSettings systemSettings) {
         this.pageRepository = pageRepository;
+        this.folderRepository = folderRepository;
+        this.systemSettings = systemSettings;
     }
 
     @GetMapping(value = "/new-aka", produces = "text/plain;charset=UTF-8")
-    public ResponseEntity<String> generateNewAka() {
+    public ResponseEntity<String> generateNewAka(
+            @RequestParam(value = "folderId", required = false) Long folderId) {
+        
+        // 1. AKA_NUMS_FIRST가 true이고 folderId가 전송되었을 경우, 해당 폴더의 nums 값을 AKA로 우선 반환
+        if (folderId != null && systemSettings.getBoolean("AKA_NUMS_FIRST", false)) {
+            Optional<Folder> folderOpt = folderRepository.findById(folderId);
+            if (folderOpt.isPresent() && folderOpt.get().getNums() != null && !folderOpt.get().getNums().trim().isEmpty()) {
+                return ResponseEntity.ok(folderOpt.get().getNums().trim());
+            }
+        }
+
+        // 2. 기본값: 4자리 고유 난수 번호 발급
         String candidate;
         int maxAttempts = 100;
         int attempts = 0;
@@ -148,7 +167,23 @@ public class ManualController {
             "            border-radius: 8px;\n" +
             "            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);\n" +
             "        }\n" +
+            "        a {\n" +
+            "            color: #4f46e5;\n" +
+            "            text-decoration: none;\n" +
+            "        }\n" +
+            "        a:hover {\n" +
+            "            text-decoration: underline;\n" +
+            "        }\n" +
             "    </style>\n" +
+            "    <script>\n" +
+            "        document.addEventListener('DOMContentLoaded', function() {\n" +
+            "            var links = document.querySelectorAll('.container a');\n" +
+            "            for (var i = 0; i < links.length; i++) {\n" +
+            "                links[i].setAttribute('target', '_blank');\n" +
+            "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
+            "            }\n" +
+            "        });\n" +
+            "    </script>\n" +
             "</head>\n" +
             "<body>\n" +
             "    <div class=\"container\">\n" +

@@ -387,7 +387,8 @@ const DocUserMain: React.FC = () => {
     if (isCurrentAkaEmpty) {
       setSaving(true)
       try {
-        const response = await axios.get('/aman/manual/new-aka')
+        const folderId = page.folder?.id
+        const response = await axios.get(`/aman/manual/new-aka?folderId=${folderId || ''}`)
         trimmedAka = response.data.toString().trim()
         setPageAka(trimmedAka)
       } catch (error) {

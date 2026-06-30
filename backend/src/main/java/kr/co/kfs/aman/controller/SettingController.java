@@ -1,5 +1,6 @@
 package kr.co.kfs.aman.controller;
 
+import kr.co.kfs.aman.config.SystemSettings;
 import kr.co.kfs.aman.model.Setting;
 import kr.co.kfs.aman.repository.SettingRepository;
 import org.springframework.http.HttpStatus;
@@ -19,9 +20,11 @@ import java.util.Optional;
 public class SettingController {
 
     private final SettingRepository settingRepository;
+    private final SystemSettings systemSettings;
 
-    public SettingController(SettingRepository settingRepository) {
+    public SettingController(SettingRepository settingRepository, SystemSettings systemSettings) {
         this.settingRepository = settingRepository;
+        this.systemSettings = systemSettings;
     }
 
     @GetMapping
@@ -42,6 +45,7 @@ public class SettingController {
         existing.setNote(settingRequest.getNote());
 
         Setting saved = settingRepository.save(existing);
+        systemSettings.reload();
         return ResponseEntity.ok(saved);
     }
 }
