@@ -1,5 +1,25 @@
 [
     { 
+        "version": "1.1.1",
+        "date": "2026-06-30",
+        "description": [
+            "문서번호가 없는 것은 5자리숫자로 랜덤하게 AKA를 만듬"
+        ]
+    },
+    { 
+        "version": "1.1.0",
+        "date": "2026-06-29",
+        "description": [
+"1. Folder 필터링 에서 현재는 name으로만 찾는데, nums에서도 찾게 끔 해줘.",
+"2. DocUserMain 문서편집에서 미리보기와 scroll sync",
+"3. 개별문서 URL에 explore icon추가",
+"4. '삭제하기' 버튼 생성 -> 페이지를 삭제 가능",
+"5. '가져오기' 중첩zip 가능",
+"6. 링크를 target=_blank로 열기",
+"7. aka별칭을 '문서 번호'로  우선적으로 설정"
+        ]
+    },
+    { 
         "version": "1.0.0",
         "date": "2026-06-28",
         "description": [
