@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useBlocker } from 'react-router-dom'
-import { Save, ExternalLink } from 'lucide-react'
+import { Save, ExternalLink, Trash2 } from 'lucide-react'
 import axios from 'axios'
 import FolderTree from '@/components/shared/FolderTree'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
@@ -64,6 +64,7 @@ const DocUserMain: React.FC = () => {
   // 피드백 상태
   const [, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
   const [copied, setCopied] = useState(false)
@@ -454,6 +455,52 @@ const DocUserMain: React.FC = () => {
     }
   }
 
+  // 5. 삭제 처리 (Delete)
+  const handleDelete = async () => {
+    if (!page || !page.id) return
+
+    const confirmDelete = window.confirm('도움말 페이지를 정말로 삭제하시겠습니까?')
+    if (!confirmDelete) return
+
+    setDeleting(true)
+    setErrorMsg('')
+    try {
+      const folderId = page.folder?.id || page.folderId
+      await axios.delete(`/aman/content/${page.id}`)
+      
+      // 삭제 후 UI 초기 상태 복원 및 해당 폴더 URL로 navigate
+      isLeavingRef.current = true
+      
+      const folder = page.folder
+      setPage({
+        id: undefined as any,
+        title: '',
+        content: '',
+        folder: folder,
+        sortOrder: 0
+      })
+      setPageTitle('')
+      setPageContent('')
+      setPageAka('')
+      setPageStatus('DRAFT')
+      
+      if (folderId) {
+        navigate(`/admin/folder/${folderId}`)
+      } else {
+        navigate('/admin')
+      }
+      
+      setTimeout(() => {
+        isLeavingRef.current = false
+      }, 100)
+    } catch (error: any) {
+      console.error('삭제 실패:', error)
+      setErrorMsg(error.response?.data?.toString() || '도움말 페이지 삭제 중 오류가 발생했습니다.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
 
 
   return (
@@ -682,6 +729,15 @@ const DocUserMain: React.FC = () => {
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>{saving ? '저장 중...' : '변경사항 저장하기'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={deleting || !page || !page.id}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{deleting ? '삭제 중...' : '삭제하기'}</span>
                   </button>
                 </div>
               </div>

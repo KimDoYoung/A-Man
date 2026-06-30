@@ -335,36 +335,21 @@ public class ContentController {
         Map<String, String> imagePathMapping = new HashMap<>();
 
         // 2. Unzip and search for markdown file & images
-        try (java.util.zip.ZipFile zFile = new java.util.zip.ZipFile(zipFile)) {
-            java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zFile.entries();
-            
-            while (entries.hasMoreElements()) {
-                java.util.zip.ZipEntry entry = entries.nextElement();
-                File destFile = new File(tempDir, entry.getName());
-                
-                // Security check (Zip Slip Prevention)
-                String canonicalDirPath = tempDir.getCanonicalPath();
-                String canonicalDestPath = destFile.getCanonicalPath();
-                if (!canonicalDestPath.startsWith(canonicalDirPath + File.separator) && !canonicalDestPath.equals(canonicalDirPath)) {
-                    throw new IOException("ZIP 파일에 올바르지 않은 경로가 포함되어 있습니다: " + entry.getName());
-                }
+        try {
+            unzip(zipFile, tempDir);
 
-                if (entry.isDirectory()) {
-                    if (!destFile.exists() && !destFile.mkdirs()) {
-                        throw new IOException("Failed to create directory: " + destFile.getAbsolutePath());
-                    }
-                } else {
-                    File parent = destFile.getParentFile();
-                    if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                        throw new IOException("Failed to create parent directory: " + parent.getAbsolutePath());
-                    }
-                    try (java.io.InputStream is = zFile.getInputStream(entry);
-                         java.io.FileOutputStream fos = new java.io.FileOutputStream(destFile)) {
-                        byte[] buffer = new byte[4096];
-                        int len;
-                        while ((len = is.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
+            // Notion 등에서 생성된 중첩 ZIP 파일이 있다면 재귀적으로 압축 해제
+            boolean foundNestedZip = true;
+            int maxDepth = 5; // 무한 루프 방지용 최대 깊이
+            while (foundNestedZip && maxDepth > 0) {
+                foundNestedZip = false;
+                java.util.List<File> nestedZips = findZipFilesRecursively(tempDir, zipFile);
+                if (!nestedZips.isEmpty()) {
+                    foundNestedZip = true;
+                    maxDepth--;
+                    for (File nz : nestedZips) {
+                        unzip(nz, nz.getParentFile());
+                        nz.delete(); // 해제 후 중첩 zip 파일 제거
                     }
                 }
             }
@@ -568,5 +553,59 @@ public class ContentController {
                 fos.write(buffer, 0, len);
             }
         }
+    }
+
+    private void unzip(File zipFile, File destDir) throws IOException {
+        try (java.util.zip.ZipFile zFile = new java.util.zip.ZipFile(zipFile)) {
+            java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zFile.entries();
+            
+            while (entries.hasMoreElements()) {
+                java.util.zip.ZipEntry entry = entries.nextElement();
+                File destFile = new File(destDir, entry.getName());
+                
+                // Security check (Zip Slip Prevention)
+                String canonicalDirPath = destDir.getCanonicalPath();
+                String canonicalDestPath = destFile.getCanonicalPath();
+                if (!canonicalDestPath.startsWith(canonicalDirPath + File.separator) && !canonicalDestPath.equals(canonicalDirPath)) {
+                    throw new IOException("ZIP 파일에 올바르지 않은 경로가 포함되어 있습니다: " + entry.getName());
+                }
+
+                if (entry.isDirectory()) {
+                    if (!destFile.exists() && !destFile.mkdirs()) {
+                        throw new IOException("Failed to create directory: " + destFile.getAbsolutePath());
+                    }
+                } else {
+                    File parent = destFile.getParentFile();
+                    if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                        throw new IOException("Failed to create parent directory: " + parent.getAbsolutePath());
+                    }
+                    try (java.io.InputStream is = zFile.getInputStream(entry);
+                         java.io.FileOutputStream fos = new java.io.FileOutputStream(destFile)) {
+                        byte[] buffer = new byte[4096];
+                        int len;
+                        while ((len = is.read(buffer)) > 0) {
+                            fos.write(buffer, 0, len);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private java.util.List<File> findZipFilesRecursively(File dir, File mainZipFile) throws IOException {
+        java.util.List<File> zips = new java.util.ArrayList<>();
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isDirectory()) {
+                    zips.addAll(findZipFilesRecursively(f, mainZipFile));
+                } else if (f.getName().toLowerCase().endsWith(".zip")) {
+                    if (!f.getCanonicalPath().equals(mainZipFile.getCanonicalPath())) {
+                        zips.add(f);
+                    }
+                }
+            }
+        }
+        return zips;
     }
 }
