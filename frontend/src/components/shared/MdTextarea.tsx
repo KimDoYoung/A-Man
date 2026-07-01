@@ -83,6 +83,18 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 updateContent(textarea, start, end, table, table.length, 0);
                 break;
             }
+            case 'h1':
+                updateContent(textarea, start, end, `# ${selectedText}`, 2, 0);
+                break;
+            case 'h2':
+                updateContent(textarea, start, end, `## ${selectedText}`, 3, 0);
+                break;
+            case 'h3':
+                updateContent(textarea, start, end, `### ${selectedText}`, 4, 0);
+                break;
+            case 'code':
+                updateContent(textarea, start, end, `\`${selectedText}\``, 1, 1);
+                break;
         }
         setMenuPos((prev) => ({ ...prev, visible: false }));
     };
@@ -184,10 +196,18 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 onSave?.();
                 return;
             }
-            if (['b', 'l', '0', '9', ','].includes(key)) {
+            if (['b', 'l', '0', '9', ',', '1', '2', '3', 'e'].includes(key)) {
                 e.preventDefault();
                 const actionMap: Record<string, string> = {
-                    b: 'bold', l: 'link', '0': 'bullet', '9': 'number', ',': 'table'
+                    b: 'bold',
+                    l: 'link',
+                    '0': 'bullet',
+                    '9': 'number',
+                    ',': 'table',
+                    '1': 'h1',
+                    '2': 'h2',
+                    '3': 'h3',
+                    'e': 'code'
                 };
                 handleAction(actionMap[key]);
             }
@@ -257,9 +277,14 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
             {/* 커스텀 컨텍스트 메뉴 */}
             {menuPos.visible && (
                 <ul
-                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-md py-1 text-[11px] w-40 font-sans font-medium"
+                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-md py-1 text-[11px] w-48 font-sans font-medium"
                     style={{ top: menuPos.y, left: menuPos.x }}
                 >
+                    <ContextMenuItem label="제목 1 (H1)" shortcut="Ctrl+1" onClick={() => handleAction('h1')} />
+                    <ContextMenuItem label="제목 2 (H2)" shortcut="Ctrl+2" onClick={() => handleAction('h2')} />
+                    <ContextMenuItem label="제목 3 (H3)" shortcut="Ctrl+3" onClick={() => handleAction('h3')} />
+                    <ContextMenuItem label="인라인 코드" shortcut="Ctrl+E" onClick={() => handleAction('code')} />
+                    <hr className="my-1 border-gray-100" />
                     <ContextMenuItem label="굵게 (Bold)" shortcut="Ctrl+B" onClick={() => handleAction('bold')} />
                     <ContextMenuItem label="링크 (Link)" shortcut="Ctrl+L" onClick={() => handleAction('link')} />
                     <hr className="my-1 border-gray-100" />

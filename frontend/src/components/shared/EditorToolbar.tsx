@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette } from 'lucide-react'
+import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -88,6 +88,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const [phraseOpen, setPhraseOpen] = useState(false)
   const [templateOpen, setTemplateOpen] = useState(false)
   const [colorOpen, setColorOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const emojiPanelRef = useRef<HTMLDivElement>(null)
   const symbolPanelRef = useRef<HTMLDivElement>(null)
@@ -253,21 +254,21 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <button
           onClick={() => insertMarkdown('# ')}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
-          title="H1 헤더 추가"
+          title="H1 헤더 추가 (Ctrl + 1)"
         >
           H1
         </button>
         <button
           onClick={() => insertMarkdown('## ')}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
-          title="H2 헤더 추가"
+          title="H2 헤더 추가 (Ctrl + 2)"
         >
           H2
         </button>
         <button
           onClick={() => insertMarkdown('### ')}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
-          title="H3 헤더 추가"
+          title="H3 헤더 추가 (Ctrl + 3)"
         >
           H3
         </button>
@@ -275,14 +276,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <button
           onClick={() => insertMarkdown('**', '**')}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="굵게"
+          title="굵게 (Ctrl + B)"
         >
           <Bold className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => insertMarkdown('`', '`')}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="인라인 코드"
+          title="인라인 코드 (Ctrl + E)"
         >
           <Code className="w-3.5 h-3.5" />
         </button>
@@ -338,28 +339,28 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <button
           onClick={insertBullet}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="글머리 기호 (Ctrl+0)"
+          title="글머리 기호 (Ctrl + 0)"
         >
           <List className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={insertNumber}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="번호 매기기 (Ctrl+9)"
+          title="번호 매기기 (Ctrl + 9)"
         >
           <ListOrdered className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={insertLink}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="링크 삽입 (Ctrl+L)"
+          title="링크 삽입 (Ctrl + L)"
         >
           <Link className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={selectAndUploadImage}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="이미지 업로드 및 삽입"
+          title="이미지 업로드 및 삽입 (Ctrl + V 붙여넣기 지원)"
         >
           <Image className="w-3.5 h-3.5" />
         </button>
@@ -534,23 +535,131 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         />
       </div>
 
-      {/* 미리보기 토글 */}
-      <button
-        onClick={() => setPreviewOpen(!previewOpen)}
-        className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
-      >
-        {previewOpen ? (
-          <>
-            <EyeOff className="w-3.5 h-3.5" />
-            {/* <span>숨기기</span> */}
-          </>
-        ) : (
-          <>
-            <Eye className="w-3.5 h-3.5" />
-            {/* <span>보이기</span> */}
-          </>
-        )}
-      </button>
+      {/* 도움말 및 미리보기 영역 */}
+      <div className="flex items-center space-x-1.5 border-l border-gray-200 pl-3">
+        {/* 도움말 버튼 */}
+        <button
+          onClick={() => setHelpOpen(true)}
+          className="p-1.5 hover:bg-gray-200 rounded text-gray-600 flex items-center justify-center cursor-pointer"
+          title="단축키 및 에디터 도움말"
+        >
+          <HelpCircle className="w-4 h-4 text-slate-500 hover:text-slate-700" />
+        </button>
+
+        {/* 미리보기 토글 */}
+        <button
+          onClick={() => setPreviewOpen(!previewOpen)}
+          className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
+        >
+          {previewOpen ? (
+            <>
+              <EyeOff className="w-3.5 h-3.5" />
+            </>
+          ) : (
+            <>
+              <Eye className="w-3.5 h-3.5" />
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* 단축키 및 에디터 도움말 모달 */}
+      {helpOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] transition-all duration-300">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <h3 className="text-sm font-bold text-slate-950 flex items-center space-x-1.5">
+                <HelpCircle className="w-4.5 h-4.5 text-indigo-650" />
+                <span>에디터 단축키 및 마크다운 도움말</span>
+              </h3>
+              <button
+                onClick={() => setHelpOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded-md text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4 text-xs text-gray-600 custom-scroll">
+              <div>
+                <h4 className="font-bold text-slate-900 mb-2 text-xs flex items-center">
+                  <span className="w-1.5 h-3 bg-indigo-500 rounded-xs mr-1.5 inline-block"></span>
+                  단축키 목록
+                </h4>
+                <div className="border border-gray-100 rounded-lg overflow-hidden">
+                  <table className="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-gray-100 text-slate-500 font-semibold">
+                        <th className="px-3 py-2">기능</th>
+                        <th className="px-3 py-2">단축키</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {[
+                        { name: '변경사항 저장하기', keys: ['Ctrl', 'S'] },
+                        { name: '제목 1 (H1) 헤더 적용', keys: ['Ctrl', '1'] },
+                        { name: '제목 2 (H2) 헤더 적용', keys: ['Ctrl', '2'] },
+                        { name: '제목 3 (H3) 헤더 적용', keys: ['Ctrl', '3'] },
+                        { name: '굵게 (Bold) 텍스트 감싸기', keys: ['Ctrl', 'B'] },
+                        { name: '인라인 코드 (`...`) 감싸기', keys: ['Ctrl', 'E'] },
+                        { name: '글머리 기호 리스트 변환', keys: ['Ctrl', '0'] },
+                        { name: '번호 매기기 리스트 변환', keys: ['Ctrl', '9'] },
+                        { name: '마크다운 표 (Table) 삽입', keys: ['Ctrl', ','] },
+                        { name: '마크다운 링크 ([텍스트](URL)) 삽입', keys: ['Ctrl', 'L'] },
+                      ].map((item) => (
+                        <tr key={item.name} className="hover:bg-slate-50/50">
+                          <td className="px-3 py-1.5 font-medium text-slate-700">{item.name}</td>
+                          <td className="px-3 py-1.5">
+                            {item.keys.map((k, i) => (
+                              <React.Fragment key={k}>
+                                {i > 0 && <span className="mx-1 text-slate-400 font-normal">+</span>}
+                                <kbd className="px-1.5 py-0.5 text-[9px] font-semibold text-slate-800 bg-slate-100 border border-slate-200 rounded-md shadow-xs font-mono">
+                                  {k}
+                                </kbd>
+                              </React.Fragment>
+                            ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-slate-900 mb-2 text-xs flex items-center">
+                  <span className="w-1.5 h-3 bg-indigo-500 rounded-xs mr-1.5 inline-block"></span>
+                  편리한 편집 꿀팁
+                </h4>
+                <ul className="list-disc list-inside space-y-2 pl-1.5 text-slate-600 leading-relaxed text-[11px]">
+                  <li>
+                    <strong className="text-slate-800">들여쓰기 및 내어쓰기 (Tab / Shift + Tab)</strong>: 
+                    텍스트 블록을 전체 드래그한 상태에서 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Tab</kbd> 키를 누르면 줄 시작 부분에 들여쓰기가 추가되고, 
+                    <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Shift+Tab</kbd> 키를 누르면 들여쓰기가 한 단계 제거됩니다.
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">클립보드 이미지 직접 붙여넣기 (Ctrl + V)</strong>: 
+                    화면 캡처나 클립보드에 복사된 이미지 파일을 에디터 내부에서 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Ctrl+V</kbd>로 즉시 붙여넣어 서버에 자동 업로드하고 마크다운 이미지 코드를 추가할 수 있습니다.
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">우클릭 커스텀 메뉴</strong>: 
+                    마크다운 편집창 안에서 마우스 우클릭을 하면 단축키 지원 메뉴가 팝업되어, 클릭만으로 다양한 태그를 쉽게 넣을 수 있습니다.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end border-t border-gray-100 pt-3 mt-4">
+              <button
+                onClick={() => setHelpOpen(false)}
+                className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs cursor-pointer transition-colors"
+              >
+                도움말 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

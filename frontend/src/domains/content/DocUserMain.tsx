@@ -191,7 +191,7 @@ const DocUserMain: React.FC = () => {
         const rect = containerRef.current.getBoundingClientRect()
         const relativeX = e.clientX - rect.left
         const percent = (relativeX / rect.width) * 100
-        setPreviewWidthPercent(Math.max(20, Math.min(percent, 80)))
+        setPreviewWidthPercent(Math.max(10, Math.min(percent, 90)))
       }
     }
 
@@ -587,7 +587,7 @@ const DocUserMain: React.FC = () => {
               >
                 {/* 왼쪽: 에디터 */}
                 <div
-                  className="bg-white flex flex-col border-r border-gray-200"
+                  className="bg-white flex flex-col border-r border-gray-200 shrink-0"
                   style={{ width: previewOpen ? `${previewWidthPercent}%` : '100%' }}
                 >
                   {/* 에디터 툴바 */}
