@@ -15,8 +15,21 @@ const AboutPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [historyList, setHistoryList] = useState<HistoryItem[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [appVersion, setAppVersion] = useState<string>('0.0.1')
 
   useEffect(() => {
+    // 1. 버전 정보 가져오기
+    axios.get<{ version: string }>('/aman/health')
+      .then(res => {
+        if (res.data && res.data.version) {
+          setAppVersion(res.data.version)
+        }
+      })
+      .catch(err => {
+        console.error('버전 정보를 가져오는 중 오류가 발생했습니다:', err)
+      })
+
+    // 2. 히스토리 정보 가져오기
     axios.get<HistoryItem[]>('/aman/history')
       .then(res => {
         if (Array.isArray(res.data) && res.data.length > 0) {
@@ -52,18 +65,18 @@ const AboutPage: React.FC = () => {
         <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
           
           {/* 히어로 헤더 섹션 */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-slate-800 text-white border border-indigo-500/20 p-8 shadow-xl">
-            <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-gray-100 via-gray-200 to-slate-200 text-slate-850 border border-gray-300/60 p-8 shadow-xs">
+            <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-slate-300/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-white text-xs font-semibold backdrop-blur-xs">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-200/50 border border-slate-300/60 text-slate-700 text-xs font-semibold backdrop-blur-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>AssetERP 매뉴얼 시스템 (A-Man)</span>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                  A-Man System <span className="text-indigo-200 text-2xl font-mono">v0.0.1</span>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
+                  A-Man System <span className="text-indigo-650 text-2xl font-mono">v{appVersion}</span>
                 </h1>
-                <p className="text-indigo-100 text-sm md:text-base max-w-2xl leading-relaxed font-normal">
+                <p className="text-slate-600 text-sm md:text-base max-w-2xl leading-relaxed font-normal">
                   일반 사용자에게는 AssetERP 3단계 메뉴 체계에 맞춘 도움말을 제공하고, 
                   한국펀드서비스 작성자에게는 웹 기반 WYSIWYG 마크다운 에디터 환경을 제공하는 통합 매뉴얼 시스템입니다.
                 </p>
@@ -72,31 +85,31 @@ const AboutPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-3 shrink-0">
                 <button
                   onClick={() => navigate('/admin')}
-                  className="px-4 py-2.5 bg-white text-indigo-700 hover:bg-indigo-50 text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-4 py-2.5 bg-slate-800 text-white hover:bg-slate-900 text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4 text-white" />
                   <span>문서 편집으로 돌아가기</span>
                 </button>
               </div>
             </div>
 
             {/* 기본 정보 배지 */}
-            <div className="mt-8 pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-              <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15">
-                <span className="text-indigo-200 block mb-1 font-medium">개발 시작일</span>
-                <span className="font-semibold text-white">2026.06.22 ~</span>
+            <div className="mt-8 pt-6 border-t border-gray-300/50 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-gray-300/40 shadow-3xs">
+                <span className="text-slate-500 block mb-1 font-medium">개발 시작일</span>
+                <span className="font-semibold text-slate-800">2026.06.22 ~</span>
               </div>
-              <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15">
-                <span className="text-indigo-200 block mb-1 font-medium">배포 아티팩트</span>
-                <span className="font-semibold text-amber-300 font-mono">aman.war</span>
+              <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-gray-300/40 shadow-3xs">
+                <span className="text-slate-500 block mb-1 font-medium">배포 아티팩트</span>
+                <span className="font-semibold text-indigo-650 font-mono">aman.war</span>
               </div>
-              <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15">
-                <span className="text-indigo-200 block mb-1 font-medium">운영 WAS 서버</span>
-                <span className="font-semibold text-sky-200">Apache Tomcat 8.5</span>
+              <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-gray-300/40 shadow-3xs">
+                <span className="text-slate-500 block mb-1 font-medium">운영 WAS 서버</span>
+                <span className="font-semibold text-sky-700">Apache Tomcat 8.5</span>
               </div>
-              <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-xl border border-white/15">
-                <span className="text-indigo-200 block mb-1 font-medium">데이터베이스</span>
-                <span className="font-semibold text-emerald-300">SQLite3 (Single File)</span>
+              <div className="bg-white/80 backdrop-blur-md p-3.5 rounded-xl border border-gray-300/40 shadow-3xs">
+                <span className="text-slate-500 block mb-1 font-medium">데이터베이스</span>
+                <span className="font-semibold text-emerald-700">SQLite3 (Single File)</span>
               </div>
             </div>
           </div>

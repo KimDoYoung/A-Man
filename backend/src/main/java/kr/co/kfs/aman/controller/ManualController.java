@@ -12,17 +12,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
-import java.util.Collections;
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/manual")
 public class ManualController {
+
+    @Value("${spring.application.version:1.0.0}")
+    private String appVersion;
 
     private final PageRepository pageRepository;
     private final FolderRepository folderRepository;
@@ -183,20 +187,42 @@ public class ManualController {
         footerHtml.append("</div>\n");
 
         boolean isBlank = systemSettings.getBoolean("LINK_BLANK", true);
-        String targetBlankScript = isBlank ?
+        String targetBlankScript = 
             "    <script>\n" +
             "        document.addEventListener('DOMContentLoaded', function() {\n" +
+            (isBlank ?
             "            var links = document.querySelectorAll('.container a, .navigation-footer a');\n" +
             "            for (var i = 0; i < links.length; i++) {\n" +
-            "                // breadcrumbs와 footer의 자체 이동 링크는 새 창이 아닌 현재 창으로 가도록 제외\n" +
             "                if (links[i].closest('.breadcrumbs') || links[i].closest('.navigation-footer')) {\n" +
             "                    continue;\n" +
             "                }\n" +
             "                links[i].setAttribute('target', '_blank');\n" +
             "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
-            "            }\n" +
+            "            }\n" : "") +
+            "            var pres = document.querySelectorAll('pre');\n" +
+            "            pres.forEach(function(pre) {\n" +
+            "                var codeEl = pre.querySelector('code');\n" +
+            "                if (!codeEl) return;\n" +
+            "                var button = document.createElement('button');\n" +
+            "                button.className = 'copy-btn';\n" +
+            "                button.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg> <span>Copy</span>';\n" +
+            "                button.addEventListener('click', function() {\n" +
+            "                    var text = codeEl.innerText;\n" +
+            "                    navigator.clipboard.writeText(text).then(function() {\n" +
+            "                        button.classList.add('copied');\n" +
+            "                        button.querySelector('span').innerText = 'Copied!';\n" +
+            "                        setTimeout(function() {\n" +
+            "                            button.classList.remove('copied');\n" +
+            "                            button.querySelector('span').innerText = 'Copy';\n" +
+            "                        }, 2000);\n" +
+            "                    }).catch(function(err) {\n" +
+            "                        console.error('Failed to copy: ', err);\n" +
+            "                    });\n" +
+            "                });\n" +
+            "                pre.appendChild(button);\n" +
+            "            });\n" +
             "        });\n" +
-            "    </script>\n" : "";
+            "    </script>\n";
 
         String fullHtml = 
             "<!DOCTYPE html>\n" +
@@ -232,12 +258,41 @@ public class ManualController {
             "            border: 1px solid #e2e8f0;\n" +
             "        }\n" +
             "        pre {\n" +
-            "            background-color: #0f172a;\n" +
-            "            color: #f8fafc;\n" +
+            "            background-color: #f1f5f9;\n" +
+            "            color: #1e293b;\n" +
             "            padding: 16px;\n" +
             "            border-radius: 8px;\n" +
             "            overflow-x: auto;\n" +
             "            margin: 16px 0;\n" +
+            "            border: 1px solid #cbd5e1;\n" +
+            "            position: relative;\n" +
+            "        }\n" +
+            "        .copy-btn {\n" +
+            "            position: absolute;\n" +
+            "            top: 8px;\n" +
+            "            right: 8px;\n" +
+            "            padding: 4px 8px;\n" +
+            "            background-color: #ffffff;\n" +
+            "            border: 1px solid #cbd5e1;\n" +
+            "            border-radius: 4px;\n" +
+            "            font-size: 11px;\n" +
+            "            color: #475569;\n" +
+            "            cursor: pointer;\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            gap: 4px;\n" +
+            "            opacity: 0.7;\n" +
+            "            transition: opacity 0.2s, background-color 0.2s;\n" +
+            "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n" +
+            "        }\n" +
+            "        .copy-btn:hover {\n" +
+            "            opacity: 1;\n" +
+            "            background-color: #f8fafc;\n" +
+            "        }\n" +
+            "        .copy-btn.copied {\n" +
+            "            background-color: #10b981;\n" +
+            "            color: #ffffff;\n" +
+            "            border-color: #10b981;\n" +
             "        }\n" +
             "        pre code {\n" +
             "            background-color: transparent;\n" +
@@ -273,10 +328,17 @@ public class ManualController {
             "            border-left: 4px solid #6366f1;\n" +
             "            padding: 6px 16px;\n" +
             "            margin: 16px 0;\n" +
-            "            background-color: #f8fafc;\n" +
-            "            color: #475569;\n" +
+            "            background-color: #f9fafb;\n" +
+            "            color: #4b5563;\n" +
             "            font-style: italic;\n" +
-            "            border-radius: 0 4px 4px 0;\n" +
+            "            border-radius: 0 6px 6px 0;\n" +
+            "            font-size: 13px;\n" +
+            "        }\n" +
+            "        blockquote p:first-child {\n" +
+            "            margin-top: 0;\n" +
+            "        }\n" +
+            "        blockquote p:last-child {\n" +
+            "            margin-bottom: 0;\n" +
             "        }\n" +
             "        img {\n" +
             "            max-width: 100%;\n" +
@@ -400,7 +462,7 @@ public class ManualController {
     }
 
     @GetMapping(value = "/help", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
-    public ResponseEntity<String> getHelpPage() {
+    public ResponseEntity<String> getHelpPage(javax.servlet.http.HttpServletRequest request) {
         try (java.io.InputStream is = getClass().getResourceAsStream("/help/doc-user-help.md")) {
             if (is == null) {
                 return ResponseEntity.status(404).body(
@@ -416,21 +478,46 @@ public class ManualController {
                 bos.write(buffer, 0, len);
             }
             String markdown = bos.toString("UTF-8");
+            markdown = markdown.replace("[version]", appVersion);
             String parsedBody = parseMarkdownToHtml(markdown);
-            // Rewrite local image references to go through our help image endpoint
-            parsedBody = parsedBody.replaceAll("src=\"\\./", "src=\"/aman/manual/help/image/");
+            // Rewrite local image references to go through our help image endpoint dynamically using context path
+            String contextPath = request.getContextPath();
+            parsedBody = parsedBody.replaceAll("src=\"\\./", "src=\"" + contextPath + "/manual/help/image/");
 
             boolean isBlank = systemSettings.getBoolean("LINK_BLANK", true);
-            String targetBlankScript = isBlank ?
+            String targetBlankScript = 
                 "    <script>\n" +
                 "        document.addEventListener('DOMContentLoaded', function() {\n" +
+                (isBlank ?
                 "            var links = document.querySelectorAll('.container a');\n" +
                 "            for (var i = 0; i < links.length; i++) {\n" +
                 "                links[i].setAttribute('target', '_blank');\n" +
                 "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
-                "            }\n" +
+                "            }\n" : "") +
+                "            var pres = document.querySelectorAll('pre');\n" +
+                "            pres.forEach(function(pre) {\n" +
+                "                var codeEl = pre.querySelector('code');\n" +
+                "                if (!codeEl) return;\n" +
+                "                var button = document.createElement('button');\n" +
+                "                button.className = 'copy-btn';\n" +
+                "                button.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg> <span>Copy</span>';\n" +
+                "                button.addEventListener('click', function() {\n" +
+                "                    var text = codeEl.innerText;\n" +
+                "                    navigator.clipboard.writeText(text).then(function() {\n" +
+                "                        button.classList.add('copied');\n" +
+                "                        button.querySelector('span').innerText = 'Copied!';\n" +
+                "                        setTimeout(function() {\n" +
+                "                            button.classList.remove('copied');\n" +
+                "                            button.querySelector('span').innerText = 'Copy';\n" +
+                "                        }, 2000);\n" +
+                "                    }).catch(function(err) {\n" +
+                "                        console.error('Failed to copy: ', err);\n" +
+                "                    });\n" +
+                "                });\n" +
+                "                pre.appendChild(button);\n" +
+                "            });\n" +
                 "        });\n" +
-                "    </script>\n" : "";
+                "    </script>\n";
 
             String fullHtml = 
                 "<!DOCTYPE html>\n" +
@@ -507,10 +594,17 @@ public class ManualController {
                 "            border-left: 4px solid #6366f1;\n" +
                 "            padding: 6px 16px;\n" +
                 "            margin: 16px 0;\n" +
-                "            background-color: #f8fafc;\n" +
-                "            color: #475569;\n" +
+                "            background-color: #f9fafb;\n" +
+                "            color: #4b5563;\n" +
                 "            font-style: italic;\n" +
-                "            border-radius: 0 4px 4px 0;\n" +
+                "            border-radius: 0 6px 6px 0;\n" +
+                "            font-size: 13px;\n" +
+                "        }\n" +
+                "        blockquote p:first-child {\n" +
+                "            margin-top: 0;\n" +
+                "        }\n" +
+                "        blockquote p:last-child {\n" +
+                "            margin-bottom: 0;\n" +
                 "        }\n" +
                 "        img {\n" +
                 "            max-width: 100%;\n" +
@@ -569,7 +663,11 @@ public class ManualController {
         }
 
         MutableDataSet options = new MutableDataSet();
-        options.set(Parser.EXTENSIONS, Collections.singletonList(TablesExtension.create()));
+        options.set(Parser.EXTENSIONS, java.util.Arrays.asList(
+            TablesExtension.create(),
+            StrikethroughExtension.create()
+        ));
+        options.set(HtmlRenderer.SOFT_BREAK, "<br />\n");
 
         Parser parser = Parser.builder(options).build();
         HtmlRenderer renderer = HtmlRenderer.builder(options).build();
