@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import getCaretCoordinates from 'textarea-caret';
 
 interface Props {
     value: string;
@@ -14,17 +15,113 @@ interface MenuPosition {
     visible: boolean;
 }
 
+interface Asset {
+    id?: number
+    atype: 'EMOJI' | 'PHRASE' | 'TEMPLATE' | 'SYMBOL'
+    name: string
+    value: string
+}
+
+const FALLBACK_EMOJIS: Asset[] = [
+    { atype: 'EMOJI', name: 'Double Exclamation', value: '‼️' },
+    { atype: 'EMOJI', name: 'Exclamation', value: '❗' },
+    { atype: 'EMOJI', name: 'Checkmark Thin', value: '✔️' },
+    { atype: 'EMOJI', name: 'Flag', value: '🚩' },
+    { atype: 'EMOJI', name: 'Right Arrow', value: '➡️' },
+    { atype: 'EMOJI', name: 'Memo', value: '📝' },
+    { atype: 'EMOJI', name: 'Play Button', value: '▶️' },
+    { atype: 'EMOJI', name: 'Red Circle', value: '🔴' },
+    { atype: 'EMOJI', name: 'Blue Diamond', value: '🔷' },
+    { atype: 'EMOJI', name: 'Blue Circle', value: '🔵' },
+    { atype: 'EMOJI', name: 'Point Right', value: '👉' },
+    { atype: 'EMOJI', name: 'Prohibited', value: '🚫' },
+    { atype: 'EMOJI', name: 'Question Mark', value: '❓' },
+    { atype: 'EMOJI', name: 'Light Bulb', value: '💡' },
+    { atype: 'EMOJI', name: 'Fire', value: '🔥' },
+    { atype: 'EMOJI', name: 'Sparkles', value: '✨' },
+    { atype: 'EMOJI', name: 'Tada', value: '🎉' },
+    { atype: 'EMOJI', name: 'Pin', value: '📌' },
+    { atype: 'EMOJI', name: 'Warning Triangle', value: '⚠️' },
+    { atype: 'EMOJI', name: 'Checkmark Thick', value: '✅' },
+    { atype: 'EMOJI', name: 'Cross Mark', value: '❌' },
+    { atype: 'EMOJI', name: 'Speech Balloon', value: '💬' },
+    { atype: 'EMOJI', name: 'Thumbs Up', value: '👍' }
+];
+
+const FALLBACK_SYMBOLS: Asset[] = [
+    { atype: 'SYMBOL', name: 'Reference Sign (※)', value: '※' },
+    { atype: 'SYMBOL', name: 'Black Square (■)', value: '■' },
+    { atype: 'SYMBOL', name: 'Black Right-Pointing Triangle (▶)', value: '▶' },
+    { atype: 'SYMBOL', name: 'White Circle (○)', value: '○' },
+    { atype: 'SYMBOL', name: 'Black Circle (●)', value: '●' },
+    { atype: 'SYMBOL', name: 'Black Star (★)', value: '★' },
+    { atype: 'SYMBOL', name: 'White Star (☆)', value: '☆' },
+    { atype: 'SYMBOL', name: 'Right Arrow (➔)', value: '➔' },
+    { atype: 'SYMBOL', name: 'Checkmark (✓)', value: '✓' }
+];
+
 const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: externalRef }) => {
     const [form, setForm] = useState({ content: value });
     const [menuPos, setMenuPos] = useState<MenuPosition>({ x: 0, y: 0, visible: false });
     const internalRef = useRef<HTMLTextAreaElement>(null);
     const textareaRef = externalRef || internalRef;
 
-    // 메뉴 외부 클릭 시 닫기
+    const [emojis, setEmojis] = useState<Asset[]>([]);
+    const [symbols, setSymbols] = useState<Asset[]>([]);
+    const [phrases, setPhrases] = useState<Asset[]>([]);
+    const [panelState, setPanelState] = useState<{
+        type: 'emoji' | 'symbol' | 'phrase' | null;
+        x: number;
+        y: number;
+    }>({ type: null, x: 0, y: 0 });
+    const [focusedIndex, setFocusedIndex] = useState(0);
+
+    // 메뉴 및 패널 외부 클릭 시 닫기
     useEffect(() => {
-        const handleClick = () => setMenuPos((prev) => ({ ...prev, visible: false }));
+        const handleClick = () => {
+            setMenuPos((prev) => ({ ...prev, visible: false }));
+            setPanelState((prev) => ({ ...prev, type: null }));
+        };
         window.addEventListener('click', handleClick);
         return () => window.removeEventListener('click', handleClick);
+    }, []);
+
+    // 에셋 목록 로드
+    useEffect(() => {
+        axios.get<Asset[]>('/aman/assets')
+            .then(res => {
+                const data = res.data;
+                const emRaw = data.filter(x => x.atype === 'EMOJI');
+                const emParsed: Asset[] = [];
+                if (emRaw.length > 0) {
+                    emRaw.forEach(asset => {
+                        const parts = asset.value.split(',').map(s => s.trim()).filter(Boolean);
+                        parts.forEach((val, idx) => {
+                            emParsed.push({ atype: 'EMOJI', name: `${asset.name}-${idx}`, value: val });
+                        });
+                    });
+                }
+                const syRaw = data.filter(x => x.atype === 'SYMBOL');
+                const syParsed: Asset[] = [];
+                if (syRaw.length > 0) {
+                    syRaw.forEach(asset => {
+                        const parts = asset.value.split(',').map(s => s.trim()).filter(Boolean);
+                        parts.forEach((val, idx) => {
+                            syParsed.push({ atype: 'SYMBOL', name: `${asset.name}-${idx}`, value: val });
+                        });
+                    });
+                }
+                const ph = data.filter(x => x.atype === 'PHRASE');
+                
+                setEmojis(emParsed.length > 0 ? emParsed : FALLBACK_EMOJIS);
+                setSymbols(syParsed.length > 0 ? syParsed : FALLBACK_SYMBOLS);
+                setPhrases(ph);
+            })
+            .catch(err => {
+                console.error('Failed to load assets in MdTextarea:', err);
+                setEmojis(FALLBACK_EMOJIS);
+                setSymbols(FALLBACK_SYMBOLS);
+            });
     }, []);
 
     // 외부 value가 변경될 때 내부 state 동기화
@@ -74,6 +171,12 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         const end = textarea.selectionEnd;
         const selectedText = form.content.substring(start, end);
 
+        if (action.startsWith('insert-')) {
+            const value = action.substring(7);
+            updateContent(textarea, start, end, value, value.length, 0);
+            return;
+        }
+
         switch (action) {
             case 'bold':
                 updateContent(textarea, start, end, `**${selectedText}**`, 2, 2);
@@ -99,9 +202,132 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 updateContent(textarea, start, end, numList, 3, 0);
                 break;
             }
+            case 'quote': {
+                const quoteText = selectedText.split('\n').map((l) => `> ${l}`).join('\n');
+                updateContent(textarea, start, end, quoteText, 2, 0);
+                break;
+            }
             case 'table': {
-                const table = `\n| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Row 1    | Row 2    | Row 3    |\n`;
-                updateContent(textarea, start, end, table, table.length, 0);
+                if (!selectedText || !selectedText.trim()) {
+                    // 아무것도 선택되어 있지 않은 경우: 기본 템플릿 삽입
+                    const table = `\n| Column 1 | Column 2 | Column 3 |\n|----------|----------|----------|\n| Row 1    | Row 2    | Row 3    |\n`;
+                    updateContent(textarea, start, end, table, table.length, 0);
+                } else {
+                    // 선택된 텍스트가 있는 경우: 마크다운 테이블 또는 CSV/TSV 판단
+                    const lines = selectedText.split('\n').map(l => l.trim()).filter(Boolean);
+                    if (lines.length === 0) {
+                        alert('선택된 영역에 텍스트가 없습니다.');
+                        break;
+                    }
+                    
+                    let hasSeparator = false;
+                    let pipeLineCount = 0;
+                    
+                    const isSeparatorRow = (line: string): boolean => {
+                        return /^[|:\s-]+$/.test(line) && line.includes('-');
+                    };
+                    
+                    for (const line of lines) {
+                        if (isSeparatorRow(line)) {
+                            hasSeparator = true;
+                        }
+                        if (line.includes('|')) {
+                            pipeLineCount++;
+                        }
+                    }
+                    
+                    const isMarkdownTable = hasSeparator && pipeLineCount >= 2;
+                    
+                    if (isMarkdownTable) {
+                        // 1. 마크다운 테이블 -> CSV 변환
+                        const csvLines: string[] = [];
+                        const escapeCSVField = (val: string): string => {
+                            const cleaned = val.trim();
+                            if (cleaned.includes(',') || cleaned.includes('"') || cleaned.includes('\n')) {
+                                return `"${cleaned.replace(/"/g, '""')}"`;
+                            }
+                            return cleaned;
+                        };
+                        
+                        for (const line of lines) {
+                            if (isSeparatorRow(line)) continue;
+                            if (!line.includes('|')) continue;
+                            let content = line;
+                            if (content.startsWith('|')) content = content.substring(1);
+                            if (content.endsWith('|')) content = content.substring(0, content.length - 1);
+                            
+                            const cells = content.split('|').map(c => c.trim());
+                            const escaped = cells.map(escapeCSVField);
+                            csvLines.push(escaped.join(','));
+                        }
+                        
+                        const csvResult = csvLines.join('\n');
+                        updateContent(textarea, start, end, csvResult, csvResult.length, 0);
+                    } else {
+                        // 2. CSV/TSV -> 마크다운 테이블 변환
+                        let delimiter = ',';
+                        const firstLine = lines[0];
+                        const commaCount = (firstLine.match(/,/g) || []).length;
+                        const tabCount = (firstLine.match(/\t/g) || []).length;
+                        
+                        if (commaCount === 0 && tabCount === 0) {
+                            alert('선택한 텍스트가 마크다운 표 또는 CSV 형식이 아닙니다.\n(쉼표나 탭으로 구분된 최소 2열 이상의 데이터여야 표 변환이 가능합니다.)');
+                            break;
+                        }
+                        
+                        if (tabCount > commaCount) {
+                            delimiter = '\t';
+                        }
+                        
+                        const rows: string[][] = [];
+                        for (const line of lines) {
+                            const row: string[] = [];
+                            let current = '';
+                            let inQuotes = false;
+                            
+                            for (let i = 0; i < line.length; i++) {
+                                const char = line[i];
+                                if (char === '"') {
+                                    inQuotes = !inQuotes;
+                                } else if (char === delimiter && !inQuotes) {
+                                    row.push(current.trim());
+                                    current = '';
+                                } else {
+                                    current += char;
+                                }
+                            }
+                            row.push(current.trim());
+                            rows.push(row);
+                        }
+                        
+                        const colCounts = rows.map(r => r.length);
+                        const minCols = Math.min(...colCounts);
+                        
+                        if (minCols <= 1) {
+                            alert('선택한 텍스트가 마크다운 표 또는 CSV 형식이 아닙니다.\n(최소 2열 이상의 데이터여야 표 변환이 가능합니다.)');
+                            break;
+                        }
+                        
+                        const maxCols = Math.max(...colCounts);
+                        
+                        // 헤더 행
+                        const headerRow = rows[0];
+                        while (headerRow.length < maxCols) headerRow.push('');
+                        const headerLine = `| ` + headerRow.map(cell => cell || ' ').join(' | ') + ` |`;
+                        
+                        // 구분선 행
+                        const separatorLine = `| ` + Array(maxCols).fill('---').join(' | ') + ` |`;
+                        
+                        // 데이터 행
+                        const dataLines = rows.slice(1).map(row => {
+                            while (row.length < maxCols) row.push('');
+                            return `| ` + row.map(cell => cell || ' ').join(' | ') + ` |`;
+                        });
+                        
+                        const tableMarkdown = `\n${headerLine}\n${separatorLine}\n${dataLines.join('\n')}\n`;
+                        updateContent(textarea, start, end, tableMarkdown, tableMarkdown.length, 0);
+                    }
+                }
                 break;
             }
             case 'h1':
@@ -153,6 +379,57 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // 패널이 열려 있는 상태에서의 키 입력 가로채기
+        if (panelState.type !== null) {
+            const items = panelState.type === 'emoji' ? emojis
+                        : panelState.type === 'symbol' ? symbols
+                        : phrases;
+            
+            const cols = panelState.type === 'emoji' ? 8
+                       : panelState.type === 'symbol' ? 6
+                       : 2;
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                setPanelState({ type: null, x: 0, y: 0 });
+                return;
+            }
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                setFocusedIndex((prev) => (prev + 1) % items.length);
+                return;
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                setFocusedIndex((prev) => (prev - 1 + items.length) % items.length);
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setFocusedIndex((prev) => {
+                    const next = prev + cols;
+                    return next < items.length ? next : prev;
+                });
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setFocusedIndex((prev) => {
+                    const next = prev - cols;
+                    return next >= 0 ? next : prev;
+                });
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (items[focusedIndex]) {
+                    handleAction(`insert-${items[focusedIndex].value}`);
+                }
+                setPanelState({ type: null, x: 0, y: 0 });
+                return;
+            }
+        }
+
         // Alt + Z: 현재 라인을 화면 중앙으로 올리는 스크롤 기능
         if (e.altKey && e.key.toLowerCase() === 'z') {
             e.preventDefault();
@@ -188,6 +465,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
 
                 const bulletMatch = currentLineText.match(/^(\s*)-\s+(.+)$/);
                 const numberMatch = currentLineText.match(/^(\s*)(\d+)\.\s+(.+)$/);
+                const quoteMatch = currentLineText.match(/^(\s*)>\s+(.+)$/);
 
                 if (bulletMatch) {
                     insertText = `\n${bulletMatch[1]}- `;
@@ -196,6 +474,8 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     const currentNum = parseInt(numberMatch[2], 10);
                     const nextNum = currentNum + 1;
                     insertText = `\n${indent}${nextNum}. `;
+                } else if (quoteMatch) {
+                    insertText = `\n${quoteMatch[1]}> `;
                 }
 
                 let successful = false;
@@ -254,6 +534,21 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     return;
                 }
 
+                // 2.2 빈 인용구인 경우 (목록 종료)
+                const emptyQuoteMatch = currentLineText.match(/^(\s*)>\s*$/);
+                if (emptyQuoteMatch) {
+                    e.preventDefault();
+                    // 현재 라인의 '> '을 제거하고 줄을 비운다.
+                    const updated = value.substring(0, lineStart) + emptyQuoteMatch[1] + value.substring(start);
+                    setForm({ content: updated });
+                    onChange(updated);
+                    setTimeout(() => {
+                        textarea.focus();
+                        textarea.setSelectionRange(lineStart + emptyQuoteMatch[1].length, lineStart + emptyQuoteMatch[1].length);
+                    }, 0);
+                    return;
+                }
+
                 // 3. 내용이 있는 글머리 기호인 경우 (다음 라인 자동 추가)
                 const bulletMatch = currentLineText.match(/^(\s*)-\s+(.+)$/);
                 if (bulletMatch) {
@@ -288,6 +583,32 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     const currentNum = parseInt(numberMatch[2], 10);
                     const nextNum = currentNum + 1;
                     const insertText = `\n${indent}${nextNum}. `;
+                    
+                    let successful = false;
+                    try {
+                        successful = document.execCommand('insertText', false, insertText);
+                    } catch (err) {
+                        console.warn('execCommand failed:', err);
+                    }
+
+                    if (!successful) {
+                        const updated = value.substring(0, start) + insertText + value.substring(start);
+                        setForm({ content: updated });
+                        onChange(updated);
+                        setTimeout(() => {
+                            textarea.focus();
+                            textarea.setSelectionRange(start + insertText.length, start + insertText.length);
+                        }, 0);
+                    }
+                    return;
+                }
+
+                // 5. 내용이 있는 인용구인 경우 (다음 라인 자동 추가)
+                const quoteMatch = currentLineText.match(/^(\s*)>\s+(.+)$/);
+                if (quoteMatch) {
+                    e.preventDefault();
+                    const indent = quoteMatch[1];
+                    const insertText = `\n${indent}> `;
                     
                     let successful = false;
                     try {
@@ -424,17 +745,60 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 }
                 return;
             }
-            if (['b', 'l', '0', '9', ',', '1', '2', '3', 'i'].includes(key)) {
+            if (['1', '2', '3'].includes(key)) {
+                e.preventDefault();
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+
+                // 1. caret의 textarea 내 오프셋 획득
+                const caret = getCaretCoordinates(textarea, start);
+                
+                // 2. textarea의 뷰포트 절대 좌표 획득
+                const rect = textarea.getBoundingClientRect();
+                
+                // 3. 뷰포트 기준 X, Y 좌표 계산
+                let x = rect.left + caret.left - textarea.scrollLeft;
+                let y = rect.top + caret.top - textarea.scrollTop + 16;
+
+                // 패널 타입 매핑
+                const typeMap: Record<string, 'emoji' | 'symbol' | 'phrase'> = {
+                    '1': 'emoji',
+                    '2': 'symbol',
+                    '3': 'phrase'
+                };
+                const type = typeMap[key];
+
+                const panelWidths = { emoji: 192, symbol: 160, phrase: 320 };
+                const panelHeights = { emoji: 120, symbol: 120, phrase: 240 };
+                const w = panelWidths[type];
+                const h = panelHeights[type];
+
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                if (x + w > viewportWidth) {
+                    x = viewportWidth - w - 10;
+                }
+                if (y + h > viewportHeight) {
+                    y = rect.top + caret.top - textarea.scrollTop - h - 4;
+                }
+                if (x < 0) x = 10;
+                if (y < 0) y = 10;
+
+                setFocusedIndex(0);
+                setPanelState({ type, x, y });
+                return;
+            }
+
+            if (['b', 'l', '0', '9', '8', ',', 'i'].includes(key)) {
                 e.preventDefault();
                 const actionMap: Record<string, string> = {
                     b: 'bold',
                     l: 'link',
                     '0': 'bullet',
                     '9': 'number',
+                    '8': 'quote',
                     ',': 'table',
-                    '1': 'h1',
-                    '2': 'h2',
-                    '3': 'h3',
                     'i': 'italic'
                 };
                 handleAction(actionMap[key]);
@@ -508,10 +872,6 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-md py-1 text-[11px] w-48 font-sans font-medium"
                     style={{ top: menuPos.y, left: menuPos.x }}
                 >
-                    <ContextMenuItem label="제목 1 (H1)" shortcut="Ctrl+1" onClick={() => handleAction('h1')} />
-                    <ContextMenuItem label="제목 2 (H2)" shortcut="Ctrl+2" onClick={() => handleAction('h2')} />
-                    <ContextMenuItem label="제목 3 (H3)" shortcut="Ctrl+3" onClick={() => handleAction('h3')} />
-                    <hr className="my-1 border-gray-100" />
                     <ContextMenuItem label="굵게 (Bold)" shortcut="Ctrl+B" onClick={() => handleAction('bold')} />
                     <ContextMenuItem label="기울임 (Italic)" shortcut="Ctrl+I" onClick={() => handleAction('italic')} />
                     <ContextMenuItem label="취소선 (Strike)" shortcut="Ctrl+Shift+S" onClick={() => handleAction('strike')} />
@@ -521,6 +881,91 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     <ContextMenuItem label="번호 매기기" shortcut="Ctrl+9" onClick={() => handleAction('number')} />
                     <ContextMenuItem label="표 (Table)" shortcut="Ctrl+," onClick={() => handleAction('table')} />
                 </ul>
+            )}
+
+            {/* 커서 근처 이모지 패널 */}
+            {panelState.type === 'emoji' && (
+                <div
+                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-2 grid grid-cols-8 gap-1 w-48 animate-in fade-in zoom-in-95 duration-100"
+                    style={{ top: panelState.y, left: panelState.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {emojis.map((item, idx) => (
+                        <button
+                            key={`${item.id || idx}`}
+                            onClick={() => {
+                                handleAction(`insert-${item.value}`);
+                                setPanelState({ type: null, x: 0, y: 0 });
+                            }}
+                            className={`w-5.5 h-5.5 flex items-center justify-center text-base rounded transition-all cursor-pointer ${
+                                focusedIndex === idx 
+                                ? 'bg-indigo-100 ring-2 ring-indigo-500 font-bold scale-110 z-10' 
+                                : 'hover:bg-gray-100'
+                            }`}
+                            title={item.name}
+                        >
+                            {item.value}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* 커서 근처 특수문자 패널 */}
+            {panelState.type === 'symbol' && (
+                <div
+                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-2 grid grid-cols-6 gap-1 w-40 animate-in fade-in zoom-in-95 duration-100"
+                    style={{ top: panelState.y, left: panelState.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {symbols.map((item, idx) => (
+                        <button
+                            key={`${item.id || idx}`}
+                            onClick={() => {
+                                handleAction(`insert-${item.value}`);
+                                setPanelState({ type: null, x: 0, y: 0 });
+                            }}
+                            className={`w-5.5 h-5.5 flex items-center justify-center text-sm rounded transition-all cursor-pointer font-mono text-gray-700 ${
+                                focusedIndex === idx 
+                                ? 'bg-indigo-100 ring-2 ring-indigo-500 font-bold scale-110 z-10' 
+                                : 'hover:bg-gray-100'
+                            }`}
+                            title={item.name}
+                        >
+                            {item.value}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* 커서 근처 상용구 패널 */}
+            {panelState.type === 'phrase' && (
+                <div
+                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-2.5 max-h-60 overflow-y-auto w-80 flex flex-wrap gap-1.5 animate-in fade-in zoom-in-95 duration-100"
+                    style={{ top: panelState.y, left: panelState.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {phrases.length === 0 ? (
+                        <div className="w-full text-center text-xs text-gray-400 py-2">등록된 상용구가 없습니다.</div>
+                    ) : (
+                        phrases.map((item, idx) => (
+                            <button
+                                key={item.id}
+                                onClick={() => {
+                                    handleAction(`insert-${item.value}`);
+                                    setPanelState({ type: null, x: 0, y: 0 });
+                                }}
+                                className={`px-2 py-0.5 border rounded text-xs font-semibold cursor-pointer transition-all max-w-[130px] truncate ${
+                                    focusedIndex === idx 
+                                    ? 'bg-purple-100 border-purple-400 text-purple-900 ring-2 ring-purple-400 font-bold scale-105 z-10' 
+                                    : 'bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700'
+                                }`}
+                                title={`${item.name}\n---\n${item.value}`}
+                            >
+                                {item.name}
+                            </button>
+                        ))
+                    )}
+                </div>
             )}
         </div>
     );

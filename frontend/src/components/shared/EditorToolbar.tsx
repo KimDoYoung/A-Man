@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X } from 'lucide-react'
+import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X, Quote } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -255,7 +255,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   return (
     <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-1">
         {/* 제목 헤더(H) 드롭다운 */}
         <div className="relative" ref={headingPanelRef}>
           <button
@@ -331,6 +331,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           title="번호 매기기 (Ctrl + 9)"
         >
           <ListOrdered className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => insertMarkdown('> ')}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
+          title="인용구 (Ctrl + 8)"
+        >
+          <Quote className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={insertLink}
@@ -627,15 +634,16 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                     <tbody className="divide-y divide-gray-100">
                       {[
                         { name: '변경사항 저장하기', keys: ['Ctrl', 'S'] },
-                        { name: '제목 1 (H1) 헤더 적용', keys: ['Ctrl', '1'] },
-                        { name: '제목 2 (H2) 헤더 적용', keys: ['Ctrl', '2'] },
-                        { name: '제목 3 (H3) 헤더 적용', keys: ['Ctrl', '3'] },
+                        { name: '이모지 삽입 패널 (커서 위치)', keys: ['Ctrl', '1'] },
+                        { name: '특수기호 삽입 패널 (커서 위치)', keys: ['Ctrl', '2'] },
+                        { name: '상용구 삽입 패널 (커서 위치)', keys: ['Ctrl', '3'] },
+                        { name: '인용구 (Blockquote) 변환', keys: ['Ctrl', '8'] },
                         { name: '굵게 (Bold) 텍스트 감싸기', keys: ['Ctrl', 'B'] },
                         { name: '기울임 (Italic) 텍스트 감싸기', keys: ['Ctrl', 'I'] },
                         { name: '취소선 (Strike) 텍스트 감싸기', keys: ['Ctrl', 'Shift', 'S'] },
                         { name: '글머리 기호 리스트 변환', keys: ['Ctrl', '0'] },
                         { name: '번호 매기기 리스트 변환', keys: ['Ctrl', '9'] },
-                        { name: '마크다운 표 (Table) 삽입', keys: ['Ctrl', ','] },
+                        { name: '표 ↔ CSV 양방향 전환 / 표 삽입', keys: ['Ctrl', ','] },
                         { name: '마크다운 링크 ([텍스트](URL)) 삽입', keys: ['Ctrl', 'L'] },
                       ].map((item) => (
                         <tr key={item.name} className="hover:bg-slate-50/50">
@@ -667,6 +675,18 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                     <strong className="text-slate-800">들여쓰기 및 내어쓰기 (Tab / Shift + Tab)</strong>: 
                     텍스트 블록을 전체 드래그한 상태에서 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Tab</kbd> 키를 누르면 줄 시작 부분에 들여쓰기가 추가되고, 
                     <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Shift+Tab</kbd> 키를 누르면 들여쓰기가 한 단계 제거됩니다.
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">편집 행 화면 중앙 정렬 (Alt + Z)</strong>: 
+                    화면 최하단 부근에서 편집할 때 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Alt+Z</kbd> 키를 누르면 현재 작성 중인 행이 즉시 화면 중앙으로 스크롤 조정되어 편안하게 작성하실 수 있습니다.
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">강제 다음 줄 줄바꿈 (Shift + Enter)</strong>: 
+                    커서가 단어 중간 등 어디에 위치해 있든 상관없이 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Shift+Enter</kbd>를 누르면 즉시 다음 줄로 커서가 이동하여 편리합니다.
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">목록 및 인용구 자동 줄바꿈 연속</strong>: 
+                    글머리 기호(<code className="font-mono text-[10px] text-indigo-650 bg-indigo-50 px-1 rounded">-</code>), 번호 매기기, 인용구(<code className="font-mono text-[10px] text-indigo-650 bg-indigo-50 px-1 rounded">&gt;</code>) 줄에서 엔터를 치면 다음 줄에도 기호가 자동 생성됩니다. 내용이 비어있을 때 엔터를 한 번 더 치면 기호가 지워지며 목록 작성이 종료됩니다.
                   </li>
                   <li>
                     <strong className="text-slate-800">클립보드 이미지 직접 붙여넣기 (Ctrl + V)</strong>: 

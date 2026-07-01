@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
+import remarkBreaks from 'remark-breaks'
 import { Copy, Check } from 'lucide-react'
 
 const extractText = (node: any): string => {
@@ -50,7 +51,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
 
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={[remarkGfm, remarkBreaks]}
       rehypePlugins={[rehypeRaw]}
       components={{
         h1: ({ children, ...props }) => (
@@ -69,7 +70,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
           </h3>
         ),
         blockquote: ({ children, ...props }) => (
-          <blockquote className="border-l-4 border-indigo-500 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r" {...props}>
+          <blockquote className="border-l-4 border-indigo-500 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r [&_p:last-child]:mb-0" {...props}>
             {children}
           </blockquote>
         ),
@@ -110,7 +111,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
           </th>
         ),
         td: ({ children, ...props }) => (
-          <td className="px-4 py-2.5 text-slate-650 border-b border-slate-150" {...props}>
+          <td className="px-4 py-2.5 text-slate-650 border-b border-slate-200" {...props}>
             {children}
           </td>
         ),
@@ -141,9 +142,9 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
           );
         },
         img: ({ src, alt, ...props }) => (
-          <div className="my-4 flex justify-center">
+          <span className="my-4 flex justify-center">
             <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm" {...props} />
-          </div>
+          </span>
         ),
         a: ({ href, children, ...props }) => {
           const isBlank = !settings || settings.LINK_BLANK !== 'false';

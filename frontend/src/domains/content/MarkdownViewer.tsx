@@ -5,6 +5,7 @@ import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
+import remarkBreaks from 'remark-breaks'
 import { Copy, Check } from 'lucide-react'
 
 const extractText = (node: any): string => {
@@ -140,7 +141,7 @@ const MarkdownViewer: React.FC = () => {
 
     return (
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeRaw]}
         components={{
           h1: ({ children, ...props }) => (
@@ -172,7 +173,7 @@ const MarkdownViewer: React.FC = () => {
           ),
           blockquote: ({ children, ...props }) => (
             <blockquote
-              className="border-l-4 border-indigo-500 pl-4 py-1.5 my-4 bg-gray-50/50 rounded-r-md text-gray-600 italic text-sm"
+              className="border-l-4 border-indigo-500 pl-4 py-1.5 my-4 bg-gray-50/50 rounded-r-md text-gray-600 italic text-sm [&_p:last-child]:mb-0"
               {...props}
             >
               {children}
@@ -215,7 +216,7 @@ const MarkdownViewer: React.FC = () => {
             </th>
           ),
           td: ({ children, ...props }) => (
-            <td className="px-4 py-2.5 text-gray-750 border-b border-gray-150" {...props}>
+            <td className="px-4 py-2.5 text-gray-750 border-b border-gray-200" {...props}>
               {children}
             </td>
           ),
@@ -249,9 +250,9 @@ const MarkdownViewer: React.FC = () => {
             )
           },
           img: ({ src, alt, ...props }) => (
-            <div className="my-4 flex justify-center">
+            <span className="my-4 flex justify-center">
               <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm" {...props} />
-            </div>
+            </span>
           ),
           a: ({ href, children, ...props }) => {
             const isBlank = settings.LINK_BLANK !== 'false';

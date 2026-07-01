@@ -151,7 +151,7 @@ const FolderManagePage: React.FC = () => {
     setStatusMsg({ type, text })
     setTimeout(() => {
       setStatusMsg({ type: '', text: '' })
-    }, 4000)
+    }, 3000)
   }
 
   // Helper to build a clean 3-level tree from flat data
