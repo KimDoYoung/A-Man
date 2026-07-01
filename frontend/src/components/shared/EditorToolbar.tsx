@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Code, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X } from 'lucide-react'
+import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -89,6 +89,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const [templateOpen, setTemplateOpen] = useState(false)
   const [colorOpen, setColorOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [headingOpen, setHeadingOpen] = useState(false)
 
   const emojiPanelRef = useRef<HTMLDivElement>(null)
   const symbolPanelRef = useRef<HTMLDivElement>(null)
@@ -96,6 +97,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const templatePanelRef = useRef<HTMLDivElement>(null)
   const colorPanelRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const headingPanelRef = useRef<HTMLDivElement>(null)
 
   const [downloading, setDownloading] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -241,6 +243,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       if (colorPanelRef.current && !colorPanelRef.current.contains(target)) {
         setColorOpen(false)
       }
+      if (headingPanelRef.current && !headingPanelRef.current.contains(target)) {
+        setHeadingOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
@@ -251,27 +256,44 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   return (
     <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
       <div className="flex items-center space-x-2">
-        <button
-          onClick={() => insertMarkdown('# ')}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
-          title="H1 헤더 추가 (Ctrl + 1)"
-        >
-          H1
-        </button>
-        <button
-          onClick={() => insertMarkdown('## ')}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
-          title="H2 헤더 추가 (Ctrl + 2)"
-        >
-          H2
-        </button>
-        <button
-          onClick={() => insertMarkdown('### ')}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-xs px-1 cursor-pointer"
-          title="H3 헤더 추가 (Ctrl + 3)"
-        >
-          H3
-        </button>
+        {/* 제목 헤더(H) 드롭다운 */}
+        <div className="relative" ref={headingPanelRef}>
+          <button
+            onClick={() => setHeadingOpen(!headingOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 font-bold text-sm px-1.5 cursor-pointer flex items-center space-x-0.5 ${headingOpen ? 'bg-indigo-50 text-indigo-650 border border-indigo-100' : ''}`}
+            title="제목 헤더 삽입 (H1 ~ H6)"
+          >
+            <span>H</span>
+            {/* <span className="text-[9px] text-gray-400 font-normal">▼</span> */}
+          </button>
+          {headingOpen && (
+            <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg w-48 z-50 flex flex-col gap-1">
+              <div className="text-[10px] text-gray-400 font-semibold px-1 mb-1 select-none">제목 크기 선택</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { label: 'H1', prefix: '# ', title: '제목 1 (Ctrl+1)', bg: 'bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-800 border border-slate-200' },
+                  { label: 'H2', prefix: '## ', title: '제목 2 (Ctrl+2)', bg: 'bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-800 border border-slate-200' },
+                  { label: 'H3', prefix: '### ', title: '제목 3 (Ctrl+3)', bg: 'bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-slate-800 border border-slate-200' },
+                  { label: 'H4', prefix: '#### ', title: '제목 4', bg: 'bg-slate-50 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 border border-slate-200/60' },
+                  { label: 'H5', prefix: '##### ', title: '제목 5', bg: 'bg-slate-50 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 border border-slate-200/60' },
+                  { label: 'H6', prefix: '###### ', title: '제목 6', bg: 'bg-slate-50 hover:bg-indigo-100 hover:text-indigo-700 text-slate-700 border border-slate-200/60' }
+                ].map((h) => (
+                  <button
+                    key={h.label}
+                    onClick={() => {
+                      insertMarkdown(h.prefix)
+                      setHeadingOpen(false)
+                    }}
+                    className={`px-2 py-1 rounded text-center text-xs font-bold transition-all duration-150 cursor-pointer shadow-xs ${h.bg}`}
+                    title={h.title}
+                  >
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <span className="w-px h-3.5 bg-gray-300"></span>
         <button
           onClick={() => insertMarkdown('**', '**')}
@@ -281,11 +303,41 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <Bold className="w-3.5 h-3.5" />
         </button>
         <button
-          onClick={() => insertMarkdown('`', '`')}
+          onClick={() => insertMarkdown('*', '*')}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="인라인 코드 (Ctrl + E)"
+          title="기울임 (Ctrl + I)"
         >
-          <Code className="w-3.5 h-3.5" />
+          <Italic className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => insertMarkdown('~~', '~~')}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
+          title="취소선 (Ctrl + Shift + S)"
+        >
+          <Strikethrough className="w-3.5 h-3.5" />
+        </button>
+
+        <span className="w-px h-3.5 bg-gray-300"></span>
+        <button
+          onClick={insertBullet}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
+          title="글머리 기호 (Ctrl + 0)"
+        >
+          <List className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={insertNumber}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
+          title="번호 매기기 (Ctrl + 9)"
+        >
+          <ListOrdered className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={insertLink}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
+          title="링크 삽입 (Ctrl + L)"
+        >
+          <Link className="w-3.5 h-3.5" />
         </button>
 
         {/* 글자 색상 드롭다운 */}
@@ -335,28 +387,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
             </div>
           )}
         </div>
-        <span className="w-px h-3.5 bg-gray-300"></span>
-        <button
-          onClick={insertBullet}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="글머리 기호 (Ctrl + 0)"
-        >
-          <List className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={insertNumber}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="번호 매기기 (Ctrl + 9)"
-        >
-          <ListOrdered className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={insertLink}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
-          title="링크 삽입 (Ctrl + L)"
-        >
-          <Link className="w-3.5 h-3.5" />
-        </button>
         <button
           onClick={selectAndUploadImage}
           className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
@@ -601,7 +631,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         { name: '제목 2 (H2) 헤더 적용', keys: ['Ctrl', '2'] },
                         { name: '제목 3 (H3) 헤더 적용', keys: ['Ctrl', '3'] },
                         { name: '굵게 (Bold) 텍스트 감싸기', keys: ['Ctrl', 'B'] },
-                        { name: '인라인 코드 (`...`) 감싸기', keys: ['Ctrl', 'E'] },
+                        { name: '기울임 (Italic) 텍스트 감싸기', keys: ['Ctrl', 'I'] },
+                        { name: '취소선 (Strike) 텍스트 감싸기', keys: ['Ctrl', 'Shift', 'S'] },
                         { name: '글머리 기호 리스트 변환', keys: ['Ctrl', '0'] },
                         { name: '번호 매기기 리스트 변환', keys: ['Ctrl', '9'] },
                         { name: '마크다운 표 (Table) 삽입', keys: ['Ctrl', ','] },

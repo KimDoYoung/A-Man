@@ -42,8 +42,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .authorizeRequests()
-                // /admin 경로는 JWT 인증 필요
-                .antMatchers("/admin/**").authenticated()
+                // /admin 하위 경로이되, 브라우저 새로고침(text/html)이 아닌 API 요청(JSON 등)에만 JWT 인증을 적용
+                .requestMatchers(request -> {
+                    String uri = request.getRequestURI();
+                    String accept = request.getHeader("Accept");
+                    boolean isAdminPath = uri.contains("/admin/");
+                    boolean isHtmlRequest = accept != null && accept.contains("text/html");
+                    return isAdminPath && !isHtmlRequest;
+                }).authenticated()
                 // 그 외 모든 요청(일반 도움말, static 자원, /health, /history 등)은 접근 허용
                 .anyRequest().permitAll()
             .and()

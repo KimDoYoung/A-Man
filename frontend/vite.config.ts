@@ -21,7 +21,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/aman': {
+      // 백엔드 API 요청 경로들만 명시적으로 백엔드로 프록시 처리
+      '^/aman/(assets|auth|content|docs|folder|manual|admin/settings|health|history|user)': {
         target: 'http://localhost:8686',
         changeOrigin: true,
       },

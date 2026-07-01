@@ -40,11 +40,26 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         cursorOffsetStart = 2,
         cursorOffsetEnd = 2
     ) => {
-        const updated = form.content.substring(0, start) + newText + form.content.substring(end);
-        setForm({ content: updated });
-        onChange(updated);
+        // 1. 포커스 및 치환 범위 지정
+        textarea.focus();
+        textarea.setSelectionRange(start, end);
 
-        // 포커스 유지 및 커서 위치 조정
+        // 2. execCommand 실행 (성공 시 브라우저가 input 이벤트를 내보내 자동으로 handleChange가 작동함)
+        let successful = false;
+        try {
+            successful = document.execCommand('insertText', false, newText);
+        } catch (e) {
+            console.warn('execCommand failed, falling back to manual update:', e);
+        }
+
+        // 3. 만약 실패했다면 이전 방식대로 React 상태 강제 갱신
+        if (!successful) {
+            const updated = form.content.substring(0, start) + newText + form.content.substring(end);
+            setForm({ content: updated });
+            onChange(updated);
+        }
+
+        // 4. 커서 위치 재조정
         setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start + cursorOffsetStart, start + newText.length - cursorOffsetEnd);
@@ -62,6 +77,12 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         switch (action) {
             case 'bold':
                 updateContent(textarea, start, end, `**${selectedText}**`, 2, 2);
+                break;
+            case 'italic':
+                updateContent(textarea, start, end, `*${selectedText}*`, 1, 1);
+                break;
+            case 'strike':
+                updateContent(textarea, start, end, `~~${selectedText}~~`, 2, 2);
                 break;
             case 'link': {
                 const url = prompt('URL을 입력하세요:');
@@ -92,16 +113,33 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
             case 'h3':
                 updateContent(textarea, start, end, `### ${selectedText}`, 4, 0);
                 break;
-            case 'code':
-                updateContent(textarea, start, end, `\`${selectedText}\``, 1, 1);
-                break;
         }
         setMenuPos((prev) => ({ ...prev, visible: false }));
     };
 
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
-        setMenuPos({ x: e.pageX, y: e.pageY, visible: true });
+        
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        const menuWidth = 192; // w-48 (192px)
+        const menuHeight = 310; // 10 menu items and dividers, approx 310px
+
+        let x = clientX;
+        if (clientX + menuWidth > viewportWidth) {
+            x = viewportWidth - menuWidth - 10;
+        }
+
+        let y = clientY;
+        if (clientY + menuHeight > viewportHeight) {
+            y = clientY - menuHeight;
+            if (y < 0) y = 10;
+        }
+
+        setMenuPos({ x, y, visible: true });
     };
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -193,10 +231,16 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
             const key = e.key.toLowerCase();
             if (key === 's') {
                 e.preventDefault();
-                onSave?.();
+                if (e.shiftKey) {
+                    // Ctrl + Shift + S: 취소선 (Strike)
+                    handleAction('strike');
+                } else {
+                    // Ctrl + S: 저장
+                    onSave?.();
+                }
                 return;
             }
-            if (['b', 'l', '0', '9', ',', '1', '2', '3', 'e'].includes(key)) {
+            if (['b', 'l', '0', '9', ',', '1', '2', '3', 'i'].includes(key)) {
                 e.preventDefault();
                 const actionMap: Record<string, string> = {
                     b: 'bold',
@@ -207,7 +251,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     '1': 'h1',
                     '2': 'h2',
                     '3': 'h3',
-                    'e': 'code'
+                    'i': 'italic'
                 };
                 handleAction(actionMap[key]);
             }
@@ -283,9 +327,10 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     <ContextMenuItem label="제목 1 (H1)" shortcut="Ctrl+1" onClick={() => handleAction('h1')} />
                     <ContextMenuItem label="제목 2 (H2)" shortcut="Ctrl+2" onClick={() => handleAction('h2')} />
                     <ContextMenuItem label="제목 3 (H3)" shortcut="Ctrl+3" onClick={() => handleAction('h3')} />
-                    <ContextMenuItem label="인라인 코드" shortcut="Ctrl+E" onClick={() => handleAction('code')} />
                     <hr className="my-1 border-gray-100" />
                     <ContextMenuItem label="굵게 (Bold)" shortcut="Ctrl+B" onClick={() => handleAction('bold')} />
+                    <ContextMenuItem label="기울임 (Italic)" shortcut="Ctrl+I" onClick={() => handleAction('italic')} />
+                    <ContextMenuItem label="취소선 (Strike)" shortcut="Ctrl+Shift+S" onClick={() => handleAction('strike')} />
                     <ContextMenuItem label="링크 (Link)" shortcut="Ctrl+L" onClick={() => handleAction('link')} />
                     <hr className="my-1 border-gray-100" />
                     <ContextMenuItem label="글머리 기호" shortcut="Ctrl+0" onClick={() => handleAction('bullet')} />
