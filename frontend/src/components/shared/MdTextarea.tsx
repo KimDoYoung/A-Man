@@ -113,6 +113,16 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
             case 'h3':
                 updateContent(textarea, start, end, `### ${selectedText}`, 4, 0);
                 break;
+            case 'color-red':
+            case 'color-blue':
+            case 'color-orange':
+            case 'color-green': {
+                const color = action.split('-')[1];
+                const prefix = `<font color="${color}">`;
+                const suffix = `</font>`;
+                updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, prefix.length, suffix.length);
+                break;
+            }
         }
         setMenuPos((prev) => ({ ...prev, visible: false }));
     };
@@ -143,6 +153,163 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Alt + Z: 현재 라인을 화면 중앙으로 올리는 스크롤 기능
+        if (e.altKey && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            const textarea = e.currentTarget;
+            const text = form.content;
+            const start = textarea.selectionStart;
+
+            const lineCount = text.split('\n').length;
+            const currentLineNumber = text.substring(0, start).split('\n').length;
+
+            if (lineCount > 0) {
+                const targetScrollTop = (currentLineNumber / lineCount) * textarea.scrollHeight - (textarea.clientHeight / 2);
+                textarea.scrollTop = Math.max(0, Math.min(targetScrollTop, textarea.scrollHeight - textarea.clientHeight));
+            }
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            const textarea = e.currentTarget;
+            const value = form.content;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            if (e.shiftKey) {
+                e.preventDefault();
+                const nextNewline = value.indexOf('\n', start);
+                const lineEnd = nextNewline === -1 ? value.length : nextNewline;
+                const lastNewline = value.substring(0, start).lastIndexOf('\n');
+                const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+                const currentLineText = value.substring(lineStart, lineEnd);
+
+                let insertText = '\n';
+
+                const bulletMatch = currentLineText.match(/^(\s*)-\s+(.+)$/);
+                const numberMatch = currentLineText.match(/^(\s*)(\d+)\.\s+(.+)$/);
+
+                if (bulletMatch) {
+                    insertText = `\n${bulletMatch[1]}- `;
+                } else if (numberMatch) {
+                    const indent = numberMatch[1];
+                    const currentNum = parseInt(numberMatch[2], 10);
+                    const nextNum = currentNum + 1;
+                    insertText = `\n${indent}${nextNum}. `;
+                }
+
+                let successful = false;
+                try {
+                    textarea.setSelectionRange(lineEnd, lineEnd);
+                    successful = document.execCommand('insertText', false, insertText);
+                } catch (err) {
+                    console.warn('execCommand failed for Shift+Enter:', err);
+                }
+
+                if (!successful) {
+                    const updated = value.substring(0, lineEnd) + insertText + value.substring(lineEnd);
+                    setForm({ content: updated });
+                    onChange(updated);
+                    setTimeout(() => {
+                        textarea.focus();
+                        textarea.setSelectionRange(lineEnd + insertText.length, lineEnd + insertText.length);
+                    }, 0);
+                }
+                return;
+            }
+
+            // 선택 영역이 있을 때는 엔터 시 자동 목록을 적용하지 않고 기본 동작 처리
+            if (start === end) {
+                const lastNewline = value.substring(0, start).lastIndexOf('\n');
+                const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+                const currentLineText = value.substring(lineStart, start);
+
+                // 1. 빈 글머리 기호인 경우 (목록 종료)
+                const emptyBulletMatch = currentLineText.match(/^(\s*)-\s*$/);
+                if (emptyBulletMatch) {
+                    e.preventDefault();
+                    // 현재 라인의 '- '을 제거하고 줄을 비운다.
+                    const updated = value.substring(0, lineStart) + emptyBulletMatch[1] + value.substring(start);
+                    setForm({ content: updated });
+                    onChange(updated);
+                    setTimeout(() => {
+                        textarea.focus();
+                        textarea.setSelectionRange(lineStart + emptyBulletMatch[1].length, lineStart + emptyBulletMatch[1].length);
+                    }, 0);
+                    return;
+                }
+
+                // 2. 빈 번호 매기기인 경우 (목록 종료)
+                const emptyNumberMatch = currentLineText.match(/^(\s*)(\d+)\.\s*$/);
+                if (emptyNumberMatch) {
+                    e.preventDefault();
+                    // 현재 라인의 '숫자. '을 제거하고 줄을 비운다.
+                    const updated = value.substring(0, lineStart) + emptyNumberMatch[1] + value.substring(start);
+                    setForm({ content: updated });
+                    onChange(updated);
+                    setTimeout(() => {
+                        textarea.focus();
+                        textarea.setSelectionRange(lineStart + emptyNumberMatch[1].length, lineStart + emptyNumberMatch[1].length);
+                    }, 0);
+                    return;
+                }
+
+                // 3. 내용이 있는 글머리 기호인 경우 (다음 라인 자동 추가)
+                const bulletMatch = currentLineText.match(/^(\s*)-\s+(.+)$/);
+                if (bulletMatch) {
+                    e.preventDefault();
+                    const indent = bulletMatch[1];
+                    const insertText = `\n${indent}- `;
+                    
+                    let successful = false;
+                    try {
+                        successful = document.execCommand('insertText', false, insertText);
+                    } catch (err) {
+                        console.warn('execCommand failed:', err);
+                    }
+
+                    if (!successful) {
+                        const updated = value.substring(0, start) + insertText + value.substring(start);
+                        setForm({ content: updated });
+                        onChange(updated);
+                        setTimeout(() => {
+                            textarea.focus();
+                            textarea.setSelectionRange(start + insertText.length, start + insertText.length);
+                        }, 0);
+                    }
+                    return;
+                }
+
+                // 4. 내용이 있는 번호 매기기인 경우 (다음 라인 번호 자동 증가 추가)
+                const numberMatch = currentLineText.match(/^(\s*)(\d+)\.\s+(.+)$/);
+                if (numberMatch) {
+                    e.preventDefault();
+                    const indent = numberMatch[1];
+                    const currentNum = parseInt(numberMatch[2], 10);
+                    const nextNum = currentNum + 1;
+                    const insertText = `\n${indent}${nextNum}. `;
+                    
+                    let successful = false;
+                    try {
+                        successful = document.execCommand('insertText', false, insertText);
+                    } catch (err) {
+                        console.warn('execCommand failed:', err);
+                    }
+
+                    if (!successful) {
+                        const updated = value.substring(0, start) + insertText + value.substring(start);
+                        setForm({ content: updated });
+                        onChange(updated);
+                        setTimeout(() => {
+                            textarea.focus();
+                            textarea.setSelectionRange(start + insertText.length, start + insertText.length);
+                        }, 0);
+                    }
+                    return;
+                }
+            }
+        }
+
         if (e.key === 'Tab') {
             e.preventDefault();
             const textarea = e.currentTarget;
@@ -151,18 +318,18 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
             const text = form.content;
 
             if (start === end) {
-                // 선택 영역이 없는 경우: 현재 커서 위치에 \t 삽입
-                const updated = text.substring(0, start) + '\t' + text.substring(start);
+                // 선택 영역이 없는 경우: 현재 커서 위치에 공백 2칸('  ') 삽입
+                const updated = text.substring(0, start) + '  ' + text.substring(start);
                 setForm({ content: updated });
                 onChange(updated);
                 
-                // 커서 위치를 \t 뒤로 이동
+                // 커서 위치를 공백 2칸 뒤로 이동
                 setTimeout(() => {
                     textarea.focus();
-                    textarea.setSelectionRange(start + 1, start + 1);
+                    textarea.setSelectionRange(start + 2, start + 2);
                 }, 0);
             } else {
-                // 선택 영역이 있는 경우: 선택 범위가 속한 모든 라인의 처음에 \t 추가
+                // 선택 영역이 있는 경우: 선택 범위가 속한 모든 라인의 처음에 공백 2칸 추가
                 const beforeSelection = text.substring(0, start);
                 const afterSelection = text.substring(end);
 
@@ -178,7 +345,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 let newSelectionEnd = end;
 
                 if (e.shiftKey) {
-                    // Shift + Tab: 들여쓰기 제거
+                    // Shift + Tab: 들여쓰기 제거 (탭문자, 4칸공백, 2칸공백 대응)
                     let totalRemoved = 0;
 
                     const updatedLines = lines.map((line, idx) => {
@@ -207,12 +374,12 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     updatedTextToIndent = updatedLines.join('\n');
                     newSelectionEnd = end - totalRemoved;
                 } else {
-                    // Tab: 들여쓰기 추가 (\t)
-                    const updatedLines = lines.map((line) => '\t' + line);
+                    // Tab: 들여쓰기 추가 (공백 2칸)
+                    const updatedLines = lines.map((line) => '  ' + line);
                     updatedTextToIndent = updatedLines.join('\n');
                     
-                    newSelectionStart = start + 1;
-                    newSelectionEnd = end + lines.length;
+                    newSelectionStart = start + 2;
+                    newSelectionEnd = end + (lines.length * 2);
                 }
 
                 const updated = text.substring(0, lineStart) + updatedTextToIndent + afterSelection;
@@ -229,6 +396,23 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
 
         if (e.ctrlKey) {
             const key = e.key.toLowerCase();
+            if (e.shiftKey && ['r', 'b', 'o', 'g'].includes(key)) {
+                e.preventDefault();
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+
+                if (start !== end) {
+                    const colorMap: Record<string, string> = {
+                        r: 'red',
+                        b: 'blue',
+                        o: 'orange',
+                        g: 'green'
+                    };
+                    handleAction(`color-${colorMap[key]}`);
+                }
+                return;
+            }
             if (key === 's') {
                 e.preventDefault();
                 if (e.shiftKey) {
@@ -315,7 +499,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 onKeyDown={handleKeydown}
                 onPaste={handlePaste}
                 onContextMenu={handleContextMenu}
-                className="flex-1 w-full p-4 font-mono text-xs resize-none focus:outline-hidden leading-relaxed bg-white border border-gray-200 rounded-lg custom-scroll"
+                className="flex-1 w-full p-4 pb-[50vh] font-mono text-xs resize-none focus:outline-hidden leading-relaxed bg-white border border-gray-200 rounded-lg custom-scroll"
             />
 
             {/* 커스텀 컨텍스트 메뉴 */}

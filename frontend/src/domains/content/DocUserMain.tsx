@@ -643,7 +643,7 @@ const DocUserMain: React.FC = () => {
                       </span>
                     </div>
                     <div ref={previewContainerRef} className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
-                      <div className="prose max-w-none bg-white p-2 border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
+                      <div className="prose max-w-none bg-white p-2 pb-[50vh] border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
                         {renderMarkdownToHtml(pageContent, settings)}
                       </div>
                     </div>
