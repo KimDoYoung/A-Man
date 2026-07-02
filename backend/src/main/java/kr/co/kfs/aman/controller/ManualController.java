@@ -875,7 +875,7 @@ public class ManualController {
             "    <div class=\"container\">\n" +
             "        <div class=\"user-settings-wrapper\">\n" +
             "            <button class=\"settings-toggle-btn\" id=\"settingsToggleBtn\" title=\"화면 설정 조절\">\n" +
-            "                <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"3\" rx=\"2\"/><line x1=\"8\" x2=\"16\" y1=\"21\" y2=\"21\"/><line x1=\"12\" x2=\"12\" y1=\"17\" y2=\"21\"/></svg>\n" +
+            "                <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 17v4\"/><path d=\"m15.2 4.9-.9-.4\"/><path d=\"m15.2 7.1-.9.4\"/><path d=\"m16.9 3.2-.4-.9\"/><path d=\"m16.9 8.8-.4.9\"/><path d=\"m19.5 2.3-.4.9\"/><path d=\"m19.5 9.7-.4-.9\"/><path d=\"m21.7 4.5-.9.4\"/><path d=\"m21.7 7.5-.9-.4\"/><path d=\"M22 13v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7\"/><path d=\"M8 21h8\"/><circle cx=\"18\" cy=\"6\" r=\"3\"/></svg>\n" +
             "            </button>\n" +
             "            <div class=\"settings-panel\" id=\"settingsPanel\">\n" +
             "                <div class=\"setting-group\">\n" +
@@ -1132,6 +1132,9 @@ public class ManualController {
         if (markdown == null || markdown.trim().isEmpty()) {
             return "<p style='color:#888; font-style:italic;'>내용이 비어있습니다.</p>";
         }
+
+        // **텍스트(괄호)** 등 볼드 한글 파싱 에러 방지용 전처리
+        markdown = markdown.replaceAll("\\*\\*([^\\*]+?)\\*\\*", "<strong>$1</strong>");
 
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, java.util.Arrays.asList(

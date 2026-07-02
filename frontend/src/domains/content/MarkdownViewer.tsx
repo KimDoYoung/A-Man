@@ -181,6 +181,9 @@ const MarkdownViewer: React.FC = () => {
       return <p className="text-gray-400 italic">내용이 비어있습니다.</p>
     }
 
+    // **텍스트(괄호)** 형태 등의 볼드 파싱 에러를 우회하기 위해 <strong> 태그로 강제 치환
+    const processedMd = md.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+
     let headingIndex = 0;
 
     return (
@@ -314,7 +317,7 @@ const MarkdownViewer: React.FC = () => {
           }
         }}
       >
-        {md}
+        {processedMd}
       </ReactMarkdown>
     )
   }

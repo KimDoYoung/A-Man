@@ -49,6 +49,9 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
     return <p className="text-gray-400 italic">내용이 비어있습니다.</p>;
   }
 
+  // **텍스트(괄호)** 형태 등의 볼드 파싱 에러를 우회하기 위해 <strong> 태그로 강제 치환
+  const processedMd = md.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkBreaks]}
@@ -70,7 +73,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
           </h3>
         ),
         blockquote: ({ children, ...props }) => (
-          <blockquote className="border-l-4 border-indigo-500 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r [&_p:last-child]:mb-0" {...props}>
+          <blockquote className="border-l-4 border-gray-300 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r [&_p:last-child]:mb-0" {...props}>
             {children}
           </blockquote>
         ),
@@ -162,7 +165,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
         }
       }}
     >
-      {md}
+      {processedMd}
     </ReactMarkdown>
   )
 }

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>A-Man 매뉴얼 스탬퍼</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f5f5f5; }
+        #canvas-container { margin: 20px auto; max-width: 90%; overflow: auto; }
+        canvas { border: 2px dashed #ccc; background: #fff; cursor: crosshair; }
+        .controls { margin-top: 15px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>A-Man 웹 앱 매뉴얼 이미지 편집기 (싱글 HTML)</h2>
+    <input type="file" id="upload" accept="image/*">
+    <div class="controls">
+        <button id="reset-btn">숫자 초기화 (현재: <span id="num-indicator">1</span>)</button>
+        <button id="download-btn">편집된 이미지 다운로드</button>
+    </div>
+    <div id="canvas-container">
+        <canvas id="editorCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('editorCanvas');
+        const ctx = canvas.getContext('2d');
+        let currentNumber = 1;
+        let baseImage = new Image();
+
+        // 1. 이미지 로드 처리
+        document.getElementById('upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                baseImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        baseImage.onload = () => {
+            canvas.width = baseImage.width;
+            canvas.height = baseImage.height;
+            ctx.drawImage(baseImage, 0, 0);
+            currentNumber = 1;
+            document.getElementById('num-indicator').innerText = currentNumber;
+        };
+
+        // 2. 마우스 클릭 시 동그라미 숫자 그리기
+        canvas.addEventListener('click', (e) => {
+            if (!baseImage.src) return;
+
+            // 캔버스 내 실제 좌표 계산
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            // 동그라미(배경) 그리기 - ❶ 스타일 (검은색 원)
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, 2 * Math.PI); // 반지름 18px 크기
+            ctx.fillStyle = '#111111';
+            ctx.fill();
+
+            // 숫자(텍스트) 그리기
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(currentNumber, x, y + 1); // 미세 조정
+
+            // 번호 카운트 증가
+            currentNumber++;
+            document.getElementById('num-indicator').innerText = currentNumber;
+        });
+
+        // 3. 숫자 초기화
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if (baseImage.src) ctx.drawImage(baseImage, 0, 0); // 원본 다시 그리기
+            currentNumber = 1;
+            document.getElementById('num-indicator').innerText = currentNumber;
+        });
+
+        // 4. 최종 다운로드
+        document.getElementById('download-btn').addEventListener('click', () => {
+            if (!baseImage.src) return;
+            const link = document.createElement('a');
+            link.download = 'aman-manual-numbered.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
