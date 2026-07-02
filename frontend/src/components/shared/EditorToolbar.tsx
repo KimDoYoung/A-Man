@@ -607,7 +607,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           value={aka || ''}
           onChange={(e) => onAkaChange(e.target.value)}
           placeholder="예: 1110"
-          className="w-24 px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded focus:outline-hidden focus:border-indigo-500 font-mono text-gray-800"
+          className="w-20 px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded focus:outline-hidden focus:border-indigo-500 font-mono text-gray-800"
           title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /aman/manual/1110 으로 접근 가능)"
         />
       </div>
@@ -626,7 +626,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         {/* 미리보기 토글 */}
         <button
           onClick={() => setPreviewOpen(!previewOpen)}
-          className="px-2.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
+          className="px-1.5 py-1 bg-white hover:bg-gray-100 border border-gray-200 rounded-xs text-xs font-medium text-gray-600 flex items-center space-x-1 cursor-pointer"
+          title="미리보기토글(F9)"
         >
           {previewOpen ? (
             <>

@@ -159,7 +159,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)} 
             className="p-1.5 rounded-md hover:bg-gray-800 text-gray-400 transition-colors cursor-pointer"
-            title="메뉴 영역 토글"
+            title="메뉴 영역 토글(F4)"
           >
             <Menu className="w-5 h-5" />
           </button>
