@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useOutletContext } from 'react-router-dom'
+import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 import { OutletContextType, PageData, TocItem } from '@/types'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
@@ -44,6 +45,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
 const MarkdownViewer: React.FC = () => {
   const { page_id, folder_id } = useParams<{ page_id?: string; folder_id?: string }>()
   const { setTocData } = useOutletContext<OutletContextType>()
+  const { fontSize, contentWidth } = useUserLocalSettingStore()
   const [page, setPage] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
@@ -131,6 +133,48 @@ const MarkdownViewer: React.FC = () => {
     return toc
   }
 
+  const fontSizeClassMap = {
+    sm: {
+      p: 'text-xs',
+      li: 'text-xs',
+      h3: 'text-base',
+      h2: 'text-lg',
+      h1: 'text-xl',
+      table: 'text-xs'
+    },
+    base: {
+      p: 'text-sm',
+      li: 'text-sm',
+      h3: 'text-lg',
+      h2: 'text-xl',
+      h1: 'text-2xl',
+      table: 'text-sm'
+    },
+    lg: {
+      p: 'text-base',
+      li: 'text-base',
+      h3: 'text-xl',
+      h2: 'text-2xl',
+      h1: 'text-3xl',
+      table: 'text-base'
+    },
+    xl: {
+      p: 'text-lg',
+      li: 'text-lg',
+      h3: 'text-2xl',
+      h2: 'text-3xl',
+      h1: 'text-4xl',
+      table: 'text-lg'
+    }
+  }[fontSize] || {
+    p: 'text-sm',
+    li: 'text-sm',
+    h3: 'text-lg',
+    h2: 'text-xl',
+    h1: 'text-2xl',
+    table: 'text-sm'
+  }
+
   // 표준 마크다운 컴포넌트 렌더러
   const renderMarkdownToHtml = (md: string): React.ReactNode => {
     if (!md || !md.trim()) {
@@ -147,7 +191,7 @@ const MarkdownViewer: React.FC = () => {
           h1: ({ children, ...props }) => (
             <h1
               id={`heading-${headingIndex++}`}
-              className="text-2xl font-bold tracking-tight text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-100"
+              className={`${fontSizeClassMap.h1} font-bold tracking-tight text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-100`}
               {...props}
             >
               {children}
@@ -156,7 +200,7 @@ const MarkdownViewer: React.FC = () => {
           h2: ({ children, ...props }) => (
             <h2
               id={`heading-${headingIndex++}`}
-              className="text-xl font-bold tracking-tight text-gray-900 mt-6 mb-3"
+              className={`${fontSizeClassMap.h2} font-bold tracking-tight text-gray-900 mt-6 mb-3`}
               {...props}
             >
               {children}
@@ -165,7 +209,7 @@ const MarkdownViewer: React.FC = () => {
           h3: ({ children, ...props }) => (
             <h3
               id={`heading-${headingIndex++}`}
-              className="text-lg font-semibold text-gray-800 mt-4 mb-2"
+              className={`${fontSizeClassMap.h3} font-semibold text-gray-800 mt-4 mb-2`}
               {...props}
             >
               {children}
@@ -181,7 +225,7 @@ const MarkdownViewer: React.FC = () => {
           ),
           hr: (props) => <hr className="my-6 border-t border-gray-200" {...props} />,
           p: ({ children, ...props }) => (
-            <p className="text-gray-600 text-sm leading-relaxed mb-4" {...props}>
+            <p className={`text-gray-600 ${fontSizeClassMap.p} leading-relaxed mb-4`} {...props}>
               {children}
             </p>
           ),
@@ -196,13 +240,13 @@ const MarkdownViewer: React.FC = () => {
             </ol>
           ),
           li: ({ children, ...props }) => (
-            <li className="text-slate-650 text-sm mb-1" {...props}>
+            <li className={`text-slate-655 ${fontSizeClassMap.li} mb-1`} {...props}>
               {children}
             </li>
           ),
           table: ({ children, ...props }) => (
             <div className="overflow-x-auto my-4 border border-gray-200 rounded-lg shadow-xs">
-              <table className="min-w-full divide-y divide-gray-200 text-sm" {...props}>
+              <table className={`min-w-full divide-y divide-gray-200 ${fontSizeClassMap.table}`} {...props}>
                 {children}
               </table>
             </div>
@@ -300,8 +344,21 @@ const MarkdownViewer: React.FC = () => {
     )
   }
 
+  const fontSizeClass = {
+    sm: 'prose-sm',
+    base: 'prose-base',
+    lg: 'prose-lg',
+    xl: 'prose-xl'
+  }[fontSize] || 'prose-base'
+
+  const contentWidthClass = {
+    normal: 'max-w-5xl',
+    wide: 'max-w-7xl',
+    full: 'max-w-none'
+  }[contentWidth] || 'max-w-5xl'
+
   return (
-    <article className="prose max-w-5xl mx-auto">
+    <article className={`prose ${fontSizeClass} ${contentWidthClass} mx-auto`}>
       <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 pb-4 border-b border-gray-200 mb-6">
         {page.title}
       </h1>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, Pin, ShieldAlert } from 'lucide-react'
+import { Menu, Pin, ShieldAlert, Type, Maximize2 } from 'lucide-react'
+import { useUserLocalSettingStore, FontSize, ContentWidth } from '@/store/useUserLocalSettingStore'
 import axios from 'axios'
 import faviconImg from '../../assets/favicon.png'
 
@@ -21,6 +22,31 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
   const [siteName, setSiteName] = useState('AssetERP Docs')
   const [siteDescription, setSiteDescription] = useState('AssetERP 도움말 시스템')
   const [version, setVersion] = useState('0.0.1')
+
+  const { fontSize, contentWidth, setFontSize, setContentWidth } = useUserLocalSettingStore()
+
+  const fontSizes: FontSize[] = ['sm', 'base', 'lg', 'xl']
+  const contentWidths: ContentWidth[] = ['normal', 'wide', 'full']
+
+  const handleDecreaseFont = () => {
+    const idx = fontSizes.indexOf(fontSize)
+    if (idx > 0) {
+      setFontSize(fontSizes[idx - 1])
+    }
+  }
+
+  const handleIncreaseFont = () => {
+    const idx = fontSizes.indexOf(fontSize)
+    if (idx < fontSizes.length - 1) {
+      setFontSize(fontSizes[idx + 1])
+    }
+  }
+
+  const handleCycleWidth = () => {
+    const idx = contentWidths.indexOf(contentWidth)
+    const nextIdx = (idx + 1) % contentWidths.length
+    setContentWidth(contentWidths[nextIdx])
+  }
 
   useEffect(() => {
     axios.get('/aman/health')
@@ -80,6 +106,45 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
               - {siteDescription}
             </span>
           )}
+        </div>
+
+        {/* 사용자 화면 설정 조절기 (아이콘은 왼쪽에 배치) */}
+        <div className="hidden md:flex items-center space-x-2 ml-4 border-l border-gray-200 pl-4 shrink-0 select-none">
+          {/* 글자 크기 조절 */}
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-2 py-1 space-x-1 text-xs">
+            <Type className="w-3.5 h-3.5 text-gray-500 mr-1" />
+            <button 
+              onClick={handleDecreaseFont} 
+              disabled={fontSize === 'sm'}
+              className="px-1.5 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer font-bold"
+              title="글자 크기 축소"
+            >
+              -
+            </button>
+            <span className="text-[10px] text-gray-400 font-medium font-mono min-w-[24px] text-center">
+              {fontSize.toUpperCase()}
+            </span>
+            <button 
+              onClick={handleIncreaseFont} 
+              disabled={fontSize === 'xl'}
+              className="px-1.5 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer font-bold"
+              title="글자 크기 확대"
+            >
+              +
+            </button>
+          </div>
+
+          {/* 본문 너비 조절 */}
+          <button 
+            onClick={handleCycleWidth}
+            className="flex items-center bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-700 cursor-pointer transition-colors"
+            title="본문 가로 너비 전환"
+          >
+            <Maximize2 className="w-3.5 h-3.5 text-gray-500 mr-1.5" />
+            <span className="font-semibold text-[11px]">
+              폭: {contentWidth === 'normal' ? '보통' : contentWidth === 'wide' ? '넓게' : '꽉차게'}
+            </span>
+          </button>
         </div>
       </div>
       
