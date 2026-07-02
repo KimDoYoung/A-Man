@@ -3,7 +3,7 @@ import { BookOpen, Key, FileText, CheckCircle } from 'lucide-react'
 
 const NormalUserIntro: React.FC = () => {
   return (
-    <article className="prose max-w-3xl">
+    <article className="prose max-w-4xl mx-auto">
       <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 pb-4 border-b border-gray-200 mb-6">
         AssetERP 도움말 센터에 오신 것을 환영합니다
       </h1>
