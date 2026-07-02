@@ -224,6 +224,97 @@ public class ManualController {
             "        });\n" +
             "    </script>\n";
 
+        String settingsScript = 
+            "    <script>\n" +
+            "        (function() {\n" +
+            "            var fontSizes = ['sm', 'base', 'lg', 'xl'];\n" +
+            "            var contentWidths = ['normal', 'wide', 'full'];\n" +
+            "            var currentSettings = { fontSize: 'base', contentWidth: 'normal' };\n" +
+            "            function loadSettings() {\n" +
+            "                try {\n" +
+            "                    var saved = localStorage.getItem('manual-user-setting');\n" +
+            "                    if (saved) {\n" +
+            "                        var parsed = JSON.parse(saved);\n" +
+            "                        if (parsed.fontSize) currentSettings.fontSize = parsed.fontSize;\n" +
+            "                        if (parsed.contentWidth) currentSettings.contentWidth = parsed.contentWidth;\n" +
+            "                    }\n" +
+            "                } catch(e) {}\n" +
+            "            }\n" +
+            "            function saveSettings() {\n" +
+            "                try {\n" +
+            "                    localStorage.setItem('manual-user-setting', JSON.stringify(currentSettings));\n" +
+            "                } catch(e) {}\n" +
+            "            }\n" +
+            "            function applySettings() {\n" +
+            "                var container = document.querySelector('.container');\n" +
+            "                if (!container) return;\n" +
+            "                container.classList.remove('font-sm', 'font-base', 'font-lg', 'font-xl');\n" +
+            "                container.classList.add('font-' + currentSettings.fontSize);\n" +
+            "                container.classList.remove('width-normal', 'width-wide', 'width-full');\n" +
+            "                container.classList.add('width-' + currentSettings.contentWidth);\n" +
+            "                var fontIndicator = document.getElementById('fontIndicator');\n" +
+            "                if (fontIndicator) {\n" +
+            "                    fontIndicator.innerText = currentSettings.fontSize.toUpperCase();\n" +
+            "                }\n" +
+            "                var widthText = document.getElementById('widthText');\n" +
+            "                if (widthText) {\n" +
+            "                    var widthLabel = '보통';\n" +
+            "                    if (currentSettings.contentWidth === 'wide') widthLabel = '넓게';\n" +
+            "                    else if (currentSettings.contentWidth === 'full') widthLabel = '꽉차게';\n" +
+            "                    widthText.innerText = '폭: ' + widthLabel;\n" +
+            "                }\n" +
+            "                var fontDecBtn = document.getElementById('fontDecBtn');\n" +
+            "                if (fontDecBtn) fontDecBtn.disabled = (currentSettings.fontSize === 'sm');\n" +
+            "                var fontIncBtn = document.getElementById('fontIncBtn');\n" +
+            "                if (fontIncBtn) fontIncBtn.disabled = (currentSettings.fontSize === 'xl');\n" +
+            "            }\n" +
+            "            document.addEventListener('DOMContentLoaded', function() {\n" +
+            "                loadSettings();\n" +
+            "                applySettings();\n" +
+            "                var settingsToggleBtn = document.getElementById('settingsToggleBtn');\n" +
+            "                var settingsPanel = document.getElementById('settingsPanel');\n" +
+            "                if (settingsToggleBtn && settingsPanel) {\n" +
+            "                    settingsToggleBtn.addEventListener('click', function() {\n" +
+            "                        var isOpen = settingsPanel.classList.toggle('open');\n" +
+            "                        settingsToggleBtn.classList.toggle('active', isOpen);\n" +
+            "                    });\n" +
+            "                }\n" +
+            "                var fontDecBtn = document.getElementById('fontDecBtn');\n" +
+            "                if (fontDecBtn) {\n" +
+            "                    fontDecBtn.addEventListener('click', function() {\n" +
+            "                        var idx = fontSizes.indexOf(currentSettings.fontSize);\n" +
+            "                        if (idx > 0) {\n" +
+            "                            currentSettings.fontSize = fontSizes[idx - 1];\n" +
+            "                            saveSettings();\n" +
+            "                            applySettings();\n" +
+            "                        }\n" +
+            "                    });\n" +
+            "                }\n" +
+            "                var fontIncBtn = document.getElementById('fontIncBtn');\n" +
+            "                if (fontIncBtn) {\n" +
+            "                    fontIncBtn.addEventListener('click', function() {\n" +
+            "                        var idx = fontSizes.indexOf(currentSettings.fontSize);\n" +
+            "                        if (idx < fontSizes.length - 1) {\n" +
+            "                            currentSettings.fontSize = fontSizes[idx + 1];\n" +
+            "                            saveSettings();\n" +
+            "                            applySettings();\n" +
+            "                        }\n" +
+            "                    });\n" +
+            "                }\n" +
+            "                var widthToggleBtn = document.getElementById('widthToggleBtn');\n" +
+            "                if (widthToggleBtn) {\n" +
+            "                    widthToggleBtn.addEventListener('click', function() {\n" +
+            "                        var idx = contentWidths.indexOf(currentSettings.contentWidth);\n" +
+            "                        var nextIdx = (idx + 1) % contentWidths.length;\n" +
+            "                        currentSettings.contentWidth = contentWidths[nextIdx];\n" +
+            "                        saveSettings();\n" +
+            "                        applySettings();\n" +
+            "                    });\n" +
+            "                }\n" +
+            "            });\n" +
+            "        })();\n" +
+            "    </script>\n";
+
         String fullHtml = 
             "<!DOCTYPE html>\n" +
             "<html lang=\"ko\">\n" +
@@ -245,8 +336,8 @@ public class ManualController {
             "            padding: 40px;\n" +
             "            border-radius: 12px;\n" +
             "            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);\n" +
-            "            max-width: 900px;\n" +
             "            margin: 20px auto;\n" +
+            "            position: relative;\n" +
             "        }\n" +
             "        code {\n" +
             "            background-color: #f1f5f9;\n" +
@@ -325,7 +416,7 @@ public class ManualController {
             "            color: #475569;\n" +
             "        }\n" +
             "        blockquote {\n" +
-            "            border-left: 4px solid #6366f1;\n" +
+            "            border-left: 4px solid #cbd5e1;\n" + // 인디고에서 연회색(#cbd5e1)으로 수정
             "            padding: 6px 16px;\n" +
             "            margin: 16px 0;\n" +
             "            background-color: #f9fafb;\n" +
@@ -424,11 +515,214 @@ public class ManualController {
             "        .nav-placeholder {\n" +
             "            width: 100px;\n" +
             "        }\n" +
+            "        \n" +
+            "        /* 화면 조절 위젯 CSS 정의 */\n" +
+            "        .user-settings-wrapper {\n" +
+            "            position: absolute;\n" +
+            "            top: 25px;\n" +
+            "            right: 40px;\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            gap: 8px;\n" +
+            "            user-select: none;\n" +
+            "            z-index: 100;\n" +
+            "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n" +
+            "        }\n" +
+            "        .settings-toggle-btn {\n" +
+            "            background: #ffffff;\n" +
+            "            border: 1px solid #e2e8f0;\n" +
+            "            border-radius: 6px;\n" +
+            "            padding: 6px;\n" +
+            "            cursor: pointer;\n" +
+            "            color: #94a3b8;\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            justify-content: center;\n" +
+            "            transition: all 0.2s;\n" +
+            "            height: 32px;\n" +
+            "            width: 32px;\n" +
+            "            box-sizing: border-box;\n" +
+            "        }\n" +
+            "        .settings-toggle-btn:hover {\n" +
+            "            background-color: #f1f5f9;\n" +
+            "            color: #475569;\n" +
+            "        }\n" +
+            "        .settings-toggle-btn.active {\n" +
+            "            background-color: #e0e7ff;\n" +
+            "            color: #4f46e5;\n" +
+            "            border-color: #c7d2fe;\n" +
+            "            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);\n" +
+            "        }\n" +
+            "        .settings-panel {\n" +
+            "            display: none;\n" +
+            "            align-items: center;\n" +
+            "            gap: 8px;\n" +
+            "        }\n" +
+            "        .settings-panel.open {\n" +
+            "            display: flex;\n" +
+            "        }\n" +
+            "        .setting-group {\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            border: 1px solid #e2e8f0;\n" +
+            "            border-radius: 6px;\n" +
+            "            background-color: #f8fafc;\n" +
+            "            height: 32px;\n" +
+            "            padding: 0 6px;\n" +
+            "            gap: 4px;\n" +
+            "            box-sizing: border-box;\n" +
+            "        }\n" +
+            "        .font-btn {\n" +
+            "            background: none;\n" +
+            "            border: none;\n" +
+            "            padding: 2px 6px;\n" +
+            "            cursor: pointer;\n" +
+            "            color: #64748b;\n" +
+            "            font-weight: 800;\n" +
+            "            font-size: 14px;\n" +
+            "            border-radius: 4px;\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            justify-content: center;\n" +
+            "            transition: background-color 0.2s;\n" +
+            "        }\n" +
+            "        .font-btn:hover {\n" +
+            "            background-color: #e2e8f0;\n" +
+            "            color: #1e293b;\n" +
+            "        }\n" +
+            "        .font-btn:disabled {\n" +
+            "            opacity: 0.3;\n" +
+            "            cursor: not-allowed;\n" +
+            "        }\n" +
+            "        .font-indicator {\n" +
+            "            font-size: 10px;\n" +
+            "            font-weight: 600;\n" +
+            "            color: #94a3b8;\n" +
+            "            font-family: monospace;\n" +
+            "            min-width: 24px;\n" +
+            "            text-align: center;\n" +
+            "            text-transform: uppercase;\n" +
+            "        }\n" +
+            "        .width-toggle-btn {\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            height: 32px;\n" +
+            "            border: 1px solid #e2e8f0;\n" +
+            "            border-radius: 6px;\n" +
+            "            background-color: #f8fafc;\n" +
+            "            padding: 0 10px;\n" +
+            "            gap: 6px;\n" +
+            "            cursor: pointer;\n" +
+            "            font-size: 11px;\n" +
+            "            font-weight: 600;\n" +
+            "            color: #475569;\n" +
+            "            transition: background-color 0.2s;\n" +
+            "            box-sizing: border-box;\n" +
+            "        }\n" +
+            "        .width-toggle-btn:hover {\n" +
+            "            background-color: #f1f5f9;\n" +
+            "        }\n" +
+            "        .theme-switch-wrapper {\n" +
+            "            display: flex;\n" +
+            "            align-items: center;\n" +
+            "            height: 32px;\n" +
+            "            border: 1px solid #e2e8f0;\n" +
+            "            border-radius: 6px;\n" +
+            "            background-color: #f8fafc;\n" +
+            "            padding: 0 8px;\n" +
+            "            gap: 6px;\n" +
+            "            box-sizing: border-box;\n" +
+            "        }\n" +
+            "        .theme-switch-slider-container {\n" +
+            "            display: inline-block;\n" +
+            "            width: 32px;\n" +
+            "            height: 18px;\n" +
+            "            background-color: #cbd5e1;\n" +
+            "            border-radius: 9px;\n" +
+            "            position: relative;\n" +
+            "            border: 1px solid #cbd5e1;\n" +
+            "            opacity: 0.8;\n" +
+            "        }\n" +
+            "        .theme-switch-slider-knob {\n" +
+            "            display: inline-block;\n" +
+            "            width: 14px;\n" +
+            "            height: 14px;\n" +
+            "            background-color: white;\n" +
+            "            border-radius: 50%;\n" +
+            "            position: absolute;\n" +
+            "            top: 1px;\n" +
+            "            left: 1px;\n" +
+            "        }\n" +
+            "        \n" +
+            "        /* Dynamic settings selectors */\n" +
+            "        .container.font-sm { font-size: 14px; }\n" +
+            "        .container.font-sm h1 { font-size: 20px; }\n" +
+            "        .container.font-sm h2 { font-size: 18px; }\n" +
+            "        .container.font-sm h3 { font-size: 16px; }\n" +
+            "        .container.font-sm p, .container.font-sm li, .container.font-sm td, .container.font-sm th { font-size: 12px; }\n" +
+            "        .container.font-sm blockquote { font-size: 12px; }\n" +
+            "        .container.font-sm pre code { font-size: 11px; }\n" +
+            "        \n" +
+            "        .container.font-base { font-size: 16px; }\n" +
+            "        .container.font-base h1 { font-size: 24px; }\n" +
+            "        .container.font-base h2 { font-size: 20px; }\n" +
+            "        .container.font-base h3 { font-size: 18px; }\n" +
+            "        .container.font-base p, .container.font-base li, .container.font-base td, .container.font-base th { font-size: 14px; }\n" +
+            "        .container.font-base blockquote { font-size: 13px; }\n" +
+            "        .container.font-base pre code { font-size: 13px; }\n" +
+            "        \n" +
+            "        .container.font-lg { font-size: 18px; }\n" +
+            "        .container.font-lg h1 { font-size: 28px; }\n" +
+            "        .container.font-lg h2 { font-size: 24px; }\n" +
+            "        .container.font-lg h3 { font-size: 20px; }\n" +
+            "        .container.font-lg p, .container.font-lg li, .container.font-lg td, .container.font-lg th { font-size: 16px; }\n" +
+            "        .container.font-lg blockquote { font-size: 15px; }\n" +
+            "        .container.font-lg pre code { font-size: 14px; }\n" +
+            "        \n" +
+            "        .container.font-xl { font-size: 20px; }\n" +
+            "        .container.font-xl h1 { font-size: 32px; }\n" +
+            "        .container.font-xl h2 { font-size: 28px; }\n" +
+            "        .container.font-xl h3 { font-size: 24px; }\n" +
+            "        .container.font-xl p, .container.font-xl li, .container.font-xl td, .container.font-xl th { font-size: 18px; }\n" +
+            "        .container.font-xl blockquote { font-size: 17px; }\n" +
+            "        .container.font-xl pre code { font-size: 15px; }\n" +
+            "        \n" +
+            "        .container.width-normal { max-width: 900px; }\n" +
+            "        .container.width-wide { max-width: 1280px; }\n" +
+            "        .container.width-full { max-width: 95%; }\n" +
             "    </style>\n" +
             targetBlankScript +
+            settingsScript +
             "</head>\n" +
             "<body>\n" +
             "    <div class=\"container\">\n" +
+            "        <div class=\"user-settings-wrapper\">\n" +
+            "            <button class=\"settings-toggle-btn\" id=\"settingsToggleBtn\" title=\"화면 설정 조절\">\n" +
+            "                <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"3\" rx=\"2\"/><line x1=\"8\" x2=\"16\" y1=\"21\" y2=\"21\"/><line x1=\"12\" x2=\"12\" y1=\"17\" y2=\"21\"/></svg>\n" +
+            "            </button>\n" +
+            "            <div class=\"settings-panel\" id=\"settingsPanel\">\n" +
+            "                <div class=\"setting-group\">\n" +
+            "                    <button class=\"font-btn\" id=\"fontDecBtn\" title=\"글자 크기 축소\">\n" +
+            "                        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.5 13h6\"/><path d=\"m2 16 4.5-9 4.5 9\"/><path d=\"M18 7v9\"/><path d=\"m15 13 3 3 3-3\"/></svg>\n" +
+            "                    </button>\n" +
+            "                    <span class=\"font-indicator\" id=\"fontIndicator\">BASE</span>\n" +
+            "                    <button class=\"font-btn\" id=\"fontIncBtn\" title=\"글자 크기 확대\">\n" +
+            "                        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3.5 13h6\"/><path d=\"m2 16 4.5-9 4.5 9\"/><path d=\"M18 16V7\"/><path d=\"m15 10 3-3 3 3\"/></svg>\n" +
+            "                    </button>\n" +
+            "                </div>\n" +
+            "                <button class=\"width-toggle-btn\" id=\"widthToggleBtn\" title=\"본문 가로 너비 전환\">\n" +
+            "                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"15 3 21 3 21 9\"/><polyline points=\"9 21 3 21 3 15\"/><line x1=\"21\" y1=\"3\" x2=\"14\" y2=\"10\"/><line x1=\"3\" y1=\"21\" x2=\"10\" y2=\"14\"/></svg>\n" +
+            "                    <span id=\"widthText\">폭: 보통</span>\n" +
+            "                </button>\n" +
+            "                <div class=\"theme-switch-wrapper\">\n" +
+            "                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2\"/><path d=\"M12 20v2\"/><path d=\"m4.93 4.93 1.41 1.41\"/><path d=\"m17.66 17.66 1.41 1.41\"/><path d=\"M2 12h2\"/><path d=\"M20 12h2\"/><path d=\"m6.34 17.66-1.41 1.41\"/><path d=\"m19.07 4.93-1.41 1.41\"/></svg>\n" +
+            "                    <span class=\"theme-switch-slider-container\">\n" +
+            "                        <span class=\"theme-switch-slider-knob\"></span>\n" +
+            "                    </span>\n" +
+            "                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#94a3b8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z\"/></svg>\n" +
+            "                </div>\n" +
+            "            </div>\n" +
+            "        </div>\n" +
             "        " + breadcrumbsHtml.toString() + "\n" +
             "        " + parsedBody + "\n" +
             "        " + footerHtml.toString() + "\n" +
