@@ -4,8 +4,10 @@ import { ArrowUp, Pin } from 'lucide-react'
 import { OutletContextType, TocItem } from '@/types'
 import FolderTree from '@/components/shared/FolderTree'
 import NormalUserTopBar from '@/components/shared/NormalUserTopBar'
+import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 
 const NormalUserMain: React.FC = () => {
+  const theme = useUserLocalSettingStore((state) => state.theme)
   // 레이아웃 인터랙션 상태
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tocOpen, setTocOpen] = useState(true)
@@ -54,8 +56,21 @@ const NormalUserMain: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // 테마 동적 주입 및 언마운트 시 클린업 (라이트 모드로 원복하여 /admin 등에 영향 배제)
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+
+    return () => {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [theme])
+
   return (
-    <div className="bg-gray-50 min-h-screen text-gray-900 flex flex-col font-sans select-none antialiased">
+    <div className="bg-gray-50 dark:bg-slate-950 min-h-screen text-gray-900 dark:text-slate-100 flex flex-col font-sans select-none antialiased">
       {/* 1. Header 영역 */}
       <NormalUserTopBar
         sidebarOpen={sidebarOpen}
@@ -69,7 +84,7 @@ const NormalUserMain: React.FC = () => {
         
         {/* 2.1 왼쪽 사이드바 (3depth 아코디언 트리) */}
         <aside 
-          className={`bg-white p-4 shrink-0 flex flex-col overflow-hidden border-r border-gray-200 transition-all duration-75 ${
+          className={`bg-white dark:bg-slate-900 p-4 shrink-0 flex flex-col overflow-hidden border-r border-gray-200 dark:border-slate-800 transition-all duration-75 ${
             sidebarOpen ? '' : 'hidden'
           }`}
           style={{ width: `${sidebarWidth}px` }}
@@ -80,16 +95,16 @@ const NormalUserMain: React.FC = () => {
 
         {/* 2.2 사이드바 폭 드래그 리사이저 */}
         <div 
-          className={`w-1 cursor-col-resize hover:bg-indigo-500 active:bg-indigo-600 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center ${
+          className={`w-1 cursor-col-resize hover:bg-indigo-500 active:bg-indigo-600 border-r border-gray-200 dark:border-slate-800 transition-colors shrink-0 flex items-center justify-center ${
             sidebarOpen ? '' : 'hidden'
           } ${isResizing ? 'bg-indigo-500' : 'bg-transparent'}`}
           onMouseDown={startResize}
         >
-          <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
+          <div className="w-0.5 h-4 bg-gray-300 dark:bg-slate-700 rounded-sm"></div>
         </div>
 
         {/* 2.3 메인 본문 콘텐츠 및 우측 목차 감싸기 */}
-        <div className="flex-1 flex items-start overflow-y-auto relative bg-white">
+        <div className="flex-1 flex items-start overflow-y-auto relative bg-white dark:bg-slate-900">
           <main className="flex-1 py-8 px-4 lg:py-12 lg:px-6 min-h-full">
             {/* 서브 라우트(Outlet) 렌더링. 목차 상태 및 Setter 제공 */}
             <Outlet context={{ setTocData, tocOpen, setTocOpen } as OutletContextType} />
@@ -98,14 +113,14 @@ const NormalUserMain: React.FC = () => {
           {/* 2.4 우측 목차 사이드바 (TOC) */}
           {tocOpen && tocData.length > 0 && (
             <aside 
-              className="w-64 bg-white border-l border-gray-200 p-4 shrink-0 flex flex-col sticky z-40"
+              className="w-64 bg-white dark:bg-slate-900 border-l border-gray-200 dark:border-slate-800 p-4 shrink-0 flex flex-col sticky z-40"
               style={{ top: '72px', maxHeight: 'calc(100vh - 90px)' }}
             >
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100 mb-3 shrink-0">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">이 페이지의 목차</p>
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-slate-800 mb-3 shrink-0">
+                <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">이 페이지의 목차</p>
                 <button 
                   onClick={() => setTocOpen(false)}
-                  className="p-1 rounded-sm text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors cursor-pointer"
+                  className="p-1 rounded-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors cursor-pointer"
                   title="목차 감추기"
                 >
                   <Pin className="w-3.5 h-3.5" />
@@ -113,12 +128,12 @@ const NormalUserMain: React.FC = () => {
               </div>
 
               {/* 목차 리스트 */}
-              <ul className="space-y-1.5 overflow-y-auto flex-1 text-xs text-gray-500 custom-scroll pr-1 select-none">
+              <ul className="space-y-1.5 overflow-y-auto flex-1 text-xs text-gray-500 dark:text-slate-400 custom-scroll pr-1 select-none">
                 {tocData.map((item, idx) => (
                   <li 
                     key={idx}
-                    className={`hover:text-gray-900 py-0.5 cursor-pointer transition-colors ${
-                      item.level === 1 ? 'font-semibold text-gray-800' : 'pl-3'
+                    className={`hover:text-gray-900 dark:hover:text-slate-200 py-0.5 cursor-pointer transition-colors ${
+                      item.level === 1 ? 'font-semibold text-gray-800 dark:text-slate-300' : 'pl-3'
                     }`}
                     onClick={() => {
                       const element = document.getElementById(item.id)
@@ -141,7 +156,7 @@ const NormalUserMain: React.FC = () => {
       {showTopBtn && (
         <button 
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 hover:bg-gray-300/90 text-gray-700/40 hover:text-gray-800 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 hover:border-gray-400 cursor-pointer"
+          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 dark:bg-slate-800/40 hover:bg-gray-300/90 dark:hover:bg-slate-700 text-gray-700/40 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 dark:border-slate-700/30 hover:border-gray-400 cursor-pointer"
           style={{ right: (tocOpen && tocData.length > 0) ? '280px' : '24px' }}
           title="맨 위로 스크롤"
         >
@@ -153,7 +168,7 @@ const NormalUserMain: React.FC = () => {
       {showTopBtn && (
         <button 
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 hover:bg-gray-300/90 text-gray-700/40 hover:text-gray-800 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 hover:border-gray-400 cursor-pointer"
+          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 dark:bg-slate-800/40 hover:bg-gray-300/90 dark:hover:bg-slate-700 text-gray-700/40 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 dark:border-slate-700/30 hover:border-gray-400 cursor-pointer"
           style={{ left: sidebarOpen ? `${sidebarWidth + 24}px` : '24px' }}
           title="맨 위로 스크롤"
         >

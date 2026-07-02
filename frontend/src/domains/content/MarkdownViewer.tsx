@@ -191,7 +191,7 @@ const MarkdownViewer: React.FC = () => {
           h1: ({ children, ...props }) => (
             <h1
               id={`heading-${headingIndex++}`}
-              className={`${fontSizeClassMap.h1} font-bold tracking-tight text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-100`}
+              className={`${fontSizeClassMap.h1} font-bold tracking-tight text-gray-900 dark:text-slate-100 mt-8 mb-4 pb-2 border-b border-gray-100 dark:border-slate-800`}
               {...props}
             >
               {children}
@@ -200,7 +200,7 @@ const MarkdownViewer: React.FC = () => {
           h2: ({ children, ...props }) => (
             <h2
               id={`heading-${headingIndex++}`}
-              className={`${fontSizeClassMap.h2} font-bold tracking-tight text-gray-900 mt-6 mb-3`}
+              className={`${fontSizeClassMap.h2} font-bold tracking-tight text-gray-900 dark:text-slate-100 mt-6 mb-3`}
               {...props}
             >
               {children}
@@ -209,7 +209,7 @@ const MarkdownViewer: React.FC = () => {
           h3: ({ children, ...props }) => (
             <h3
               id={`heading-${headingIndex++}`}
-              className={`${fontSizeClassMap.h3} font-semibold text-gray-800 mt-4 mb-2`}
+              className={`${fontSizeClassMap.h3} font-semibold text-gray-800 dark:text-slate-200 mt-4 mb-2`}
               {...props}
             >
               {children}
@@ -217,50 +217,50 @@ const MarkdownViewer: React.FC = () => {
           ),
           blockquote: ({ children, ...props }) => (
             <blockquote
-              className="border-l-4 border-gray-300 pl-4 py-1.5 my-4 bg-gray-50/50 rounded-r-md text-gray-600 italic text-sm [&_p:last-child]:mb-0"
+              className="border-l-4 border-gray-300 dark:border-slate-700 pl-4 py-1.5 my-4 bg-gray-50/50 dark:bg-slate-800/40 rounded-r-md text-gray-600 dark:text-slate-300 italic text-sm [&_p:last-child]:mb-0"
               {...props}
             >
               {children}
             </blockquote>
           ),
-          hr: (props) => <hr className="my-6 border-t border-gray-200" {...props} />,
+          hr: (props) => <hr className="my-6 border-t border-gray-200 dark:border-slate-800" {...props} />,
           p: ({ children, ...props }) => (
-            <p className={`text-gray-600 ${fontSizeClassMap.p} leading-relaxed mb-4`} {...props}>
+            <p className={`text-gray-600 dark:text-slate-300 ${fontSizeClassMap.p} leading-relaxed mb-4`} {...props}>
               {children}
             </p>
           ),
           ul: ({ children, ...props }) => (
-            <ul className="my-2 list-disc pl-5" {...props}>
+            <ul className="my-2 list-disc pl-5 text-gray-600 dark:text-slate-300" {...props}>
               {children}
             </ul>
           ),
           ol: ({ children, ...props }) => (
-            <ol className="my-2 list-decimal pl-5" {...props}>
+            <ol className="my-2 list-decimal pl-5 text-gray-600 dark:text-slate-300" {...props}>
               {children}
             </ol>
           ),
           li: ({ children, ...props }) => (
-            <li className={`text-slate-655 ${fontSizeClassMap.li} mb-1`} {...props}>
+            <li className={`text-slate-655 dark:text-slate-350 ${fontSizeClassMap.li} mb-1`} {...props}>
               {children}
             </li>
           ),
           table: ({ children, ...props }) => (
-            <div className="overflow-x-auto my-4 border border-gray-200 rounded-lg shadow-xs">
-              <table className={`min-w-full divide-y divide-gray-200 ${fontSizeClassMap.table}`} {...props}>
+            <div className="overflow-x-auto my-4 border border-gray-200 dark:border-slate-800 rounded-lg shadow-xs">
+              <table className={`min-w-full divide-y divide-gray-200 dark:divide-slate-850 ${fontSizeClassMap.table}`} {...props}>
                 {children}
               </table>
             </div>
           ),
-          thead: ({ children, ...props }) => <thead className="bg-gray-50" {...props}>{children}</thead>,
-          tbody: ({ children, ...props }) => <tbody className="bg-white divide-y divide-gray-100" {...props}>{children}</tbody>,
-          tr: ({ children, ...props }) => <tr className="hover:bg-gray-50/55 transition-colors" {...props}>{children}</tr>,
+          thead: ({ children, ...props }) => <thead className="bg-gray-50 dark:bg-slate-800/80" {...props}>{children}</thead>,
+          tbody: ({ children, ...props }) => <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-100 dark:divide-slate-800" {...props}>{children}</tbody>,
+          tr: ({ children, ...props }) => <tr className="hover:bg-gray-50/55 dark:hover:bg-slate-800/50 transition-colors" {...props}>{children}</tr>,
           th: ({ children, ...props }) => (
-            <th className="px-4 py-2.5 text-left font-semibold text-gray-900 border-b border-gray-200" {...props}>
+            <th className="px-4 py-2.5 text-left font-semibold text-gray-900 dark:text-slate-100 border-b border-gray-200 dark:border-slate-800" {...props}>
               {children}
             </th>
           ),
           td: ({ children, ...props }) => (
-            <td className="px-4 py-2.5 text-gray-750 border-b border-gray-200" {...props}>
+            <td className="px-4 py-2.5 text-gray-750 dark:text-slate-300 border-b border-gray-200 dark:border-slate-800" {...props}>
               {children}
             </td>
           ),
@@ -268,7 +268,7 @@ const MarkdownViewer: React.FC = () => {
             const text = extractText(children)
             return (
               <div className="relative group my-4">
-                <pre className="bg-slate-100 text-slate-800 border border-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto leading-normal whitespace-pre m-0" {...props}>
+                <pre className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 p-4 rounded-lg font-mono text-xs overflow-x-auto leading-normal whitespace-pre m-0" {...props}>
                   {children}
                 </pre>
                 <CopyButton text={text} />
@@ -280,7 +280,7 @@ const MarkdownViewer: React.FC = () => {
             if (isInline) {
               return (
                 <code
-                  className="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200"
+                  className="bg-slate-100 dark:bg-slate-950 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200 dark:border-slate-850"
                   {...props}
                 >
                   {children}
@@ -295,7 +295,7 @@ const MarkdownViewer: React.FC = () => {
           },
           img: ({ src, alt, ...props }) => (
             <span className="my-4 flex justify-center">
-              <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 shadow-sm" {...props} />
+              <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-slate-800 shadow-sm" {...props} />
             </span>
           ),
           a: ({ href, children, ...props }) => {
@@ -305,7 +305,7 @@ const MarkdownViewer: React.FC = () => {
                 href={href}
                 target={isBlank ? "_blank" : undefined}
                 rel={isBlank ? "noopener noreferrer" : undefined}
-                className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 underline font-medium"
                 {...props}
               >
                 {children}
@@ -358,8 +358,8 @@ const MarkdownViewer: React.FC = () => {
   }[contentWidth] || 'max-w-5xl'
 
   return (
-    <article className={`prose ${fontSizeClass} ${contentWidthClass} mx-auto`}>
-      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 pb-4 border-b border-gray-200 mb-6">
+    <article className={`prose dark:prose-invert ${fontSizeClass} ${contentWidthClass} mx-auto`}>
+      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100 pb-4 border-b border-gray-200 dark:border-slate-800 mb-6">
         {page.title}
       </h1>
       
@@ -368,7 +368,7 @@ const MarkdownViewer: React.FC = () => {
         {renderMarkdownToHtml(page.content)}
       </div>
 
-      <p className="text-xs text-gray-400 text-center mt-12 pt-4 border-t border-gray-100">
+      <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-12 pt-4 border-t border-gray-100 dark:border-slate-800">
         --- 문서의 끝입니다 ---
       </p>
     </article>

@@ -110,6 +110,7 @@ const router = createBrowserRouter([
 })
 
 function App() {
+
   useEffect(() => {
     let isRefreshing = false
 

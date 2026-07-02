@@ -277,10 +277,10 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
         <div 
           onClick={() => toggleFolder(node)}
           onContextMenu={(contextMenuEnable && !isContextMenuDisabled) ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
-          className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${
+          className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-colors ${
             isFolderActive
-              ? 'bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold'
-              : depth === 1 ? 'font-semibold text-gray-900' : 'text-gray-600'
+              ? 'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-semibold'
+              : depth === 1 ? 'font-semibold text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400'
           }`}
           style={{ 
             paddingLeft: depth === 3 
@@ -290,11 +290,11 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
         >
           <div className="flex items-center">
             {depth === 3 ? (
-              <FileText className="w-3.5 h-3.5 mr-2 text-slate-400" />
+              <FileText className="w-3.5 h-3.5 mr-2 text-slate-400 dark:text-slate-500" />
             ) : isExpanded ? (
-              <FolderOpen className={`w-3.5 h-3.5 mr-2 ${depth === 1 ? 'text-indigo-500' : 'text-amber-500'}`} />
+              <FolderOpen className={`w-3.5 h-3.5 mr-2 ${depth === 1 ? 'text-indigo-500 dark:text-indigo-400' : 'text-amber-500 dark:text-amber-600'}`} />
             ) : (
-              <Folder className="w-3.5 h-3.5 mr-2 text-gray-400" />
+              <Folder className="w-3.5 h-3.5 mr-2 text-gray-400 dark:text-slate-500" />
             )}
             <span>
               {formatNodeName(node)}
@@ -319,8 +319,8 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
 
   return (
     <>
-      <div className="mb-3 pb-2 border-b border-gray-100 shrink-0">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">메뉴 내비게이션</p>
+      <div className="mb-3 pb-2 border-b border-gray-100 dark:border-slate-800 shrink-0">
+        <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">메뉴 내비게이션</p>
         <div className="flex items-center space-x-1.5">
             <FilterInput 
               value={searchInput} 
@@ -331,14 +331,14 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
           
           <button 
             onClick={expandAll} 
-            className="p-1.5 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-500 border border-gray-200 cursor-pointer"
+            className="p-1.5 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700 cursor-pointer"
             title="전체 펼치기"
           >
             <FolderOpen className="w-3.5 h-3.5" />
           </button>
           <button 
             onClick={collapseAll} 
-            className="p-1.5 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-500 border border-gray-200 cursor-pointer"
+            className="p-1.5 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-md text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700 cursor-pointer"
             title="전체 접기"
           >
             <Folder className="w-3.5 h-3.5" />

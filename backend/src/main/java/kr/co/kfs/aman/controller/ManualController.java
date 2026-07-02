@@ -229,7 +229,7 @@ public class ManualController {
             "        (function() {\n" +
             "            var fontSizes = ['sm', 'base', 'lg', 'xl'];\n" +
             "            var contentWidths = ['normal', 'wide', 'full'];\n" +
-            "            var currentSettings = { fontSize: 'base', contentWidth: 'normal' };\n" +
+            "            var currentSettings = { fontSize: 'base', contentWidth: 'normal', theme: 'light' };\n" +
             "            function loadSettings() {\n" +
             "                try {\n" +
             "                    var saved = localStorage.getItem('manual-user-setting');\n" +
@@ -237,6 +237,7 @@ public class ManualController {
             "                        var parsed = JSON.parse(saved);\n" +
             "                        if (parsed.fontSize) currentSettings.fontSize = parsed.fontSize;\n" +
             "                        if (parsed.contentWidth) currentSettings.contentWidth = parsed.contentWidth;\n" +
+            "                        if (parsed.theme) currentSettings.theme = parsed.theme;\n" +
             "                    }\n" +
             "                } catch(e) {}\n" +
             "            }\n" +
@@ -267,6 +268,27 @@ public class ManualController {
             "                if (fontDecBtn) fontDecBtn.disabled = (currentSettings.fontSize === 'sm');\n" +
             "                var fontIncBtn = document.getElementById('fontIncBtn');\n" +
             "                if (fontIncBtn) fontIncBtn.disabled = (currentSettings.fontSize === 'xl');\n" +
+            "                \n" +
+            "                if (currentSettings.theme === 'dark') {\n" +
+            "                    document.body.classList.add('dark-mode');\n" +
+            "                } else {\n" +
+            "                    document.body.classList.remove('dark-mode');\n" +
+            "                }\n" +
+            "                var knob = document.getElementById('themeSwitchKnob');\n" +
+            "                var switchBg = document.getElementById('themeSwitchContainer');\n" +
+            "                var sunIcon = document.getElementById('sunIcon');\n" +
+            "                var moonIcon = document.getElementById('moonIcon');\n" +
+            "                if (knob && switchBg) {\n" +
+            "                    knob.style.transform = currentSettings.theme === 'dark' ? 'translateX(14px)' : 'translateX(0)';\n" +
+            "                    switchBg.style.backgroundColor = currentSettings.theme === 'dark' ? '#4f46e5' : 'rgba(226, 232, 240, 0.5)';\n" +
+            "                    switchBg.style.borderColor = currentSettings.theme === 'dark' ? '#4f46e5' : '#cbd5e1';\n" +
+            "                }\n" +
+            "                if (sunIcon) {\n" +
+            "                    sunIcon.style.stroke = currentSettings.theme === 'light' ? '#f59e0b' : '#64748b';\n" +
+            "                }\n" +
+            "                if (moonIcon) {\n" +
+            "                    moonIcon.style.stroke = currentSettings.theme === 'dark' ? '#818cf8' : '#94a3b8';\n" +
+            "                }\n" +
             "            }\n" +
             "            document.addEventListener('DOMContentLoaded', function() {\n" +
             "                loadSettings();\n" +
@@ -311,6 +333,14 @@ public class ManualController {
             "                        applySettings();\n" +
             "                    });\n" +
             "                }\n" +
+            "                var themeToggleBtn = document.getElementById('themeSwitchContainer');\n" +
+            "                if (themeToggleBtn) {\n" +
+            "                    themeToggleBtn.addEventListener('click', function() {\n" +
+            "                        currentSettings.theme = currentSettings.theme === 'light' ? 'dark' : 'light';\n" +
+            "                        saveSettings();\n" +
+            "                        applySettings();\n" +
+            "                    });\n" +
+            "                }\n" +
             "            });\n" +
             "        })();\n" +
             "    </script>\n";
@@ -329,6 +359,7 @@ public class ManualController {
             "            color: #334155;\n" +
             "            background-color: #f8fafc;\n" +
             "            line-height: 1.6;\n" +
+            "            transition: background-color 0.2s, color 0.2s;\n" +
             "        }\n" +
             "        .container {\n" +
             "            background-color: #ffffff;\n" +
@@ -338,6 +369,7 @@ public class ManualController {
             "            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);\n" +
             "            margin: 20px auto;\n" +
             "            position: relative;\n" +
+            "            transition: background-color 0.2s, border-color 0.2s;\n" +
             "        }\n" +
             "        code {\n" +
             "            background-color: #f1f5f9;\n" +
@@ -347,6 +379,7 @@ public class ManualController {
             "            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n" +
             "            font-size: 0.85em;\n" +
             "            border: 1px solid #e2e8f0;\n" +
+            "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
             "        }\n" +
             "        pre {\n" +
             "            background-color: #f1f5f9;\n" +
@@ -357,6 +390,7 @@ public class ManualController {
             "            margin: 16px 0;\n" +
             "            border: 1px solid #cbd5e1;\n" +
             "            position: relative;\n" +
+            "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
             "        }\n" +
             "        .copy-btn {\n" +
             "            position: absolute;\n" +
@@ -373,7 +407,7 @@ public class ManualController {
             "            align-items: center;\n" +
             "            gap: 4px;\n" +
             "            opacity: 0.7;\n" +
-            "            transition: opacity 0.2s, background-color 0.2s;\n" +
+            "            transition: opacity 0.2s, background-color 0.2s, color 0.2s, border-color 0.2s;\n" +
             "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n" +
             "        }\n" +
             "        .copy-btn:hover {\n" +
@@ -401,10 +435,12 @@ public class ManualController {
             "            border: 1px solid #e2e8f0;\n" +
             "            border-radius: 8px;\n" +
             "            overflow: hidden;\n" +
+            "            transition: border-color 0.2s;\n" +
             "        }\n" +
             "        th, td {\n" +
             "            padding: 10px 16px;\n" +
             "            border-bottom: 1px solid #e2e8f0;\n" +
+            "            transition: border-color 0.2s, color 0.2s, background-color 0.2s;\n" +
             "        }\n" +
             "        th {\n" +
             "            background-color: #f8fafc;\n" +
@@ -424,6 +460,7 @@ public class ManualController {
             "            font-style: italic;\n" +
             "            border-radius: 0 6px 6px 0;\n" +
             "            font-size: 13px;\n" +
+            "            transition: border-color 0.2s, color 0.2s, background-color 0.2s;\n" +
             "        }\n" +
             "        blockquote p:first-child {\n" +
             "            margin-top: 0;\n" +
@@ -442,6 +479,7 @@ public class ManualController {
             "        a {\n" +
             "            color: #4f46e5;\n" +
             "            text-decoration: none;\n" +
+            "            transition: color 0.2s;\n" +
             "        }\n" +
             "        a:hover {\n" +
             "            text-decoration: underline;\n" +
@@ -456,11 +494,13 @@ public class ManualController {
             "            align-items: center;\n" +
             "            flex-wrap: wrap;\n" +
             "            gap: 6px;\n" +
+            "            transition: border-color 0.2s, color 0.2s;\n" +
             "        }\n" +
             "        .breadcrumbs a {\n" +
             "            color: #6366f1;\n" +
             "            text-decoration: none;\n" +
             "            font-weight: 500;\n" +
+            "            transition: color 0.2s;\n" +
             "        }\n" +
             "        .breadcrumbs a:hover {\n" +
             "            text-decoration: underline;\n" +
@@ -472,6 +512,7 @@ public class ManualController {
             "        .breadcrumbs .folder-name {\n" +
             "            color: #475569;\n" +
             "            font-weight: 500;\n" +
+            "            transition: color 0.2s;\n" +
             "        }\n" +
             "        .navigation-footer {\n" +
             "            margin-top: 40px;\n" +
@@ -481,6 +522,7 @@ public class ManualController {
             "            justify-content: space-between;\n" +
             "            align-items: center;\n" +
             "            gap: 16px;\n" +
+            "            transition: border-color 0.2s;\n" +
             "        }\n" +
             "        .nav-button {\n" +
             "            display: flex;\n" +
@@ -506,6 +548,7 @@ public class ManualController {
             "            font-weight: bold;\n" +
             "            color: #6366f1;\n" +
             "            font-size: 1.1em;\n" +
+            "            transition: color 0.2s;\n" +
             "        }\n" +
             "        .nav-button .nav-title {\n" +
             "            white-space: nowrap;\n" +
@@ -571,6 +614,7 @@ public class ManualController {
             "            padding: 0 6px;\n" +
             "            gap: 4px;\n" +
             "            box-sizing: border-box;\n" +
+            "            transition: all 0.2s;\n" +
             "        }\n" +
             "        .font-btn {\n" +
             "            background: none;\n" +
@@ -584,7 +628,7 @@ public class ManualController {
             "            display: flex;\n" +
             "            align-items: center;\n" +
             "            justify-content: center;\n" +
-            "            transition: background-color 0.2s;\n" +
+            "            transition: background-color 0.2s, color 0.2s;\n" +
             "        }\n" +
             "        .font-btn:hover {\n" +
             "            background-color: #e2e8f0;\n" +
@@ -602,6 +646,7 @@ public class ManualController {
             "            min-width: 24px;\n" +
             "            text-align: center;\n" +
             "            text-transform: uppercase;\n" +
+            "            transition: color 0.2s;\n" +
             "        }\n" +
             "        .width-toggle-btn {\n" +
             "            display: flex;\n" +
@@ -616,7 +661,7 @@ public class ManualController {
             "            font-size: 11px;\n" +
             "            font-weight: 600;\n" +
             "            color: #475569;\n" +
-            "            transition: background-color 0.2s;\n" +
+            "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
             "            box-sizing: border-box;\n" +
             "        }\n" +
             "        .width-toggle-btn:hover {\n" +
@@ -632,16 +677,21 @@ public class ManualController {
             "            padding: 0 8px;\n" +
             "            gap: 6px;\n" +
             "            box-sizing: border-box;\n" +
+            "            transition: all 0.2s;\n" +
             "        }\n" +
             "        .theme-switch-slider-container {\n" +
-            "            display: inline-block;\n" +
+            "            display: inline-flex;\n" +
+            "            align-items: center;\n" +
             "            width: 32px;\n" +
             "            height: 18px;\n" +
             "            background-color: #cbd5e1;\n" +
             "            border-radius: 9px;\n" +
             "            position: relative;\n" +
             "            border: 1px solid #cbd5e1;\n" +
-            "            opacity: 0.8;\n" +
+            "            cursor: pointer;\n" +
+            "            transition: background-color 0.2s, border-color 0.2s;\n" +
+            "            padding: 0;\n" +
+            "            outline: none;\n" +
             "        }\n" +
             "        .theme-switch-slider-knob {\n" +
             "            display: inline-block;\n" +
@@ -652,6 +702,8 @@ public class ManualController {
             "            position: absolute;\n" +
             "            top: 1px;\n" +
             "            left: 1px;\n" +
+            "            transition: transform 0.2s;\n" +
+            "            box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);\n" +
             "        }\n" +
             "        \n" +
             "        /* Dynamic settings selectors */\n" +
@@ -690,6 +742,131 @@ public class ManualController {
             "        .container.width-normal { max-width: 900px; }\n" +
             "        .container.width-wide { max-width: 1280px; }\n" +
             "        .container.width-full { max-width: 95%; }\n" +
+            "        \n" +
+            "        /* Dark Mode Styles */\n" +
+            "        .dark-mode body {\n" +
+            "            background-color: #0f172a;\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode .container {\n" +
+            "            background-color: #1e293b;\n" +
+            "            border-color: #334155;\n" +
+            "            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);\n" +
+            "        }\n" +
+            "        .dark-mode h1, .dark-mode h2, .dark-mode h3 {\n" +
+            "            color: #f1f5f9;\n" +
+            "        }\n" +
+            "        .dark-mode h1 {\n" +
+            "            border-bottom-color: #334155;\n" +
+            "        }\n" +
+            "        .dark-mode p, .dark-mode li {\n" +
+            "            color: #94a3b8;\n" +
+            "        }\n" +
+            "        .dark-mode a {\n" +
+            "            color: #818cf8;\n" +
+            "        }\n" +
+            "        .dark-mode a:hover {\n" +
+            "            color: #a5b4fc;\n" +
+            "        }\n" +
+            "        .dark-mode code {\n" +
+            "            background-color: #0f172a;\n" +
+            "            border-color: #334155;\n" +
+            "            color: #f43f5e;\n" +
+            "        }\n" +
+            "        .dark-mode pre {\n" +
+            "            background-color: #0f172a;\n" +
+            "            border-color: #334155;\n" +
+            "            color: #e2e8f0;\n" +
+            "        }\n" +
+            "        .dark-mode .copy-btn {\n" +
+            "            background-color: #1e293b;\n" +
+            "            border-color: #334155;\n" +
+            "            color: #94a3b8;\n" +
+            "        }\n" +
+            "        .dark-mode .copy-btn:hover {\n" +
+            "            background-color: #334155;\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode blockquote {\n" +
+            "            background-color: rgba(30, 41, 59, 0.4);\n" +
+            "            border-left-color: #475569;\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode table {\n" +
+            "            border-color: #334155;\n" +
+            "        }\n" +
+            "        .dark-mode th {\n" +
+            "            background-color: #0f172a;\n" +
+            "            color: #f1f5f9;\n" +
+            "            border-bottom-color: #334155;\n" +
+            "        }\n" +
+            "        .dark-mode td {\n" +
+            "            color: #cbd5e1;\n" +
+            "            border-bottom-color: #334155;\n" +
+            "        }\n" +
+            "        .dark-mode .breadcrumbs {\n" +
+            "            border-bottom-color: #334155;\n" +
+            "            color: #94a3b8;\n" +
+            "        }\n" +
+            "        .dark-mode .breadcrumbs a {\n" +
+            "            color: #818cf8;\n" +
+            "        }\n" +
+            "        .dark-mode .breadcrumbs .folder-name {\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode .navigation-footer {\n" +
+            "            border-top-color: #334155;\n" +
+            "        }\n" +
+            "        .dark-mode .nav-button {\n" +
+            "            background-color: #0f172a;\n" +
+            "            border-color: #334155;\n" +
+            "            color: #94a3b8;\n" +
+            "        }\n" +
+            "        .dark-mode .nav-button:hover {\n" +
+            "            background-color: #1e293b;\n" +
+            "            border-color: #475569;\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode .nav-button .arrow {\n" +
+            "            color: #818cf8;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .settings-toggle-btn {\n" +
+            "            background: #1e293b;\n" +
+            "            border-color: #334155;\n" +
+            "            color: #64748b;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .settings-toggle-btn:hover {\n" +
+            "            background-color: #334155;\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .settings-toggle-btn.active {\n" +
+            "            background-color: #312e81;\n" +
+            "            border-color: #4338ca;\n" +
+            "            color: #818cf8;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .setting-group,\n" +
+            "        .dark-mode .user-settings-wrapper .width-toggle-btn,\n" +
+            "        .dark-mode .user-settings-wrapper .theme-switch-wrapper {\n" +
+            "            background-color: #0f172a;\n" +
+            "            border-color: #334155;\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .font-btn {\n" +
+            "            color: #94a3b8;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .font-btn:hover {\n" +
+            "            background-color: #1e293b;\n" +
+            "            color: #f1f5f9;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .width-toggle-btn {\n" +
+            "            color: #cbd5e1;\n" +
+            "        }\n" +
+            "        .dark-mode .user-settings-wrapper .width-toggle-btn:hover {\n" +
+            "            background-color: #1e293b;\n" +
+            "        }\n" +
+            "        .dark-mode .theme-switch-slider-knob {\n" +
+            "            background-color: #cbd5e1;\n" +
+            "        }\n" +
             "    </style>\n" +
             targetBlankScript +
             settingsScript +
@@ -715,11 +892,11 @@ public class ManualController {
             "                    <span id=\"widthText\">폭: 보통</span>\n" +
             "                </button>\n" +
             "                <div class=\"theme-switch-wrapper\">\n" +
-            "                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2\"/><path d=\"M12 20v2\"/><path d=\"m4.93 4.93 1.41 1.41\"/><path d=\"m17.66 17.66 1.41 1.41\"/><path d=\"M2 12h2\"/><path d=\"M20 12h2\"/><path d=\"m6.34 17.66-1.41 1.41\"/><path d=\"m19.07 4.93-1.41 1.41\"/></svg>\n" +
-            "                    <span class=\"theme-switch-slider-container\">\n" +
-            "                        <span class=\"theme-switch-slider-knob\"></span>\n" +
-            "                    </span>\n" +
-            "                    <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#94a3b8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z\"/></svg>\n" +
+            "                    <svg id=\"sunIcon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#f59e0b\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2\"/><path d=\"M12 20v2\"/><path d=\"m4.93 4.93 1.41 1.41\"/><path d=\"m17.66 17.66 1.41 1.41\"/><path d=\"M2 12h2\"/><path d=\"M20 12h2\"/><path d=\"m6.34 17.66-1.41 1.41\"/><path d=\"m19.07 4.93-1.41 1.41\"/></svg>\n" +
+            "                    <button type=\"button\" class=\"theme-switch-slider-container\" id=\"themeSwitchContainer\" title=\"테마 토글 스위치\">\n" +
+            "                        <span class=\"theme-switch-slider-knob\" id=\"themeSwitchKnob\"></span>\n" +
+            "                    </button>\n" +
+            "                    <svg id=\"moonIcon\" xmlns=\"http://www.w3.org/2000/svg\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#94a3b8\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z\"/></svg>\n" +
             "                </div>\n" +
             "            </div>\n" +
             "        </div>\n" +

@@ -54,17 +54,17 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
     const lastWord = trimmed.substring(lastSpaceIndex + 1)
     return (
       <>
-        {firstPart} <span className="text-indigo-600">{lastWord}</span>
+        {firstPart} <span className="text-indigo-600 dark:text-indigo-400">{lastWord}</span>
       </>
     )
   }
 
   return (
-    <header className="sticky top-0 z-50 flex items-center justify-between bg-white border-b border-gray-200 px-6 py-3 shadow-xs shrink-0">
+    <header className="sticky top-0 z-50 flex items-center justify-between bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-3 shadow-xs shrink-0">
       <div className="flex items-center space-x-3">
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)} 
-          className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 transition-colors cursor-pointer"
+          className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -74,11 +74,11 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
           title={siteDescription}
         >
           <img src={faviconImg} alt="Logo" className="w-5 h-5 shrink-0 object-contain" />
-          <span className="text-base font-bold tracking-tight shrink-0">
-            {renderSiteName(siteName)} <span className="text-xs font-semibold text-gray-400 font-mono ml-0.5">(v{version})</span>
+          <span className="text-base font-bold tracking-tight shrink-0 text-gray-900 dark:text-slate-100">
+            {renderSiteName(siteName)} <span className="text-xs font-semibold text-gray-400 dark:text-slate-500 font-mono ml-0.5">(v{version})</span>
           </span>
           {siteDescription && (
-            <span className="text-xs text-gray-500 font-normal truncate hidden sm:inline ml-1">
+            <span className="text-xs text-gray-500 dark:text-slate-400 font-normal truncate hidden sm:inline ml-1">
               - {siteDescription}
             </span>
           )}
@@ -90,8 +90,8 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
             onClick={() => setIsSettingsOpen(!isSettingsOpen)}
             className={`p-1.5 rounded-md transition-all cursor-pointer border ${
               isSettingsOpen 
-                ? 'bg-indigo-50 text-indigo-600 border-indigo-100/70 shadow-xs' 
-                : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600 border-transparent'
+                ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border-indigo-100/70 dark:border-indigo-900/50 shadow-xs' 
+                : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 border-transparent'
             }`}
             title="화면 설정 조절"
           >
@@ -106,7 +106,7 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
         {/* 어드민으로 이동 */}
         <button
           onClick={() => navigate('/admin')}
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-all cursor-pointer"
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-md transition-all cursor-pointer"
           title="관리자 모드로 이동"
         >
           <ShieldAlert className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
         {!tocOpen && (
           <button 
             onClick={() => setTocOpen(true)}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-all cursor-pointer"
+            className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-md transition-all cursor-pointer"
             title="목차 열기"
           >
             <Pin className="w-3.5 h-3.5" />
