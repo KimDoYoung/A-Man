@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X, Quote } from 'lucide-react'
+import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
 import axios from 'axios'
 
 interface Asset {
@@ -101,6 +101,30 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   const [downloading, setDownloading] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyContent = async () => {
+    if (!pageContent) return
+    try {
+      await navigator.clipboard.writeText(pageContent)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch (err) {
+      // Fallback
+      const textArea = document.createElement('textarea')
+      textArea.value = pageContent
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    }
+  }
 
   const handleDownloadZip = async () => {
     setDownloading(true)
@@ -527,35 +551,51 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       </div>
 
       {/* 액션 및 별칭 영역 */}
-      <div className="flex items-center space-x-2 ml-auto mr-4">
-        {/* 가져오기 (Import) */}
-        <button
-          onClick={handleTriggerImport}
-          disabled={importing}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          title="가져오기 (ZIP 업로드)"
-        >
-          <Upload className={`w-4 h-4 ${importing ? 'text-gray-400 animate-pulse' : 'text-indigo-600'}`} />
-        </button>
+      <div className="flex items-center space-x-3 ml-auto mr-4">
+        <div className="flex items-center space-x-0.5">
+          {/* 가져오기 (Import) */}
+          <button
+            onClick={handleTriggerImport}
+            disabled={importing}
+            className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            title="가져오기 (ZIP 업로드)"
+          >
+            <Upload className={`w-4 h-4 ${importing ? 'text-gray-400 animate-pulse' : 'text-indigo-600'}`} />
+          </button>
 
-        {/* 숨겨진 파일 인풋 */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleImportZip}
-          accept=".zip"
-          className="hidden"
-        />
+          {/* 숨겨진 파일 인풋 */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportZip}
+            accept=".zip"
+            className="hidden"
+          />
 
-        {/* 내보내기 (Export) */}
-        <button
-          onClick={handleDownloadZip}
-          disabled={downloading}
-          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          title="내보내기 (ZIP 다운로드)"
-        >
-          <Download className={`w-4 h-4 ${downloading ? 'text-gray-400 animate-bounce' : 'text-indigo-600'}`} />
-        </button>
+          {/* 내보내기 (Export) */}
+          <button
+            onClick={handleDownloadZip}
+            disabled={downloading}
+            className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            title="내보내기 (ZIP 다운로드)"
+          >
+            <Download className={`w-4 h-4 ${downloading ? 'text-gray-400 animate-bounce' : 'text-indigo-600'}`} />
+          </button>
+
+          {/* 본문 복사 (Copy Content) */}
+          <button
+            onClick={handleCopyContent}
+            disabled={!pageContent}
+            className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+            title="본문 복사"
+          >
+            {copied ? (
+              <Check className="w-4 h-4 text-green-600" />
+            ) : (
+              <Copy className="w-4 h-4 text-indigo-600" />
+            )}
+          </button>
+        </div>
 
         {/* 세퍼레이터 */}
         <span className="text-gray-300 select-none px-1">|</span>

@@ -863,7 +863,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 onKeyDown={handleKeydown}
                 onPaste={handlePaste}
                 onContextMenu={handleContextMenu}
-                className="flex-1 w-full p-4 pb-[50vh] font-mono text-xs resize-none focus:outline-hidden leading-relaxed bg-white border border-gray-200 rounded-lg custom-scroll"
+                className="flex-1 w-full p-4 pb-[50vh] font-mono text-sm resize-none focus:outline-hidden leading-relaxed bg-white border border-gray-200 rounded-lg custom-scroll"
             />
 
             {/* 커스텀 컨텍스트 메뉴 */}

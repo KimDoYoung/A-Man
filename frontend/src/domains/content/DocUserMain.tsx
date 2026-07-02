@@ -224,6 +224,23 @@ const DocUserMain: React.FC = () => {
       })
   }, [])
 
+  // F4 -> 메뉴 영역 토글, F9 -> 미리보기 영역 토글 단축키 바인딩
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F4') {
+        e.preventDefault()
+        setSidebarOpen((prev) => !prev)
+      } else if (e.key === 'F9') {
+        e.preventDefault()
+        setPreviewOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
   // 스크롤 동기화 (Scroll Sync) 효과
   useEffect(() => {
     const textarea = textareaRef.current
@@ -441,7 +458,7 @@ const DocUserMain: React.FC = () => {
       setSaveStatus({ type: 'success', text: '변경사항 저장이 완료되었습니다.' })
       setTimeout(() => {
         setSaveStatus((prev) => prev.text === '변경사항 저장이 완료되었습니다.' ? { type: '', text: '' } : prev)
-      }, 3000)
+      }, 1000)
 
       // 저장 완료 후, 페이지 ID를 업데이트하여 신규 상태를 방지하고 폴더 경로 유지
       isLeavingRef.current = true
