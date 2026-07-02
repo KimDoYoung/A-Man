@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>A-Man 매뉴얼 에디터 Pro</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f5f5f5; margin: 0; padding: 20px; }
+        #canvas-container { margin: 20px auto; max-width: 95%; overflow: auto; }
+        canvas { border: 2px dashed #ccc; background: #fff; cursor: crosshair; display: block; margin: 0 auto; }
+        .toolbar { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block; margin-bottom: 10px; }
+        .tool-group { display: inline-block; margin: 0 15px; padding-right: 15px; border-right: 1px solid #ddd; }
+        .tool-group:last-child { border: none; }
+        label { font-weight: bold; font-size: 14px; margin-right: 5px; }
+        button { padding: 8px 12px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; background: #fff; }
+        button.active { background: #007bff; color: white; border-color: #0056b3; }
+        .hint { color: #666; font-size: 13px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h2>A-Man 웹 앱 매뉴얼 편집기 Pro</h2>
+    
+    <div class="toolbar">
+        <div class="tool-group">
+            <input type="file" id="upload" accept="image/*">
+        </div>
+
+        <div class="tool-group">
+            <label>도구 선택:</label>
+            <button id="tool-number" class="active">❶ 숫자 스탬프</button>
+            <button id="tool-rect"> Ley 사각형 (러버밴드)</button>
+            <button id="tool-text"> T 글씨 넣기 (팝업)</button>
+        </div>
+
+        <div class="tool-group">
+            <button id="undo-btn" style="background: #ffc107; color: #212529;">↩️ 실행 취소 (Undo)</button>
+            <button id="reset-btn">숫자 초기화 (현재: <span id="num-indicator">1</span>)</button>
+            <button id="download-btn" style="background: #28a745; color: white;">이미지 다운로드</button>
+        </div>
+    </div>
+    <div class="hint" id="status-hint">숫자 스탬프 모드: 이미지 위를 클릭하면 빨간 원 안에 흰색 숫자가 그려집니다.</div>
+
+    <div id="canvas-container">
+        <canvas id="editorCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('editorCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let currentTool = 'number'; // number, rect, text
+        let currentNumber = 1;
+        let baseImage = new Image();
+
+        // 사각형/러버밴드 및 그리기를 위한 상태 변수
+        let isDrawingRect = false;
+        let startX, startY;
+
+        // Undo(실행 취소)를 위한 히스토리 스택 배열
+        let historyStack = [];
+
+        // 툴바 엘리먼트
+        const btnNumber = document.getElementById('tool-number');
+        const btnRect = document.getElementById('tool-rect');
+        const btnText = document.getElementById('tool-text');
+        const statusHint = document.getElementById('status-hint');
+
+        function setTool(tool) {
+            currentTool = tool;
+            btnNumber.classList.remove('active');
+            btnRect.classList.remove('active');
+            btnText.classList.remove('active');
+
+            if(tool === 'number') {
+                btnNumber.classList.add('active');
+                statusHint.innerText = "숫자 스탬프 모드: 이미지 위를 클릭하면 빨간 원 안에 흰색 숫자가 그려집니다.";
+            } else if(tool === 'rect') {
+                btnRect.classList.add('active');
+                statusHint.innerText = "사각형 영역 모드: 마우스를 누른 채 드래그하면 실시간(러버밴드)으로 크기가 보입니다.";
+            } else if(tool === 'text') {
+                btnText.classList.add('active');
+                statusHint.innerText = "글씨 넣기 모드: 원하는 곳을 클릭하면 프롬프트 창이 뜨며 글씨를 입력할 수 있습니다.";
+            }
+        }
+
+        btnNumber.addEventListener('click', () => setTool('number'));
+        btnRect.addEventListener('click', () => setTool('rect'));
+        btnText.addEventListener('click', () => setTool('text'));
+
+        // 현재 캔버스 상태를 히스토리에 저장하는 함수
+        function saveToHistory() {
+            historyStack.push(canvas.toDataURL());
+        }
+
+        // 이미지 파일 로드
+        document.getElementById('upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                baseImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        baseImage.onload = () => {
+            canvas.width = baseImage.width;
+            canvas.height = baseImage.height;
+            ctx.drawImage(baseImage, 0, 0);
+            currentNumber = 1;
+            document.getElementById('num-indicator').innerText = currentNumber;
+            historyStack = []; // 히스토리 초기화
+            saveToHistory();   // 최초 원본 상태 저장
+        };
+
+        // 캔버스 마우스 캔버스 내 실제 좌표 변환 함수
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        // 마우스 누름 (mousedown)
+        canvas.addEventListener('mousedown', (e) => {
+            if (!baseImage.src) return;
+            const coords = getCanvasCoords(e);
+
+            if (currentTool === 'rect') {
+                isDrawingRect = true;
+                startX = coords.x;
+                startY = coords.y;
+            }
+        });
+
+        // 마우스 이동 (mousemove) -> 핵심 1: 사각형 러버밴드 구현
+        canvas.addEventListener('mousemove', (e) => {
+            if (!baseImage.src || !isDrawingRect || currentTool !== 'rect') return;
+            const coords = getCanvasCoords(e);
+
+            // 1. 캔버스를 이전 상태(마우스 누르기 직전 상태)로 되돌려 잔상 제거
+            const previousState = new Image();
+            previousState.src = historyStack[historyStack.length - 1];
+            
+            // 이미지 로딩 동기화 처리 후 드로잉
+            previousState.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(previousState, 0, 0);
+
+                // 2. 현재 마우스 위치까지 실시간으로 사각형 그리기 (러버밴드 효과)
+                const width = coords.x - startX;
+                const height = coords.y - startY;
+
+                ctx.strokeStyle = '#FF0000';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(startX, startY, width, height);
+
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.05)';
+                ctx.fillRect(startX, startY, width, height);
+            };
+        });
+
+        // 마우스 뗌 (mouseup)
+        canvas.addEventListener('mouseup', (e) => {
+            if (!baseImage.src) return;
+            const coords = getCanvasCoords(e);
+
+            if (currentTool === 'number') {
+                saveToHistory(); // 그리기 전 상태 저장 (Undo용)
+
+                ctx.beginPath();
+                ctx.arc(coords.x, coords.y, 16, 0, 2 * Math.PI);
+                ctx.fillStyle = '#FF0000';
+                ctx.fill();
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold 18px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(currentNumber, coords.x, coords.y + 1);
+
+                currentNumber++;
+                document.getElementById('num-indicator').innerText = currentNumber;
+
+            } else if (currentTool === 'rect' && isDrawingRect) {
+                isDrawingRect = false;
+                // 드래그가 끝난 최종 형태 확정되었으므로 히스토리에 최종 저장
+                saveToHistory();
+
+            } else if (currentTool === 'text') {
+                // 핵심 2: 클릭 시 prompt 창 띄우고 취소 처리 기능
+                const textValue = prompt("이미지에 삽입할 글씨를 입력하세요:");
+                
+                // 사용자가 취소를 누르거나(null) 아무것도 입력하지 않은 경우 그리지 않음
+                if (textValue === null || textValue.trim() === "") return;
+
+                saveToHistory(); // 그리기 전 상태 저장 (Undo용)
+
+                ctx.fillStyle = '#FF0000';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                
+                ctx.shadowColor = '#FFFFFF';
+                ctx.shadowBlur = 4;
+                ctx.fillText(textValue, coords.x, coords.y);
+                ctx.shadowBlur = 0;
+            }
+        });
+
+        // 핵심 3: 실행 취소 (Undo) 기능 구현
+        document.getElementById('undo-btn').addEventListener('click', () => {
+            if (historyStack.length <= 1) {
+                alert("더 이상 되돌릴 작업이 없습니다.");
+                return;
+            }
+
+            // 마지막에 쌓인 최근 상태를 제거(pop)
+            historyStack.pop();
+            
+            // 바로 직전 상태의 이미지 데이터를 가져와 캔버스에 복원
+            const previousState = new Image();
+            previousState.src = historyStack[historyStack.length - 1];
+            
+            previousState.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(previousState, 0, 0);
+                
+                // 숫자 도구 상태였다면 카운트도 1 감소 시켜 싱크 맞춤
+                if (currentNumber > 1) {
+                    currentNumber--;
+                    document.getElementById('num-indicator').innerText = currentNumber;
+                }
+            };
+        });
+
+        // 숫자 초기화 및 전체 캔버스 리셋
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if (baseImage.src) {
+                ctx.drawImage(baseImage, 0, 0);
+                historyStack = [];
+                saveToHistory();
+            }
+            currentNumber = 1;
+            document.getElementById('num-indicator').innerText = currentNumber;
+        });
+
+        // 최종 다운로드
+        document.getElementById('download-btn').addEventListener('click', () => {
+            if (!baseImage.src) return;
+            const link = document.createElement('a');
+            link.download = 'aman-manual-edit-pro.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    </script>
+</body>
+</html>
