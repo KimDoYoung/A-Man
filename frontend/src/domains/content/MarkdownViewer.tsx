@@ -217,7 +217,7 @@ const MarkdownViewer: React.FC = () => {
           ),
           blockquote: ({ children, ...props }) => (
             <blockquote
-              className="border-l-4 border-indigo-500 pl-4 py-1.5 my-4 bg-gray-50/50 rounded-r-md text-gray-600 italic text-sm [&_p:last-child]:mb-0"
+              className="border-l-4 border-gray-300 pl-4 py-1.5 my-4 bg-gray-50/50 rounded-r-md text-gray-600 italic text-sm [&_p:last-child]:mb-0"
               {...props}
             >
               {children}
