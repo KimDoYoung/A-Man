@@ -9,7 +9,7 @@ const NormalUserMain: React.FC = () => {
   // 레이아웃 인터랙션 상태
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tocOpen, setTocOpen] = useState(true)
-  const [sidebarWidth, setSidebarWidth] = useState(260)
+  const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isResizing, setIsResizing] = useState(false)
   const [showTopBtn, setShowTopBtn] = useState(false)
   
@@ -90,7 +90,7 @@ const NormalUserMain: React.FC = () => {
 
         {/* 2.3 메인 본문 콘텐츠 및 우측 목차 감싸기 */}
         <div className="flex-1 flex items-start overflow-y-auto relative bg-white">
-          <main className="flex-1 p-8 lg:p-12 min-h-full">
+          <main className="flex-1 py-8 px-4 lg:py-12 lg:px-6 min-h-full">
             {/* 서브 라우트(Outlet) 렌더링. 목차 상태 및 Setter 제공 */}
             <Outlet context={{ setTocData, tocOpen, setTocOpen } as OutletContextType} />
           </main>

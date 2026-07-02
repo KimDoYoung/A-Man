@@ -44,7 +44,7 @@ const DocUserMain: React.FC = () => {
   // 레이아웃 인터랙션 상태
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(true)
-  const [sidebarWidth, setSidebarWidth] = useState(260)
+  const [sidebarWidth, setSidebarWidth] = useState(320)
   const [previewWidthPercent, setPreviewWidthPercent] = useState(50)
   const [resizingSidebar, setResizingSidebar] = useState(false)
   const [resizingPreview, setResizingPreview] = useState(false)
