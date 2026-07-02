@@ -1134,7 +1134,7 @@ public class ManualController {
         }
 
         // **텍스트(괄호)** 등 볼드 한글 파싱 에러 방지용 전처리
-        markdown = markdown.replaceAll("\\*\\*([^\\*]+?)\\*\\*", "<strong>$1</strong>");
+        markdown = markdown.replaceAll("\\*\\*(.*?)\\*\\*", "<strong>$1</strong>");
 
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, java.util.Arrays.asList(

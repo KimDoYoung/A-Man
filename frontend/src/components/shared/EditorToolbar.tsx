@@ -278,7 +278,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   }, [])
 
   return (
-    <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
+    <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5 flex items-center justify-between text-gray-500 shrink-0 select-none">
       <div className="flex items-center space-x-1">
         {/* 제목 헤더(H) 드롭다운 */}
         <div className="relative" ref={headingPanelRef}>

@@ -50,7 +50,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
   }
 
   // **텍스트(괄호)** 형태 등의 볼드 파싱 에러를 우회하기 위해 <strong> 태그로 강제 치환
-  const processedMd = md.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+  const processedMd = md.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
   return (
     <ReactMarkdown
