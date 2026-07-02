@@ -1,5 +1,5 @@
 import React from 'react'
-import { BookOpen, Key, FileText, CheckCircle } from 'lucide-react'
+import { BookOpen, Key, FileText, CheckCircle, ShieldAlert, FolderTree, TableOfContents, SquarePen } from 'lucide-react'
 import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 
 const NormalUserIntro: React.FC = () => {
@@ -64,7 +64,7 @@ const NormalUserIntro: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
           <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/50 flex flex-col space-y-2">
             <div className="flex items-center space-x-2 text-indigo-600">
-              <BookOpen className="w-5 h-5" />
+              <FolderTree className="w-5 h-5" />
               <h3 className="font-bold text-gray-900 m-0">3단계 메뉴 구조</h3>
             </div>
             <p className={fontSizeClassMap.desc}>
@@ -74,41 +74,42 @@ const NormalUserIntro: React.FC = () => {
 
           <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/50 flex flex-col space-y-2">
             <div className="flex items-center space-x-2 text-indigo-600">
-              <FileText className="w-5 h-5" />
+              <SquarePen className="w-5 h-5" />
               <h3 className="font-bold text-gray-900 m-0">마크다운 문서 뷰어</h3>
             </div>
             <p className={fontSizeClassMap.desc}>
               가독성이 뛰어난 서식과 하이라이트 기능을 탑재하여 다양한 ERP 사용 업무 지침을 손쉽게 읽을 수 있습니다.
             </p>
           </div>
-
           <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/50 flex flex-col space-y-2">
             <div className="flex items-center space-x-2 text-indigo-600">
-              <Key className="w-5 h-5" />
-              <h3 className="font-bold text-gray-900 m-0">문서 관리자 권한</h3>
-            </div>
-            <p className={fontSizeClassMap.desc}>
-              한국펀드서비스 권한을 획득한 문서 작성자는 에디터를 통해 실시간으로 도움말을 추가, 수정 및 삭제할 수 있습니다.
-            </p>
-          </div>
-
-          <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/50 flex flex-col space-y-2">
-            <div className="flex items-center space-x-2 text-indigo-600">
-              <CheckCircle className="w-5 h-5" />
+              <TableOfContents className="w-5 h-5" />
               <h3 className="font-bold text-gray-900 m-0">실시간 목차 연동</h3>
             </div>
             <p className={fontSizeClassMap.desc}>
               조회 중인 도움말 지침서 문서의 제목 수준에 따라 우측 목차(TOC)가 실시간으로 자동 구성되어 빠른 본문 이동을 돕습니다.
             </p>
           </div>
+
+          <div className="p-5 border border-gray-200 rounded-lg bg-gray-50/50 flex flex-col space-y-2">
+            <div className="flex items-center space-x-2 text-indigo-600">
+              <ShieldAlert className="w-5 h-5" />
+              <h3 className="font-bold text-gray-900 m-0">문서 관리자 권한</h3>
+            </div>
+            <p className={fontSizeClassMap.desc}>
+              한국펀드서비스(주) 문서 작성자는 에디터를 통해 실시간으로 도움말을 추가, 수정 및 삭제할 수 있습니다.
+            </p>
+          </div>          
         </div>
 
         <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-5">
           <h4 className="text-indigo-900 font-bold mb-2">💡 이용 가이드</h4>
           <ul className={fontSizeClassMap.guide}>
-            <li>왼쪽 상단 필터 입력창에 키워드를 검색하면 관련 매뉴얼 폴더들이 즉시 필터링됩니다.</li>
-            <li>왼쪽 트리에서 <strong>3단계 소분류 메뉴</strong>(예: 1.1.1 사용자 관리)를 열어 내부 지침 문서를 클릭하십시오.</li>
-            <li>본문 우측의 [목차 감추기(Pin)] 버튼을 누르면 본문 영역을 확장하여 집중해서 글을 읽을 수 있습니다.</li>
+            <li>왼쪽 상단 <strong>필터링 입력창에 키워드 또는 문서번호</strong>를 검색하면 관련 매뉴얼 폴더들이 필터링됩니다.</li>
+            <li>왼쪽 상단 툴바의 <strong>햄버거 icon</strong>을 클릭하면 메뉴 트리를 감추거나 보이게 할 수 있습니다.</li>
+            <li>왼쪽 트리에서 <strong>3단계 소분류 메뉴</strong>(예: 1412 책무 등록)를 열어 내부 지침 문서를 클릭하십시오.</li>
+            <li>본문 우측의 [<strong>목차 감추기(Pin)</strong>] 버튼을 누르면 본문 영역을 확장하여 집중해서 글을 읽을 수 있습니다.</li>
+            <li>최 상단 툴바에서 <strong>글자 크기와 문서의 폭</strong>을 조절할 수 있습니다. 모니터에 따라서 최적의 읽기 상태를 만들 수 있습니다.</li>
           </ul>
         </div>
       </div>
