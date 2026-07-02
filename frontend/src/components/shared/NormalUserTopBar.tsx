@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, Pin, ShieldAlert, Maximize2, AArrowDown, AArrowUp } from 'lucide-react'
-import { useUserLocalSettingStore, FontSize, ContentWidth } from '@/store/useUserLocalSettingStore'
+import { Menu, Pin, ShieldAlert, MonitorCog } from 'lucide-react'
+import NormalUserSettings from './NormalUserSettings'
 import axios from 'axios'
 import faviconImg from '../../assets/favicon.png'
 
@@ -22,31 +22,7 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
   const [siteName, setSiteName] = useState('AssetERP Docs')
   const [siteDescription, setSiteDescription] = useState('AssetERP 도움말 시스템')
   const [version, setVersion] = useState('0.0.1')
-
-  const { fontSize, contentWidth, setFontSize, setContentWidth } = useUserLocalSettingStore()
-
-  const fontSizes: FontSize[] = ['sm', 'base', 'lg', 'xl']
-  const contentWidths: ContentWidth[] = ['normal', 'wide', 'full']
-
-  const handleDecreaseFont = () => {
-    const idx = fontSizes.indexOf(fontSize)
-    if (idx > 0) {
-      setFontSize(fontSizes[idx - 1])
-    }
-  }
-
-  const handleIncreaseFont = () => {
-    const idx = fontSizes.indexOf(fontSize)
-    if (idx < fontSizes.length - 1) {
-      setFontSize(fontSizes[idx + 1])
-    }
-  }
-
-  const handleCycleWidth = () => {
-    const idx = contentWidths.indexOf(contentWidth)
-    const nextIdx = (idx + 1) % contentWidths.length
-    setContentWidth(contentWidths[nextIdx])
-  }
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   useEffect(() => {
     axios.get('/aman/health')
@@ -108,42 +84,21 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
           )}
         </div>
 
-        {/* 사용자 화면 설정 조절기 (아이콘은 왼쪽에 배치) */}
-        <div className="hidden md:flex items-center space-x-2 ml-4 border-l border-gray-200 pl-4 shrink-0 select-none">
-          {/* 글자 크기 조절 (AArrowDown, AArrowUp 아이콘 적용) */}
-          <div className="flex items-center h-8 bg-gray-50 border border-gray-200 rounded-md px-1.5 space-x-1">
-            <button 
-              onClick={handleDecreaseFont} 
-              disabled={fontSize === 'sm'}
-              className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer text-gray-500 hover:text-gray-800 transition-colors flex items-center justify-center"
-              title="글자 크기 축소"
-            >
-              <AArrowDown className="w-4 h-4" />
-            </button>
-            <span className="text-[10px] text-gray-400 font-semibold font-mono min-w-[24px] text-center">
-              {fontSize.toUpperCase()}
-            </span>
-            <button 
-              onClick={handleIncreaseFont} 
-              disabled={fontSize === 'xl'}
-              className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 cursor-pointer text-gray-500 hover:text-gray-800 transition-colors flex items-center justify-center"
-              title="글자 크기 확대"
-            >
-              <AArrowUp className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 본문 너비 조절 */}
-          <button 
-            onClick={handleCycleWidth}
-            className="flex items-center h-8 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md px-2.5 text-xs text-gray-700 cursor-pointer transition-colors"
-            title="본문 가로 너비 전환"
+        {/* 사용자 화면 설정 조절기 토글 및 컴포넌트 마운트 */}
+        <div className="hidden md:flex items-center space-x-2 ml-4 shrink-0">
+          <button
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className={`p-1.5 rounded-md transition-all cursor-pointer border ${
+              isSettingsOpen 
+                ? 'bg-indigo-50 text-indigo-600 border-indigo-100/70 shadow-xs' 
+                : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600 border-transparent'
+            }`}
+            title="화면 설정 조절"
           >
-            <Maximize2 className="w-4 h-4 text-gray-500 mr-1.5" />
-            <span className="font-semibold text-[11px]">
-              폭: {contentWidth === 'normal' ? '보통' : contentWidth === 'wide' ? '넓게' : '꽉차게'}
-            </span>
+            <MonitorCog className="w-4.5 h-4.5" />
           </button>
+          
+          {isSettingsOpen && <NormalUserSettings />}
         </div>
       </div>
       
