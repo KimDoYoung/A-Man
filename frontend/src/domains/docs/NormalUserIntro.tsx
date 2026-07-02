@@ -1,5 +1,5 @@
 import React from 'react'
-import { BookOpen, Key, FileText, CheckCircle, ShieldAlert, FolderTree, TableOfContents, SquarePen } from 'lucide-react'
+import { FolderTree, SquarePen, TableOfContents, ShieldAlert } from 'lucide-react'
 import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 
 const NormalUserIntro: React.FC = () => {
