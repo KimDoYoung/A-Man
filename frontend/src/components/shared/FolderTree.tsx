@@ -50,6 +50,44 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
     }
   }, [location.pathname])
 
+  // 포커싱된 폴더 변경 시: 모두 접은 뒤 해당 폴더의 상위 부모 폴더들만 탐색하여 펼침
+  useEffect(() => {
+    if (focusedFolderId === null || folders.length === 0) return;
+
+    // 1. 트리 노드 리스트 평탄화
+    const flatList: FolderNode[] = [];
+    const flatten = (items: FolderNode[]) => {
+      items.forEach(item => {
+        flatList.push(item);
+        if (item.children && item.children.length > 0) {
+          flatten(item.children);
+        }
+      });
+    };
+    flatten(folders);
+
+    // 2. 현재 포커스 노드로부터 상위 부모 ID 탐색
+    const parentIds: number[] = [];
+    let current = flatList.find(item => item.id === focusedFolderId);
+    while (current) {
+      const parentId = current.parentId;
+      if (parentId) {
+        parentIds.push(parentId);
+        current = flatList.find(item => item.id === parentId);
+      } else {
+        break;
+      }
+    }
+
+    // 3. 해당 부모 폴더들만 true로 설정하여 펼침 상태 업데이트 (기타 폴더는 자동 접힘)
+    const newExpanded: Record<number, boolean> = {};
+    parentIds.forEach(pId => {
+      newExpanded[pId] = true;
+    });
+
+    setExpandedFolders(newExpanded);
+  }, [focusedFolderId, folders])
+
   // 키보드로 선택된 폴더 노드를 스크롤 영역 안으로 이동 (jump 방지용 수동 스크롤 조절)
   useEffect(() => {
     if (focusedFolderId !== null) {

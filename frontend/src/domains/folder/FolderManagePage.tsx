@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, Save, Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown, ListOrdered, RefreshCw, Layers } from 'lucide-react'
+import { Plus, Trash2, Save, Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown, ListOrdered, RefreshCw, Layers, FileText } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { AgGridReact } from 'ag-grid-react'
@@ -511,7 +511,9 @@ const FolderManagePage: React.FC = () => {
             ) : (
               <span className="w-4.5" />
             )}
-            {isExpanded ? (
+            {node.level === 3 ? (
+              <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-500' : 'text-slate-400'}`} />
+            ) : isExpanded ? (
               <FolderOpen className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-500' : 'text-amber-500'}`} />
             ) : (
               <FolderIcon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-indigo-500' : 'text-amber-400'}`} />

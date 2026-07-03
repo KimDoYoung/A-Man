@@ -15,7 +15,7 @@ const DepthBadge: React.FC<DepthBadgeProps> = ({ level }) => {
     badgeClass = 'bg-blue-50 text-blue-600 border-blue-200'
   } else {
     // Gray/Slate Theme for Level 3 (D3)
-    badgeClass = 'bg-slate-100 text-slate-500 border-slate-200'
+    badgeClass = 'bg-slate-100 text-slate-400 border-slate-100'
   }
 
   return (
