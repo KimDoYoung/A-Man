@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, User, AlertCircle } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import favicon from '@/assets/aman-favicon.png'
 
 const LoginPage: React.FC = () => {
@@ -22,13 +22,13 @@ const LoginPage: React.FC = () => {
     setErrorMsg('')
 
     try {
-      const response = await axios.post('/aman/auth/login', {
+      const data = await apiClient.post<any>('/auth/login', {
         username,
         password
       })
 
       // 로그인 성공 시 사용자 정보 저장
-      localStorage.setItem('aman_user', JSON.stringify(response.data))
+      localStorage.setItem('aman_user', JSON.stringify(data))
       
       // 관리자 메인 화면으로 이동
       navigate('/admin', { replace: true })

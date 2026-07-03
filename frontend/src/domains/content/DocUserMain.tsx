@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useBlocker } from 'react-router-dom'
 import { Save, ExternalLink, Trash2 } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import FolderTree from '@/components/shared/FolderTree'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import MdTextarea from '@/components/shared/MdTextarea'
@@ -122,8 +122,7 @@ const DocUserMain: React.FC = () => {
         let targetFolderId: number | null = null
 
         if (page_id) {
-          const response = await axios.get(`/aman/content/${page_id}`)
-          const data = response.data
+          const data = await apiClient.get<any>(`/content/${page_id}`)
           setPage(data)
           setPageTitle(data.title)
           setPageContent(data.content)
@@ -131,11 +130,9 @@ const DocUserMain: React.FC = () => {
           setPageStatus(data.status || 'DRAFT')
           targetFolderId = data.folder?.id || null
         } else if (folder_id) {
-          const pagesRes = await axios.get(`/aman/content/folders/${folder_id}/pages`)
-          const pages = pagesRes.data
+          const pages = await apiClient.get<any[]>(`/content/folders/${folder_id}/pages`)
 
-          const folderRes = await axios.get(`/aman/docs/folders/${folder_id}`)
-          const folder = folderRes.data
+          const folder = await apiClient.get<any>(`/docs/folders/${folder_id}`)
           targetFolderId = Number(folder_id)
 
           if (pages && pages.length > 0) {
@@ -163,8 +160,8 @@ const DocUserMain: React.FC = () => {
 
         // 폴더 계층 구조 로드 (빵부스러기용)
         if (targetFolderId) {
-          const hierarchyRes = await axios.get(`/aman/docs/folders/${targetFolderId}/hierarchy`)
-          setFolderHierarchy(hierarchyRes.data)
+          const hierarchy = await apiClient.get<any[]>(`/docs/folders/${targetFolderId}/hierarchy`)
+          setFolderHierarchy(hierarchy)
         } else {
           setFolderHierarchy([])
         }
@@ -213,10 +210,10 @@ const DocUserMain: React.FC = () => {
 
   // 사이트 포맷 및 제어 설정 로드
   useEffect(() => {
-    axios.get('/aman/health')
-      .then(res => {
-        if (res.data && res.data.settings) {
-          setSettings(res.data.settings)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data && data.settings) {
+          setSettings(data.settings)
         }
       })
       .catch(err => {
@@ -376,10 +373,10 @@ const DocUserMain: React.FC = () => {
       try {
         const formData = new FormData()
         formData.append('file', file)
-        const res = await axios.post<{ url: string }>('/aman/content/image', formData, {
+        const res = await apiClient.post<{ url: string }>('/content/image', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        const actualUrl = res.data?.url ?? 'undefined_url_returned'
+        const actualUrl = res?.url ?? 'undefined_url_returned'
         const markdownImage = `![image](${actualUrl})\n`
         setPageContent((prev) => prev.replace(loadingText, markdownImage))
       } catch (error) {
@@ -419,8 +416,8 @@ const DocUserMain: React.FC = () => {
       setSaving(true)
       try {
         const folderId = page.folder?.id
-        const response = await axios.get(`/aman/manual/new-aka?folderId=${folderId || ''}`)
-        trimmedAka = response.data.toString().trim()
+        const data = await apiClient.get<any>(`/manual/new-aka?folderId=${folderId || ''}`)
+        trimmedAka = data.toString().trim()
         setPageAka(trimmedAka)
       } catch (error) {
         console.error('새로운 AKA 발급 실패:', error)
@@ -445,7 +442,7 @@ const DocUserMain: React.FC = () => {
 
       const trimmedContent = pageContent.trim()
 
-      const response = await axios.post('/aman/content', {
+      const savedPage = await apiClient.post<any>('/content', {
         id: page.id,
         folderId: folderId,
         title: titleToSave,
@@ -453,7 +450,6 @@ const DocUserMain: React.FC = () => {
         aka: trimmedAka,
         status: pageStatus
       })
-      const savedPage = response.data
       
       setSaveStatus({ type: 'success', text: '변경사항 저장이 완료되었습니다.' })
       setTimeout(() => {
@@ -498,7 +494,7 @@ const DocUserMain: React.FC = () => {
     setErrorMsg('')
     try {
       const folderId = page.folder?.id || page.folderId
-      await axios.delete(`/aman/content/${page.id}`)
+      await apiClient.delete(`/content/${page.id}`)
       
       // 삭제 후 UI 초기 상태 복원 및 해당 폴더 URL로 navigate
       isLeavingRef.current = true
