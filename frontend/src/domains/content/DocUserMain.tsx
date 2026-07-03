@@ -673,7 +673,6 @@ const DocUserMain: React.FC = () => {
         blocker={blocker}
         handleSave={handleSave}
         isLeavingRef={isLeavingRef}
-        navigate={navigate}
       />
     </div>
   )

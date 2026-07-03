@@ -1,18 +1,15 @@
 import React from 'react';
-import { NavigateFunction } from 'react-router-dom';
 
 interface UnsavedChangesModalProps {
   blocker: any;
   handleSave: (silent?: boolean) => Promise<boolean>;
   isLeavingRef: React.MutableRefObject<boolean>;
-  navigate: NavigateFunction;
 }
 
 const UnsavedChangesModal: React.FC<UnsavedChangesModalProps> = ({
   blocker,
   handleSave,
   isLeavingRef,
-  navigate,
 }) => {
   if (blocker.state !== 'blocked') return null;
 
@@ -42,15 +39,10 @@ const UnsavedChangesModal: React.FC<UnsavedChangesModalProps> = ({
           </button>
           <button
             onClick={async () => {
-              const destination = blocker.location
-                ? blocker.location.pathname + (blocker.location.search || '') + (blocker.location.hash || '')
-                : null;
-              
               isLeavingRef.current = true;
               const success = await handleSave(true);
-              if (success && destination) {
-                blocker.reset();
-                navigate(destination);
+              if (success) {
+                blocker.proceed();
               } else {
                 isLeavingRef.current = false;
                 blocker.reset();

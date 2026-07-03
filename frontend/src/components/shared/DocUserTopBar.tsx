@@ -2,23 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Menu, UserCheck, LogOut, Info, HelpCircle } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
-import { useRecentPagesStore } from '@/store/useRecentPagesStore'
 import ProfileEditModal from './ProfileEditModal'
+import RecentPagesModal from './RecentPagesModal'
 
 interface DocUserTopBarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-}
-
-const formatRelativeTime = (timestamp: number) => {
-  const diff = Date.now() - timestamp
-  if (diff < 60000) return '방금 전'
-  const mins = Math.floor(diff / 60000)
-  if (mins < 60) return `${mins}분 전`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}시간 전`
-  const days = Math.floor(hours / 24)
-  return `${days}일 전`
 }
 
 const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
@@ -43,16 +32,29 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
 
   // Recent Pages Modal States
   const [isRecentPagesOpen, setIsRecentPagesOpen] = useState(false)
-  const { recentPages, fetchRecentPages, removePage, clearPages } = useRecentPagesStore()
-
-  useEffect(() => {
-    if (isRecentPagesOpen) {
-      fetchRecentPages()
-    }
-  }, [isRecentPagesOpen, fetchRecentPages])
 
   // Profile Edit Modal States
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  // 핫키 바인딩 (Alt + H: 작업이력 토글, ESC: 모달 닫기)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isAltOnly = e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey;
+      
+      if (isAltOnly && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        setIsRecentPagesOpen((prev) => !prev);
+      }
+      
+      if (e.key === 'Escape') {
+        setIsRecentPagesOpen(false);
+        setIsProfileOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     apiClient.get<any>('/health')
@@ -147,7 +149,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           <button
             onClick={() => setIsRecentPagesOpen(true)}
             className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
-            title="최근 작업 문서 이력 보기"
+            title="최근 작업 문서 이력 보기 (Alt + H)"
           >
             작업이력
           </button>
@@ -227,95 +229,10 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
       />
 
       {/* 최근 작업 문서 (UserWorkStack) 모달 */}
-      {isRecentPagesOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-[999] transition-all duration-300">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full shadow-2xl border border-slate-100 text-slate-800 transform transition-all animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-150 mb-4">
-              <h3 className="text-base font-bold text-slate-950 flex items-center">
-                <span className="mr-2">⏱️</span> 최근 작업 문서 이력 (최근 10개)
-              </h3>
-              <button 
-                onClick={() => setIsRecentPagesOpen(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
-              >
-                &times;
-              </button>
-            </div>
-            
-            {recentPages.length === 0 ? (
-              <div className="py-12 text-center text-gray-400 text-sm font-medium">
-                최근 작업(저장)한 문서 이력이 없습니다.
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto max-h-[300px] overflow-y-auto custom-scroll mb-4 border border-gray-250 rounded-md">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
-                        <th className="px-4 py-2 text-center w-24">폴더 번호</th>
-                        <th className="px-4 py-2">메뉴/폴더명</th>
-                        <th className="px-4 py-2 w-28 text-center">작업 시간</th>
-                        <th className="px-4 py-2 text-center w-28">동작</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentPages.map((page) => (
-                        <tr key={page.id} className="border-b border-gray-150 hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 font-mono text-center text-slate-500 font-bold">
-                            {page.nums || '-'}
-                          </td>
-                          <td className="px-4 py-3 text-slate-800 font-semibold">
-                            {page.name}
-                          </td>
-                          <td className="px-4 py-3 text-slate-400 text-center font-medium">
-                            {formatRelativeTime(page.timestamp)}
-                          </td>
-                          <td className="px-4 py-3 text-center flex items-center justify-center space-x-1.5">
-                            <button
-                              onClick={() => {
-                                navigate(`/admin/folder/${page.id}`);
-                                setIsRecentPagesOpen(false);
-                              }}
-                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-sm cursor-pointer transition-colors"
-                            >
-                              이동
-                            </button>
-                            <button
-                              onClick={() => removePage(page.id)}
-                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-sm cursor-pointer transition-colors"
-                            >
-                              삭제
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-gray-150 pt-3">
-                  <button
-                    onClick={() => {
-                      if (confirm('모든 작업 이력을 삭제하시겠습니까?')) {
-                        clearPages();
-                      }
-                    }}
-                    className="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 font-bold rounded-md transition-colors cursor-pointer"
-                  >
-                    이력 전체 비우기
-                  </button>
-                  <button
-                    onClick={() => setIsRecentPagesOpen(false)}
-                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-md transition-colors cursor-pointer"
-                  >
-                    닫기
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <RecentPagesModal 
+        isOpen={isRecentPagesOpen} 
+        onClose={() => setIsRecentPagesOpen(false)} 
+      />
     </header>
   )
 }

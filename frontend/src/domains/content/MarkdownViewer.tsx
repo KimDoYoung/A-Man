@@ -132,7 +132,9 @@ const MarkdownViewer: React.FC = () => {
 
   // 마크다운에서 헤더(#, ##, ###)를 추출하는 헬퍼 함수
   const extractTocFromMarkdown = (md: string): TocItem[] => {
-    const lines = md.split('\n')
+    // 코드 블록(``` ... ```) 내부의 주석(#)이 헤더로 오인식되는 것을 방지하기 위해 제거
+    const cleanMd = md.replace(/```[\s\S]*?```/g, '')
+    const lines = cleanMd.split('\n')
     const toc: TocItem[] = []
     
     let headingIndex = 0
