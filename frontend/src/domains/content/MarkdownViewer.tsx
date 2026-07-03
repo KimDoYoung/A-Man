@@ -387,7 +387,7 @@ const MarkdownViewer: React.FC = () => {
   return (
     <div className={`mx-auto ${contentWidthClass}`}>
       <FolderBreadcrumbs folderHierarchy={folderHierarchy} />
-      <article className={`prose dark:prose-invert ${fontSizeClass} max-w-none mt-4`}>
+      <article className={`prose dark:prose-invert ${fontSizeClass} max-w-none mt-4 pb-[60vh]`}>
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100 pb-4 border-b border-gray-200 dark:border-slate-800 mb-6">
           {page.title}
         </h1>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { ArrowUp, Pin } from 'lucide-react'
+import { Pin } from 'lucide-react'
 import { OutletContextType, TocItem } from '@/types'
 import FolderTree from '@/components/shared/FolderTree'
 import NormalUserTopBar from '@/components/shared/NormalUserTopBar'
+import ScrollToTopButton from '@/components/shared/ScrollToTopButton'
 import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 
 const NormalUserMain: React.FC = () => {
@@ -22,7 +23,6 @@ const NormalUserMain: React.FC = () => {
   const [tocOpen, setTocOpen] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isResizing, setIsResizing] = useState(false)
-  const [showTopBtn, setShowTopBtn] = useState(false)
   
   // 데이터 피드백 상태
   const [tocData, setTocData] = useState<TocItem[]>([])
@@ -56,14 +56,7 @@ const NormalUserMain: React.FC = () => {
     }
   }, [isResizing])
 
-  // 탑 버튼 스크롤 핸들링
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowTopBtn(window.pageYOffset > 200)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+
 
   // 테마 동적 주입 및 언마운트 시 클린업 (라이트 모드로 원복하여 /admin 등에 영향 배제)
   useEffect(() => {
@@ -164,28 +157,16 @@ const NormalUserMain: React.FC = () => {
       </div>
 
       {/* 3. 탑 플로팅 버튼 (우측 하단 - 본문 뷰어 영역 기준) */}
-      {showTopBtn && (
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 dark:bg-slate-800/40 hover:bg-gray-300/90 dark:hover:bg-slate-700 text-gray-700/40 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 dark:border-slate-700/30 hover:border-gray-400 cursor-pointer"
-          style={{ right: (tocOpen && tocData.length > 0) ? '280px' : '24px' }}
-          title="맨 위로 스크롤"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+      <ScrollToTopButton 
+        scrollContainerRef={contentScrollRef}
+        position={{ right: (tocOpen && tocData.length > 0) ? '280px' : '24px' }}
+      />
 
       {/* 4. 탑 플로팅 버튼 (좌측 하단 - 본문 뷰어 영역 기준) */}
-      {showTopBtn && (
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-6 z-50 p-2.5 bg-gray-200/30 dark:bg-slate-800/40 hover:bg-gray-300/90 dark:hover:bg-slate-700 text-gray-700/40 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 rounded-full shadow-none hover:shadow-md transition-all border border-gray-300/30 dark:border-slate-700/30 hover:border-gray-400 cursor-pointer"
-          style={{ left: sidebarOpen ? `${sidebarWidth + 24}px` : '24px' }}
-          title="맨 위로 스크롤"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
-      )}
+      <ScrollToTopButton 
+        scrollContainerRef={contentScrollRef}
+        position={{ left: sidebarOpen ? `${sidebarWidth + 24}px` : '24px' }}
+      />
     </div>
   )
 }
