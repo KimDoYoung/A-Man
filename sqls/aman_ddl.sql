@@ -91,6 +91,22 @@ CREATE TABLE assets (
 CREATE INDEX idx_assets_atype_name ON assets(atype, name);
 
 
+-- 1. 최근 작업 이력 스택 테이블 생성
+CREATE TABLE work_stack (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,                                       -- users.id 참조 (사용자별 작업 이력 격리)
+    folder_id INTEGER NOT NULL,                                     -- folders.id 참조
+    created_at DATETIME DEFAULT (datetime('now', 'localtime')),     -- 작업 일시 (최신순 정렬용)
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+    UNIQUE(user_id, folder_id)                                      -- 동일 문서 중복 삽입 방지 (UPSERT 제어용)
+);
+
+-- 2. 사용자별 최신 작업 이력 고속 조회를 위한 인덱스 생성
+CREATE INDEX idx_work_stack_user_created
+ON work_stack (user_id, created_at DESC);
+
+
 CREATE TABLE settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     setting_key VARCHAR(50) NOT NULL,

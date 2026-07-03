@@ -8,6 +8,7 @@ import { PageData } from '@/types'
 import UnsavedChangesModal from './components/UnsavedChangesModal'
 import EditorActionBar from './components/EditorActionBar'
 import MarkdownSplitEditor from './components/MarkdownSplitEditor'
+import { useRecentPagesStore } from '@/store/useRecentPagesStore'
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   if (navigator.clipboard && window.isSecureContext) {
@@ -39,6 +40,7 @@ const copyTextToClipboard = async (text: string): Promise<boolean> => {
 const DocUserMain: React.FC = () => {
   const { page_id, folder_id } = useParams<{ page_id?: string; folder_id?: string }>()
   const navigate = useNavigate()
+  const addPage = useRecentPagesStore((state) => state.addPage)
 
   // 레이아웃 인터랙션 상태
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -463,6 +465,10 @@ const DocUserMain: React.FC = () => {
       })
       
       setSaveStatus({ type: 'success', text: '변경사항 저장이 완료되었습니다.' })
+      
+      // 저장 성공 시 최근 작업 문서(work_stack) 데이터베이스 등록
+      addPage(folderId)
+
       setTimeout(() => {
         setSaveStatus((prev) => prev.text === '변경사항 저장이 완료되었습니다.' ? { type: '', text: '' } : prev)
       }, 1000)

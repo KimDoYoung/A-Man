@@ -2,10 +2,23 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Menu, UserCheck, LogOut, Info, HelpCircle } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import { useRecentPagesStore } from '@/store/useRecentPagesStore'
+import ProfileEditModal from './ProfileEditModal'
 
 interface DocUserTopBarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+}
+
+const formatRelativeTime = (timestamp: number) => {
+  const diff = Date.now() - timestamp
+  if (diff < 60000) return '방금 전'
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60) return `${mins}분 전`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}시간 전`
+  const days = Math.floor(hours / 24)
+  return `${days}일 전`
 }
 
 const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
@@ -28,15 +41,18 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
      !location.pathname.startsWith('/admin/about'))
   const [version, setVersion] = useState('0.0.1')
 
+  // Recent Pages Modal States
+  const [isRecentPagesOpen, setIsRecentPagesOpen] = useState(false)
+  const { recentPages, fetchRecentPages, removePage, clearPages } = useRecentPagesStore()
+
+  useEffect(() => {
+    if (isRecentPagesOpen) {
+      fetchRecentPages()
+    }
+  }, [isRecentPagesOpen, fetchRecentPages])
+
   // Profile Edit Modal States
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const [profileData, setProfileData] = useState<{ id: number; username: string; name: string; email: string } | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [errorMsg, setErrorMsg] = useState('')
-  const [successMsg, setSuccessMsg] = useState('')
-  const [modalLoading, setModalLoading] = useState(false)
 
   useEffect(() => {
     apiClient.get<any>('/health')
@@ -49,29 +65,6 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         console.error('버전 정보 조회 실패:', err)
       })
   }, [])
-
-  // Load profile dynamically when the modal opens
-  useEffect(() => {
-    if (isProfileOpen) {
-      setModalLoading(true)
-      setErrorMsg('')
-      setSuccessMsg('')
-      setPassword('')
-      setConfirmPassword('')
-      apiClient.get<any>('/user/me')
-        .then(data => {
-          setProfileData(data)
-          setEmail(data.email || '')
-        })
-        .catch(err => {
-          console.error('내 프로필 정보 조회 실패:', err)
-          setErrorMsg('프로필 정보를 가져오지 못했습니다.')
-        })
-        .finally(() => {
-          setModalLoading(false)
-        })
-    }
-  }, [isProfileOpen])
 
   // Get logged-in user information
   const userStr = localStorage.getItem('aman_user')
@@ -87,67 +80,6 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
     } finally {
       localStorage.removeItem('aman_user')
       navigate('/login', { replace: true })
-    }
-  }
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!profileData) return
-
-    setErrorMsg('')
-    setSuccessMsg('')
-
-    const emailTrimmed = email.trim()
-    if (!emailTrimmed) {
-      setErrorMsg('이메일을 입력해 주세요.')
-      return
-    }
-    if (!/\S+@\S+\.\S+/.test(emailTrimmed)) {
-      setErrorMsg('올바른 이메일 형식이 아닙니다.')
-      return
-    }
-
-    const payload: any = {}
-    if (emailTrimmed !== profileData.email) {
-      payload.email = emailTrimmed
-    }
-
-    if (password) {
-      if (password.length < 4) {
-        setErrorMsg('비밀번호는 최소 4자 이상이어야 합니다.')
-        return
-      }
-      if (password !== confirmPassword) {
-        setErrorMsg('새 비밀번호와 비밀번호 확인이 일치하지 않습니다.')
-        return
-      }
-      payload.password = password
-    }
-
-    if (Object.keys(payload).length === 0) {
-      setErrorMsg('수정된 정보가 없습니다.')
-      return
-    }
-
-    try {
-      setModalLoading(true)
-      const data = await apiClient.patch<any>(`/user/${profileData.id}`, payload)
-      
-      // Update localStorage to reflect email change
-      if (user) {
-        const updatedUser = { ...user, email: data.email }
-        localStorage.setItem('aman_user', JSON.stringify(updatedUser))
-      }
-
-      setSuccessMsg('개인정보가 성공적으로 변경되었습니다.')
-      setTimeout(() => {
-        setIsProfileOpen(false)
-      }, 1500)
-    } catch (err: any) {
-      console.error('프로필 변경 실패:', err)
-      setErrorMsg(err.response?.data || '개인정보 변경 중 오류가 발생했습니다.')
-    } finally {
-      setModalLoading(false)
     }
   }
 
@@ -212,6 +144,13 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             메뉴 관리
           </button>
+          <button
+            onClick={() => setIsRecentPagesOpen(true)}
+            className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
+            title="최근 작업 문서 이력 보기"
+          >
+            작업이력
+          </button>
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin/users')}
@@ -243,14 +182,6 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
       
       {/* 우측 로그인 사용자 정보 및 로그아웃 */}
       <div className="flex items-center space-x-4 text-xs font-semibold">
-        <button 
-          onClick={() => setIsProfileOpen(true)}
-          className="flex items-center space-x-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer group"
-          title="개인정보 변경"
-        >
-          <UserCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform animate-pulse" />
-          <span className="font-medium border-b border-dashed border-gray-400 group-hover:border-white">{displayName}</span>
-        </button>
         <button
           onClick={() => navigate('/admin/about')}
           className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-xs font-bold border ${
@@ -272,6 +203,14 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           <span>Help</span>
         </button>
         <button 
+          onClick={() => setIsProfileOpen(true)}
+          className="flex items-center space-x-1.5 text-gray-300 hover:text-white transition-colors cursor-pointer group"
+          title="개인정보 변경"
+        >
+          <UserCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform animate-pulse" />
+          <span className="font-medium border-b border-dashed border-gray-400 group-hover:border-white">{displayName}</span>
+        </button>        
+        <button 
           onClick={handleLogout}
           className="flex items-center space-x-1 px-2.5 py-1 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 rounded-md transition-all cursor-pointer"
           title="로그아웃"
@@ -282,132 +221,98 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
       </div>
 
       {/* Profile Edit Modal */}
-      {isProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
-            onClick={() => setIsProfileOpen(false)}
-          />
-          
-          {/* Content */}
-          <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden transform transition-all text-slate-800">
-            {/* Header */}
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-indigo-500" />
-                개인정보 변경
+      <ProfileEditModal 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+      />
+
+      {/* 최근 작업 문서 (UserWorkStack) 모달 */}
+      {isRecentPagesOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-[999] transition-all duration-300">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full shadow-2xl border border-slate-100 text-slate-800 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-150 mb-4">
+              <h3 className="text-base font-bold text-slate-950 flex items-center">
+                <span className="mr-2">⏱️</span> 최근 작업 문서 이력 (최근 10개)
               </h3>
               <button 
-                onClick={() => setIsProfileOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors text-xl font-bold cursor-pointer"
+                onClick={() => setIsRecentPagesOpen(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
               >
                 &times;
               </button>
             </div>
             
-            {/* Form */}
-            <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
-              {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-semibold">
-                  {errorMsg}
+            {recentPages.length === 0 ? (
+              <div className="py-12 text-center text-gray-400 text-sm font-medium">
+                최근 작업(저장)한 문서 이력이 없습니다.
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto max-h-[300px] overflow-y-auto custom-scroll mb-4 border border-gray-250 rounded-md">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
+                        <th className="px-4 py-2 text-center w-24">폴더 번호</th>
+                        <th className="px-4 py-2">메뉴/폴더명</th>
+                        <th className="px-4 py-2 w-28 text-center">작업 시간</th>
+                        <th className="px-4 py-2 text-center w-28">동작</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentPages.map((page) => (
+                        <tr key={page.id} className="border-b border-gray-150 hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 font-mono text-center text-slate-500 font-bold">
+                            {page.nums || '-'}
+                          </td>
+                          <td className="px-4 py-3 text-slate-800 font-semibold">
+                            {page.name}
+                          </td>
+                          <td className="px-4 py-3 text-slate-400 text-center font-medium">
+                            {formatRelativeTime(page.timestamp)}
+                          </td>
+                          <td className="px-4 py-3 text-center flex items-center justify-center space-x-1.5">
+                            <button
+                              onClick={() => {
+                                navigate(`/admin/folder/${page.id}`);
+                                setIsRecentPagesOpen(false);
+                              }}
+                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-sm cursor-pointer transition-colors"
+                            >
+                              이동
+                            </button>
+                            <button
+                              onClick={() => removePage(page.id)}
+                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-sm cursor-pointer transition-colors"
+                            >
+                              삭제
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-              {successMsg && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-lg text-xs font-semibold">
-                  {successMsg}
+
+                <div className="flex items-center justify-between border-t border-gray-150 pt-3">
+                  <button
+                    onClick={() => {
+                      if (confirm('모든 작업 이력을 삭제하시겠습니까?')) {
+                        clearPages();
+                      }
+                    }}
+                    className="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 font-bold rounded-md transition-colors cursor-pointer"
+                  >
+                    이력 전체 비우기
+                  </button>
+                  <button
+                    onClick={() => setIsRecentPagesOpen(false)}
+                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-md transition-colors cursor-pointer"
+                  >
+                    닫기
+                  </button>
                 </div>
-              )}
-              
-              {modalLoading && !profileData ? (
-                <div className="py-8 flex flex-col items-center justify-center space-y-3">
-                  <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-xs text-slate-500 font-medium">사용자 정보를 불러오는 중...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <label className="block text-slate-500 mb-1 font-semibold">아이디</label>
-                      <input 
-                        type="text" 
-                        value={profileData?.username || ''} 
-                        disabled 
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 cursor-not-allowed font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-500 mb-1 font-semibold">이름</label>
-                      <input 
-                        type="text" 
-                        value={profileData?.name || ''} 
-                        disabled 
-                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 cursor-not-allowed font-medium"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-slate-600 mb-1 text-xs font-semibold">이메일</label>
-                    <input 
-                      type="email" 
-                      value={email} 
-                      onChange={e => setEmail(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
-                      placeholder="example@kfs.co.kr"
-                    />
-                  </div>
-                  
-                  <div className="pt-2 border-t border-slate-100">
-                    <span className="block text-[11px] text-slate-400 font-semibold mb-2">
-                      ※ 비밀번호를 변경하지 않으려면 공란으로 두세요 (이메일만 변경됩니다).
-                    </span>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-slate-600 mb-1 text-xs font-semibold">새 비밀번호</label>
-                        <input 
-                          type="password" 
-                          value={password} 
-                          onChange={e => setPassword(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
-                          placeholder="새 비밀번호 입력 (4자 이상)"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 mb-1 text-xs font-semibold">새 비밀번호 확인</label>
-                        <input 
-                          type="password" 
-                          value={confirmPassword} 
-                          onChange={e => setConfirmPassword(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
-                          placeholder="새 비밀번호 확인"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 flex justify-end space-x-2">
-                    <button 
-                      type="button" 
-                      onClick={() => setIsProfileOpen(false)}
-                      disabled={modalLoading}
-                      className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                    >
-                      취소
-                    </button>
-                    <button 
-                      type="submit" 
-                      disabled={modalLoading}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-                    >
-                      {modalLoading && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
-                      저장
-                    </button>
-                  </div>
-                </>
-              )}
-            </form>
+              </>
+            )}
           </div>
         </div>
       )}
