@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useBlocker } from 'react-router-dom'
-import { Save, ExternalLink, Trash2 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import FolderTree from '@/components/shared/FolderTree'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
-import MdTextarea from '@/components/shared/MdTextarea'
-import EditorToolbar from '@/components/shared/EditorToolbar'
 import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
-import { renderMarkdownToHtml } from '@/utils/markdownRenderer'
 import { PageData } from '@/types'
+import UnsavedChangesModal from './components/UnsavedChangesModal'
+import EditorActionBar from './components/EditorActionBar'
+import MarkdownSplitEditor from './components/MarkdownSplitEditor'
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   if (navigator.clipboard && window.isSecureContext) {
@@ -579,7 +578,7 @@ const DocUserMain: React.FC = () => {
           {/* 비어있는 상태 알림 */}
           {page && !page.id && (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-100 text-amber-800 rounded-md text-xs flex items-center justify-between shrink-0">
-              <span>⚠️ 현재 이 카테고리에 도움말 페이지가 비어 있습니다. 아래에 내용을 작성하여 새 도움말을 저장하십시오.</span>
+              <span>⚠️ 현재 이 메뉴에 도움말 페이지가 비어 있습니다. 아래에 내용을 작성하여 새 도움말을 저장하십시오.</span>
             </div>
           )}
 
@@ -606,239 +605,70 @@ const DocUserMain: React.FC = () => {
           {page ? (
             <>
               {/* 스플릿 편집 및 미리보기 컨테이너 */}
-              <div
-                ref={containerRef}
-                className="flex-1 flex border border-gray-200 rounded-lg overflow-hidden bg-gray-100 items-stretch relative"
-              >
-                {/* 왼쪽: 에디터 */}
-                <div
-                  className="bg-white flex flex-col border-r border-gray-200 shrink-0"
-                  style={{ width: previewOpen ? `${previewWidthPercent}%` : '100%' }}
-                >
-                  {/* 에디터 툴바 */}
-                  <EditorToolbar
-                    insertMarkdown={insertMarkdown}
-                    insertLink={insertLink}
-                    insertBullet={insertBullet}
-                    insertNumber={insertNumber}
-                    selectAndUploadImage={selectAndUploadImage}
-                    aka={pageAka}
-                    onAkaChange={setPageAka}
-                    previewOpen={previewOpen}
-                    setPreviewOpen={setPreviewOpen}
-                    pageTitle={page?.title || page?.folder?.name || 'document'}
-                    pageContent={pageContent}
-                    folderId={folder_id || page?.folder?.id?.toString()}
-                    onImportSuccess={(importedPage) => {
-                      isLeavingRef.current = true;
-                      navigate(`/admin/page/${importedPage.id}`);
-                      setTimeout(() => {
-                        isLeavingRef.current = false;
-                      }, 100);
-                    }}
-                  />
-
-                  {/* 텍스트 편집창 */}
-                  <MdTextarea
-                    value={pageContent}
-                    onChange={setPageContent}
-                    onSave={handleSave}
-                    textareaRef={textareaRef}
-                  />
-                </div>
-
-                {/* 2번 스플리터 (에디터 - 프리뷰용) */}
-                {previewOpen && (
-                  <div
-                    className={`w-1.5 cursor-col-resize hover:bg-indigo-500 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center z-20 ${
-                      resizingPreview ? 'bg-indigo-500' : 'bg-transparent'
-                    }`}
-                    onMouseDown={() => setResizingPreview(true)}
-                  >
-                    <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
-                  </div>
-                )}
-
-                {/* 오른쪽: 라이브 프리뷰 */}
-                {previewOpen && (
-                  <div className="bg-slate-50 flex flex-col flex-1">
-                    <div className="bg-slate-100 border-b border-gray-200 px-4 py-2 flex items-center justify-between text-gray-500 shrink-0 select-none">
-                      <span className="text-[10px] font-mono text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded font-bold tracking-wider">
-                        LIVE PREVIEW
-                      </span>
-                    </div>
-                    <div ref={previewContainerRef} className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
-                      <div className="prose max-w-none bg-white p-2 pb-[50vh] border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
-                        {renderMarkdownToHtml(pageContent, settings)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <MarkdownSplitEditor
+                page={page}
+                pageContent={pageContent}
+                setPageContent={setPageContent}
+                pageAka={pageAka}
+                setPageAka={setPageAka}
+                previewOpen={previewOpen}
+                setPreviewOpen={setPreviewOpen}
+                previewWidthPercent={previewWidthPercent}
+                setPreviewWidthPercent={setPreviewWidthPercent}
+                resizingPreview={resizingPreview}
+                setResizingPreview={setResizingPreview}
+                pageTitle={page?.title || page?.folder?.name || 'document'}
+                folderId={folder_id || page?.folder?.id?.toString()}
+                settings={settings}
+                insertMarkdown={insertMarkdown}
+                insertLink={insertLink}
+                insertBullet={insertBullet}
+                insertNumber={insertNumber}
+                selectAndUploadImage={selectAndUploadImage}
+                handleSave={handleSave}
+                textareaRef={textareaRef}
+                containerRef={containerRef}
+                previewContainerRef={previewContainerRef}
+                onImportSuccess={(importedPage) => {
+                  isLeavingRef.current = true;
+                  navigate(`/admin/page/${importedPage.id}`);
+                  setTimeout(() => {
+                    isLeavingRef.current = false;
+                  }, 100);
+                }}
+              />
 
               {/* 저장 액션바 */}
-              <div className="mt-3 flex items-center justify-between shrink-0 select-none">
-                {/* 상태 알림 또는 AKA URL 복사 영역 */}
-                <div className="flex items-center space-x-3">
-                  {saveStatus.type === 'success' && (
-                    <span className="text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-md flex items-center space-x-1">
-                      ✅ {saveStatus.text}
-                    </span>
-                  )}
-                  {saveStatus.type === 'error' && (
-                    <span className="text-xs font-medium text-red-650 bg-red-50 border border-red-100 px-3 py-1.5 rounded-md flex items-center space-x-1">
-                      ❌ {saveStatus.text}
-                    </span>
-                  )}
-                  
-                  {!saveStatus.type && page && page.aka && (
-                    <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-600">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] bg-slate-200 px-1 py-0.5 rounded mr-1">URL</span>
-                      <span className="font-mono text-slate-700 select-all">{`${window.location.origin}/aman/manual/${page.aka}`}</span>
-                      <button
-                        onClick={async () => {
-                          const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`
-                          const ok = await copyTextToClipboard(fullUrl)
-                          if (ok) {
-                            setCopied(true)
-                            setTimeout(() => setCopied(false), 2000)
-                          } else {
-                            alert('클립보드 복사에 실패했습니다. URL을 직접 선택하여 복사해주세요.')
-                          }
-                        }}
-                        className="p-1 hover:bg-slate-200 rounded text-slate-500 cursor-pointer hover:text-slate-800 transition-colors flex items-center justify-center"
-                        title="URL 복사"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (pageStatus === 'PUBLISHED') {
-                            const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`
-                            window.open(fullUrl, '_blank')
-                          }
-                        }}
-                        disabled={pageStatus !== 'PUBLISHED'}
-                        className={`p-1 rounded transition-colors flex items-center justify-center ${
-                          pageStatus === 'PUBLISHED'
-                            ? 'hover:bg-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer'
-                            : 'text-slate-300 cursor-not-allowed opacity-50'
-                        }`}
-                        title={pageStatus === 'PUBLISHED' ? "새 창에서 열기" : "배포 상태일 때만 새 창에서 열 수 있습니다."}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </button>
-                      {copied && (
-                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-sm transition-all duration-200 select-none">
-                          복사 완료!
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  {/* 배포 상태 스위치 (작성 중 / 완료 및 배포) */}
-                  <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md select-none">
-                    <span className="text-xs font-bold text-slate-500">배포 상태:</span>
-                    <button
-                      type="button"
-                      onClick={handleToggleStatus}
-                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        pageStatus === 'PUBLISHED' ? 'bg-indigo-600' : 'bg-slate-400'
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                          pageStatus === 'PUBLISHED' ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                    <span className={`text-[11px] font-bold ${pageStatus === 'PUBLISHED' ? 'text-indigo-600' : 'text-slate-500'}`}>
-                      {pageStatus === 'PUBLISHED' ? '완료 및 배포' : '작성 중'}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={saving || !isDirty}
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{saving ? '저장 중...' : '변경사항 저장하기'}</span>
-                  </button>
-
-                  <button
-                    onClick={handleDelete}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={deleting || !page || !page.id}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>{deleting ? '삭제 중...' : '삭제하기'}</span>
-                  </button>
-                </div>
-              </div>
+              <EditorActionBar
+                page={page}
+                isDirty={isDirty}
+                saving={saving}
+                deleting={deleting}
+                pageStatus={pageStatus}
+                saveStatus={saveStatus}
+                copied={copied}
+                setCopied={setCopied}
+                handleSave={handleSave}
+                handleDelete={handleDelete}
+                handleToggleStatus={handleToggleStatus}
+                copyTextToClipboard={copyTextToClipboard}
+              />
             </>
           ) : (
             <div className="flex-1 border border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50/50">
-              <p className="text-sm text-gray-400 font-medium">좌측 탐색기 트리에서 편집할 도움말 카테고리를 선택하세요.</p>
+              <p className="text-sm text-gray-400 font-medium">좌측 메뉴 트리 탐색기에서 편집할 도움말 메뉴 카테고리를 선택하세요.</p>
             </div>
           )}
         </main>
       </div>
 
       {/* 3. 변경사항 저장 확인 커스텀 모달 */}
-      {blocker.state === 'blocked' && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] transition-all duration-300">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-base font-bold text-slate-950 mb-2">변경사항 저장</h3>
-            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-              작성 중인 도움말 변경 사항이 있습니다. 이동하기 전에 저장하시겠습니까?
-            </p>
-            <div className="flex items-center justify-end space-x-2">
-              <button
-                onClick={() => {
-                  blocker.reset()
-                }}
-                className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-              >
-                취소 (편집 계속)
-              </button>
-              <button
-                onClick={() => {
-                  blocker.proceed()
-                }}
-                className="px-3 py-2 text-xs font-semibold text-red-650 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
-              >
-                저장 안 함
-              </button>
-              <button
-                onClick={async () => {
-                  const destination = blocker.location
-                    ? blocker.location.pathname + (blocker.location.search || '') + (blocker.location.hash || '')
-                    : null
-                  
-                  isLeavingRef.current = true
-                  const success = await handleSave(true)
-                  if (success && destination) {
-                    blocker.reset()
-                    navigate(destination)
-                  } else {
-                    isLeavingRef.current = false
-                    blocker.reset()
-                  }
-                }}
-                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-xs hover:shadow-md transition-all cursor-pointer"
-              >
-                저장 후 이동
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UnsavedChangesModal
+        blocker={blocker}
+        handleSave={handleSave}
+        isLeavingRef={isLeavingRef}
+        navigate={navigate}
+      />
     </div>
   )
 }

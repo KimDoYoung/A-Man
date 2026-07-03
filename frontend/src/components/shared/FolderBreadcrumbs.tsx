@@ -17,7 +17,7 @@ const FolderBreadcrumbs: React.FC<Props> = ({ folderHierarchy }) => {
       {folderHierarchy.length > 0 ? (
         folderHierarchy.map((item, idx) => (
           <React.Fragment key={item.id}>
-            {idx > 0 && <ChevronRight className="w-3 h-3 text-gray-300" />}
+            {idx > 0 && <ChevronRight className="w-3 h-3 text-gray-500" />}
             <span
               className={
                 idx === folderHierarchy.length - 1
