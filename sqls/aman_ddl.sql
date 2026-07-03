@@ -106,7 +106,24 @@ CREATE TABLE work_stack (
 CREATE INDEX idx_work_stack_user_created
 ON work_stack (user_id, created_at DESC);
 
+-- -----------------------------------------------------------
+-- 이미지 편집 작업 상태를 단일 JSON 필드로 통합하여 관리하는 테이블 DDL
+CREATE TABLE image_work (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL,			-- 소유한 사용자 ID (외래키)
+    title       TEXT NOT NULL,          -- json_data와 중복으로 보관
+    json_data   TEXT NOT NULL,			-- title, original_image_url, edited_image_url, items(도형들)를
+포함한 통합 JSON
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP, -- 생성 시각
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP, -- 최종 수정 시각 (정렬용)
 
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 사용자별 최신 수정일 기준 정렬 조회를 위한 복합 인덱스
+CREATE INDEX idx_image_work_user_updated ON image_work (user_id, updated_at DESC);
+
+-- -----------------------------------------------------------------------
 CREATE TABLE settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     setting_key VARCHAR(50) NOT NULL,
