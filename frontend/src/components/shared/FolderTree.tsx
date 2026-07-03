@@ -25,6 +25,115 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
   const [filterText, setFilterText] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [settings, setSettings] = useState<Record<string, string>>({})
+  const [focusedFolderId, setFocusedFolderId] = useState<number | null>(null)
+
+  // 현재 펼쳐져서 화면에 보이는 모든 노드들을 순서대로 평탄화한 배열 반환
+  const getVisibleNodes = () => {
+    const list: FolderNode[] = []
+    const traverse = (nodes: FolderNode[]) => {
+      nodes.forEach(node => {
+        list.push(node)
+        if (expandedFolders[node.id] && node.children && node.children.length > 0) {
+          traverse(node.children)
+        }
+      })
+    }
+    traverse(folders)
+    return list
+  }
+
+  // URL 경로에 따라 현재 선택된 폴더를 포커스 폴더로 지정
+  useEffect(() => {
+    const match = location.pathname.match(/\/docs\/folder\/(\d+)/) || location.pathname.match(/\/admin\/folder\/(\d+)/)
+    if (match) {
+      setFocusedFolderId(Number(match[1]))
+    }
+  }, [location.pathname])
+
+  // 키보드로 선택된 폴더 노드를 스크롤 영역 안으로 이동 (jump 방지용 수동 스크롤 조절)
+  useEffect(() => {
+    if (focusedFolderId !== null) {
+      const el = document.getElementById(`folder-node-${focusedFolderId}`)
+      const parent = el?.closest('ul') // 스크롤바가 있는 가장 가까운 ul 컨테이너 검색
+      if (el && parent) {
+        const parentRect = parent.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+
+        // 만약 노드가 부모 스크롤뷰 위로 벗어나 있으면 위로 스크롤 조정
+        if (elRect.top < parentRect.top) {
+          parent.scrollTop += (elRect.top - parentRect.top) - 10
+        }
+        // 만약 노드가 부모 스크롤뷰 아래로 벗어나 있으면 아래로 스크롤 조정
+        else if (elRect.bottom > parentRect.bottom) {
+          parent.scrollTop += (elRect.bottom - parentRect.bottom) + 10
+        }
+      }
+    }
+  }, [focusedFolderId])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const visibleNodes = getVisibleNodes()
+    if (visibleNodes.length === 0) return
+
+    const currentIndex = visibleNodes.findIndex(n => n.id === focusedFolderId)
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        if (currentIndex < visibleNodes.length - 1) {
+          setFocusedFolderId(visibleNodes[currentIndex + 1].id)
+        } else if (focusedFolderId === null) {
+          setFocusedFolderId(visibleNodes[0].id)
+        }
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        if (currentIndex > 0) {
+          setFocusedFolderId(visibleNodes[currentIndex - 1].id)
+        }
+        break
+      case 'ArrowRight':
+        e.preventDefault()
+        if (focusedFolderId !== null) {
+          const node = visibleNodes[currentIndex]
+          if (node && node.children.length > 0) {
+            if (!expandedFolders[node.id]) {
+              setExpandedFolders(prev => ({ ...prev, [node.id]: true }))
+            } else {
+              setFocusedFolderId(node.children[0].id)
+            }
+          }
+        }
+        break
+      case 'ArrowLeft':
+        e.preventDefault()
+        if (focusedFolderId !== null) {
+          const node = visibleNodes[currentIndex]
+          if (node) {
+            if (node.children.length > 0 && expandedFolders[node.id]) {
+              setExpandedFolders(prev => ({ ...prev, [node.id]: false }))
+            } else if (node.parentId !== null) {
+              setFocusedFolderId(node.parentId)
+            }
+          }
+        }
+        break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        if (focusedFolderId !== null) {
+          const isAdmin = location.pathname.startsWith('/admin')
+          if (isAdmin) {
+            navigate(`/admin/folder/${focusedFolderId}`)
+          } else {
+            navigate(`/docs/folder/${focusedFolderId}`)
+          }
+        }
+        break
+      default:
+        break
+    }
+  }
 
   // 사이트 포맷 설정 로드
   useEffect(() => {
@@ -232,16 +341,21 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
     return roots.sort((a, b) => a.sortOrder - b.sortOrder)
   };
 
-  // 특정 폴더 토글 및 경로 이동
-  const toggleFolder = (folder: FolderNode) => {
-    const isOpen = !!expandedFolders[folder.id]
-    setExpandedFolders(prev => ({ ...prev, [folder.id]: !isOpen }))
+  // 접기/펼치기 기능만 수행 (문서 로드 없음)
+  const handleToggleExpandOnly = (folderId: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const isOpen = !!expandedFolders[folderId]
+    setExpandedFolders(prev => ({ ...prev, [folderId]: !isOpen }))
+  }
 
+  // 문서 불러오기 기능만 수행 (접기/펼치기 없음)
+  const handleNavigateOnly = (folderId: number, e: React.MouseEvent) => {
+    e.stopPropagation()
     const isAdmin = location.pathname.startsWith('/admin')
     if (isAdmin) {
-      navigate(`/admin/folder/${folder.id}`)
+      navigate(`/admin/folder/${folderId}`)
     } else {
-      navigate(`/docs/folder/${folder.id}`)
+      navigate(`/docs/folder/${folderId}`)
     }
   }
 
@@ -271,15 +385,23 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
       (isAdmin && location.pathname === `/admin/folder/${node.id}`) ||
       (!isAdmin && location.pathname === `/docs/folder/${node.id}`)
 
+    const isFocused = focusedFolderId === node.id
+
     return (
       <li key={node.id} className="space-y-1">
         <div 
-          onClick={() => toggleFolder(node)}
+          id={`folder-node-${node.id}`}
+          onClick={(e) => {
+            setFocusedFolderId(node.id)
+            node.level === 3 ? handleNavigateOnly(node.id, e) : handleToggleExpandOnly(node.id, e)
+          }}
           onContextMenu={(contextMenuEnable && !isContextMenuDisabled) ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
-          className={`flex items-center justify-between p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-colors ${
+          className={`flex items-center justify-between p-1.5 rounded-md border cursor-pointer transition-colors ${
             isFolderActive
-              ? 'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-semibold'
-              : depth === 1 ? 'font-semibold text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400'
+              ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 font-semibold'
+              : isFocused
+                ? 'bg-slate-200/60 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-gray-900 dark:text-slate-100 font-semibold'
+                : 'border-transparent hover:bg-gray-100 dark:hover:bg-slate-850 ' + (depth === 1 ? 'font-semibold text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400')
           }`}
           style={{ 
             paddingLeft: depth === 3 
@@ -288,16 +410,25 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
           }}
         >
           <div className="flex items-center">
-            {depth === 3 ? (
+            {node.level === 3 ? (
               <FileText className="w-3.5 h-3.5 mr-2 text-slate-400 dark:text-slate-500" />
             ) : isExpanded ? (
               <FolderOpen className={`w-3.5 h-3.5 mr-2 ${depth === 1 ? 'text-indigo-500 dark:text-indigo-400' : 'text-amber-500 dark:text-amber-600'}`} />
             ) : (
               <Folder className="w-3.5 h-3.5 mr-2 text-gray-400 dark:text-slate-500" />
             )}
-            <span>
-              {formatNodeName(node)}
-            </span>
+            {node.level === 3 ? (
+              <span>
+                {formatNodeName(node)}
+              </span>
+            ) : (
+              <span 
+                onClick={(e) => handleNavigateOnly(node.id, e)}
+                className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400"
+              >
+                {formatNodeName(node)}
+              </span>
+            )}
           </div>
           {hasChildren && (
             <ChevronDown 
@@ -346,7 +477,11 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
       </div>
 
       {/* 계층 트리 리스트 */}
-      <ul className="space-y-1 overflow-y-auto flex-1 text-xs whitespace-nowrap custom-scroll pr-1">
+      <ul 
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className="space-y-1 overflow-y-auto flex-1 text-xs whitespace-nowrap custom-scroll pr-1 focus:outline-none focus-visible:outline-none rounded-md"
+      >
         {folders.map(root => renderFolderNode(root, 1))}
       </ul>
 

@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
 import { Copy, Check } from 'lucide-react'
+import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
 
 const extractText = (node: any): string => {
   if (!node) return ''
@@ -50,6 +51,7 @@ const MarkdownViewer: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [settings, setSettings] = useState<Record<string, string>>({})
+  const [folderHierarchy, setFolderHierarchy] = useState<any[]>([])
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -58,13 +60,19 @@ const MarkdownViewer: React.FC = () => {
       setErrorMsg('')
       try {
         let pageData = null
+        let targetFolderId: number | null = null
+
         if (page_id) {
           pageData = await apiClient.get<any>(`/docs/${page_id}`)
+          if (pageData) {
+            targetFolderId = pageData.folder?.id || null
+          }
         } else if (folder_id) {
           const pages = await apiClient.get<any[]>(`/docs/folders/${folder_id}/pages`)
           if (pages && pages.length > 0) {
             pageData = pages[0]
           }
+          targetFolderId = Number(folder_id)
         }
 
         if (pageData) {
@@ -75,6 +83,19 @@ const MarkdownViewer: React.FC = () => {
         } else {
           setPage(null)
           setTocData([])
+        }
+
+        // Fetch hierarchy for breadcrumbs
+        if (targetFolderId) {
+          try {
+            const hierarchy = await apiClient.get<any[]>(`/docs/folders/${targetFolderId}/hierarchy`)
+            setFolderHierarchy(hierarchy)
+          } catch (e) {
+            console.error('Failed to load hierarchy:', e)
+            setFolderHierarchy([])
+          }
+        } else {
+          setFolderHierarchy([])
         }
       } catch (error: any) {
         console.error('페이지 로드 실패:', error)
@@ -322,25 +343,30 @@ const MarkdownViewer: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-        <p className="text-sm text-gray-500 font-medium">도움말 문서를 불러오는 중입니다...</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">도움말 문서를 불러오는 중입니다...</p>
       </div>
     )
   }
 
   if (errorMsg) {
     return (
-      <div className="p-6 border border-red-200 bg-red-50/30 rounded-lg text-center max-w-xl mx-auto my-12">
-        <p className="text-sm text-red-600 font-semibold">{errorMsg}</p>
+      <div className="flex items-center justify-center min-h-[60vh] p-4">
+        <div className="p-6 border border-red-200 dark:border-red-900/50 bg-red-50/30 dark:bg-red-950/10 rounded-xl text-center max-w-md w-full shadow-xs">
+          <p className="text-sm text-red-600 dark:text-red-400 font-semibold">{errorMsg}</p>
+        </div>
       </div>
     )
   }
 
   if (!page) {
     return (
-      <div className="text-center py-20 text-gray-400">
-        <p className="text-sm">조회할 수 있는 문서 데이터가 없습니다.</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 w-full">
+        <FolderBreadcrumbs folderHierarchy={folderHierarchy} />
+        <div className="mt-4 text-gray-400 dark:text-slate-500">
+          <p className="text-base font-medium">조회할 수 있는 문서 데이터가 없습니다.</p>
+        </div>
       </div>
     )
   }
@@ -359,20 +385,23 @@ const MarkdownViewer: React.FC = () => {
   }[contentWidth] || 'max-w-5xl'
 
   return (
-    <article className={`prose dark:prose-invert ${fontSizeClass} ${contentWidthClass} mx-auto`}>
-      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100 pb-4 border-b border-gray-200 dark:border-slate-800 mb-6">
-        {page.title}
-      </h1>
-      
-      {/* 렌더링된 본문 데이터 뷰 영역 */}
-      <div className="markdown-content">
-        {renderMarkdownToHtml(page.content)}
-      </div>
+    <div className={`mx-auto ${contentWidthClass}`}>
+      <FolderBreadcrumbs folderHierarchy={folderHierarchy} />
+      <article className={`prose dark:prose-invert ${fontSizeClass} max-w-none mt-4`}>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100 pb-4 border-b border-gray-200 dark:border-slate-800 mb-6">
+          {page.title}
+        </h1>
+        
+        {/* 렌더링된 본문 데이터 뷰 영역 */}
+        <div className="markdown-content">
+          {renderMarkdownToHtml(page.content)}
+        </div>
 
-      <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-12 pt-4 border-t border-gray-100 dark:border-slate-800">
-        --- 문서의 끝입니다 ---
-      </p>
-    </article>
+        <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-12 pt-4 border-t border-gray-100 dark:border-slate-800">
+          --- 문서의 끝입니다 ---
+        </p>
+      </article>
+    </div>
   )
 }
 

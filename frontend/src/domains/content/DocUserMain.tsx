@@ -221,6 +221,18 @@ const DocUserMain: React.FC = () => {
       })
   }, [])
 
+  // 메뉴 변경 시 메인 콘텐츠 영역 및 윈도우 스크롤을 최상단으로 리셋
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+    
+    const mainEl = document.querySelector('main')
+    if (mainEl && mainEl.parentElement) {
+      mainEl.parentElement.scrollTop = 0
+    }
+  }, [page_id, folder_id])
+
   // F4 -> 메뉴 영역 토글, F9 -> 미리보기 영역 토글 단축키 바인딩
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

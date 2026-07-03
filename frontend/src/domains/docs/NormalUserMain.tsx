@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import { ArrowUp, Pin } from 'lucide-react'
 import { OutletContextType, TocItem } from '@/types'
 import FolderTree from '@/components/shared/FolderTree'
@@ -8,6 +8,15 @@ import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 
 const NormalUserMain: React.FC = () => {
   const theme = useUserLocalSettingStore((state) => state.theme)
+  const location = useLocation()
+  const contentScrollRef = useRef<HTMLDivElement>(null)
+
+  // 페이지 이동 시 메인 콘텐츠 영역 스크롤 최상단 리셋
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0
+    }
+  }, [location.pathname])
   // 레이아웃 인터랙션 상태
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tocOpen, setTocOpen] = useState(true)
@@ -70,7 +79,7 @@ const NormalUserMain: React.FC = () => {
   }, [theme])
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-950 min-h-screen text-gray-900 dark:text-slate-100 flex flex-col font-sans select-none antialiased">
+    <div className="bg-gray-50 dark:bg-slate-950 h-screen text-gray-900 dark:text-slate-100 flex flex-col font-sans select-none antialiased overflow-hidden">
       {/* 1. Header 영역 */}
       <NormalUserTopBar
         sidebarOpen={sidebarOpen}
@@ -103,8 +112,10 @@ const NormalUserMain: React.FC = () => {
           <div className="w-0.5 h-4 bg-gray-300 dark:bg-slate-700 rounded-sm"></div>
         </div>
 
-        {/* 2.3 메인 본문 콘텐츠 및 우측 목차 감싸기 */}
-        <div className="flex-1 flex items-start overflow-y-auto relative bg-white dark:bg-slate-900">
+        <div 
+          ref={contentScrollRef}
+          className="flex-1 flex items-start overflow-y-auto relative bg-white dark:bg-slate-900"
+        >
           <main className="flex-1 py-8 px-4 lg:py-12 lg:px-6 min-h-full">
             {/* 서브 라우트(Outlet) 렌더링. 목차 상태 및 Setter 제공 */}
             <Outlet context={{ setTocData, tocOpen, setTocOpen } as OutletContextType} />
