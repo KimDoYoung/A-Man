@@ -11,6 +11,7 @@ import FolderManagePage from '@/domains/folder/FolderManagePage'
 import SettingsPage from '@/domains/system/SettingsPage'
 import AboutPage from '@/domains/system/AboutPage'
 import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 
 // 1. JWT 토큰 자동 첨부 인터셉터
 axios.interceptors.request.use((config) => {
@@ -135,8 +136,8 @@ function App() {
           console.log('Access token expiring soon. Attempting silent refresh...')
           
           try {
-            const response = await axios.post('/aman/auth/refresh')
-            const newAccessToken = response.data.accessToken
+            const data = await apiClient.post<any>('/auth/refresh')
+            const newAccessToken = data.accessToken
             if (newAccessToken) {
               const updatedUser = { ...user, accessToken: newAccessToken }
               localStorage.setItem('aman_user', JSON.stringify(updatedUser))

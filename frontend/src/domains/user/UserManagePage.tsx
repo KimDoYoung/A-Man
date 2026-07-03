@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Search, Trash2, Save, RotateCcw, User, Mail, Shield, Info } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 
 interface UserData {
@@ -38,8 +38,8 @@ const UserManagePage: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true)
     try {
-      const response = await axios.get<UserData[]>('/aman/user')
-      setUsers(response.data)
+      const data = await apiClient.get<UserData[]>('/user')
+      setUsers(data)
     } catch (error) {
       console.error('사용자 목록 조회 실패:', error)
       showStatus('error', '사용자 목록을 불러오지 못했습니다.')
@@ -107,7 +107,7 @@ const UserManagePage: React.FC = () => {
 
     setDeactivating(true)
     try {
-      await axios.delete(`/aman/user/${selectedUser.id}`)
+      await apiClient.delete(`/user/${selectedUser.id}`)
       showStatus('success', '계정이 정상적으로 비활성화 처리되었습니다.')
       fetchUsers()
       // 폼 상태 동기화
@@ -158,9 +158,9 @@ const UserManagePage: React.FC = () => {
         if (formPassword.trim()) {
           fields.password = formPassword.trim()
         }
-        const response = await axios.patch<UserData>(`/aman/user/${selectedUser.id}`, fields)
+        const data = await apiClient.patch<UserData>(`/user/${selectedUser.id}`, fields)
         showStatus('success', '사용자 정보가 성공적으로 수정되었습니다.')
-        setSelectedUser(response.data)
+        setSelectedUser(data)
       } else {
         // Create (POST)
         const payload: UserData = {
@@ -171,9 +171,9 @@ const UserManagePage: React.FC = () => {
           role: formRole,
           isActive: formIsActive
         }
-        const response = await axios.post<UserData>('/aman/user', payload)
+        const data = await apiClient.post<UserData>('/user', payload)
         showStatus('success', '신규 사용자가 추가되었습니다.')
-        setSelectedUser(response.data)
+        setSelectedUser(data)
       }
       fetchUsers()
     } catch (error: any) {

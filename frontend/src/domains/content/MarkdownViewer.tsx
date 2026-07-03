@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useOutletContext } from 'react-router-dom'
 import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 import { OutletContextType, PageData, TocItem } from '@/types'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
@@ -59,11 +59,9 @@ const MarkdownViewer: React.FC = () => {
       try {
         let pageData = null
         if (page_id) {
-          const response = await axios.get(`/aman/docs/${page_id}`)
-          pageData = response.data
+          pageData = await apiClient.get<any>(`/docs/${page_id}`)
         } else if (folder_id) {
-          const response = await axios.get(`/aman/docs/folders/${folder_id}/pages`)
-          const pages = response.data
+          const pages = await apiClient.get<any[]>(`/docs/folders/${folder_id}/pages`)
           if (pages && pages.length > 0) {
             pageData = pages[0]
           }
@@ -100,10 +98,10 @@ const MarkdownViewer: React.FC = () => {
 
   // 사이트 제어 설정 로드
   useEffect(() => {
-    axios.get('/aman/health')
-      .then(res => {
-        if (res.data && res.data.settings) {
-          setSettings(res.data.settings)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data && data.settings) {
+          setSettings(data.settings)
         }
       })
       .catch(err => {

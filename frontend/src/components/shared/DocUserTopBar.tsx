@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Menu, UserCheck, LogOut, Info, HelpCircle } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 
 interface DocUserTopBarProps {
   sidebarOpen: boolean;
@@ -39,10 +39,10 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const [modalLoading, setModalLoading] = useState(false)
 
   useEffect(() => {
-    axios.get('/aman/health')
-      .then(res => {
-        if (res.data && res.data.version) {
-          setVersion(res.data.version)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data && data.version) {
+          setVersion(data.version)
         }
       })
       .catch(err => {
@@ -58,10 +58,10 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
       setSuccessMsg('')
       setPassword('')
       setConfirmPassword('')
-      axios.get('/aman/user/me')
-        .then(res => {
-          setProfileData(res.data)
-          setEmail(res.data.email || '')
+      apiClient.get<any>('/user/me')
+        .then(data => {
+          setProfileData(data)
+          setEmail(data.email || '')
         })
         .catch(err => {
           console.error('내 프로필 정보 조회 실패:', err)
@@ -81,7 +81,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const handleLogout = async () => {
     if (!confirm('로그아웃 하시겠습니까?')) return
     try {
-      await axios.post('/aman/auth/logout')
+      await apiClient.post('/auth/logout')
     } catch (error) {
       console.error('로그아웃 오류:', error)
     } finally {
@@ -131,11 +131,11 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
 
     try {
       setModalLoading(true)
-      const res = await axios.patch(`/aman/user/${profileData.id}`, payload)
+      const data = await apiClient.patch<any>(`/user/${profileData.id}`, payload)
       
       // Update localStorage to reflect email change
       if (user) {
-        const updatedUser = { ...user, email: res.data.email }
+        const updatedUser = { ...user, email: data.email }
         localStorage.setItem('aman_user', JSON.stringify(updatedUser))
       }
 

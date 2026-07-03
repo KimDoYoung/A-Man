@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Info, Server, Cpu, Layers, Terminal, ShieldCheck, FileText, Sparkles, Code, CheckCircle, ArrowLeft, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 
 interface HistoryItem {
@@ -19,10 +19,10 @@ const AboutPage: React.FC = () => {
 
   useEffect(() => {
     // 1. 버전 정보 가져오기
-    axios.get<{ version: string }>('/aman/health')
-      .then(res => {
-        if (res.data && res.data.version) {
-          setAppVersion(res.data.version)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data && data.version) {
+          setAppVersion(data.version)
         }
       })
       .catch(err => {
@@ -30,10 +30,10 @@ const AboutPage: React.FC = () => {
       })
 
     // 2. 히스토리 정보 가져오기
-    axios.get<HistoryItem[]>('/aman/history')
-      .then(res => {
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          setHistoryList(res.data)
+    apiClient.get<HistoryItem[]>('/history')
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setHistoryList(data)
         } else {
           setHistoryList([
             {

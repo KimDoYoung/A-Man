@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Menu, Pin, ShieldAlert, MonitorCog } from 'lucide-react'
 import NormalUserSettings from './NormalUserSettings'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import faviconImg from '../../assets/favicon.png'
 
 interface NormalUserTopBarProps {
@@ -25,17 +25,17 @@ const NormalUserTopBar: React.FC<NormalUserTopBarProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   useEffect(() => {
-    axios.get('/aman/health')
-      .then(res => {
-        if (res.data) {
-          if (res.data.siteName) {
-            setSiteName(res.data.siteName)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data) {
+          if (data.siteName) {
+            setSiteName(data.siteName)
           }
-          if (res.data.siteDescription) {
-            setSiteDescription(res.data.siteDescription)
+          if (data.siteDescription) {
+            setSiteDescription(data.siteDescription)
           }
-          if (res.data.version) {
-            setVersion(res.data.version)
+          if (data.version) {
+            setVersion(data.version)
           }
         }
       })

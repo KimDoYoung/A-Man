@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 
 interface Asset {
   id?: number
@@ -129,15 +129,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const handleDownloadZip = async () => {
     setDownloading(true)
     try {
-      const response = await axios.post('/aman/content/export', {
+      const blob = await apiClient.post<Blob>('/content/export', {
         title: pageTitle || 'document',
         content: pageContent,
         aka: aka
       }, {
         responseType: 'blob'
       })
-      
-      const blob = new Blob([response.data], { type: 'application/zip' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -177,14 +175,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
     setImporting(true)
     try {
-      const res = await axios.post('/aman/content/import', formData, {
+      const data = await apiClient.post<any>('/content/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
       alert('도움말 가져오기가 완료되었습니다.')
       if (onImportSuccess) {
-        onImportSuccess(res.data)
+        onImportSuccess(data)
       }
     } catch (err: any) {
       console.error('Import failed:', err)
@@ -198,9 +196,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   }
 
   useEffect(() => {
-    axios.get<Asset[]>('/aman/assets')
-      .then(res => {
-        const data = res.data
+    apiClient.get<Asset[]>('/assets')
+      .then(data => {
         
         // EMOJI: split comma-separated values
         const emRaw = data.filter(x => x.atype === 'EMOJI')

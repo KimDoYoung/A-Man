@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Folder, FolderOpen, ChevronDown, FileText } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import { FolderNode } from '@/types'
 import FolderTreeContextMenu from '@/components/shared/FolderTreeContextMenu'
 import FilterInput from '@/components/shared/FilterInput'
@@ -28,10 +28,10 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
 
   // 사이트 포맷 설정 로드
   useEffect(() => {
-    axios.get('/aman/health')
-      .then(res => {
-        if (res.data && res.data.settings) {
-          setSettings(res.data.settings)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data && data.settings) {
+          setSettings(data.settings)
         }
       })
       .catch(err => {
@@ -138,13 +138,12 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
 
     const fetchFolders = async () => {
       try {
-        let url = '/aman/docs/folders'
+        let url = '/docs/folders'
         if (filterText.trim()) {
           url += `?filter=${encodeURIComponent(filterText)}`
         }
-        const response = await axios.get(url)
+        const rawData = await apiClient.get<any>(url)
         if (!active) return
-        const rawData = response.data
 
         // 2. 계층형 트리(대-중-소) 구조 생성 조립
         const tree = buildFolderTree(rawData)

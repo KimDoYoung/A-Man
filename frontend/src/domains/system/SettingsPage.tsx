@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Settings, Save, RefreshCw } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { AgGridReact } from 'ag-grid-react'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -24,9 +24,9 @@ const SettingsPage: React.FC = () => {
   const fetchSettings = async () => {
     setLoading(true)
     try {
-      const response = await axios.get('/aman/admin/settings')
+      const responseData = await apiClient.get<any[]>('/admin/settings')
       // Ensure records are clean of nulls
-      const data = (response.data || []).filter((item: any) => item !== null && item !== undefined)
+      const data = (responseData || []).filter((item: any) => item !== null && item !== undefined)
       setSettings(data)
     } catch (err: any) {
       console.error('설정 로딩 실패:', err)
@@ -60,7 +60,7 @@ const SettingsPage: React.FC = () => {
       })
 
       for (const item of rows) {
-        await axios.patch(`/aman/admin/settings/${item.id}`, {
+        await apiClient.patch(`/admin/settings/${item.id}`, {
           settingValue: item.settingValue
         })
       }

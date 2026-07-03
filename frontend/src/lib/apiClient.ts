@@ -4,7 +4,6 @@ import axios from 'axios'
 // 개발 환경(http://localhost:5173)에서는 vite.config.ts의 proxy 설정이 http://localhost:8686으로 프록시합니다.
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/aman',
-  headers: { Accept: 'application/json' },
 })
 
 instance.interceptors.request.use((config) => {

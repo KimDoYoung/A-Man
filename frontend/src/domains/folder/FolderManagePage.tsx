@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Plus, Trash2, Save, Folder as FolderIcon, FolderOpen, ChevronRight, ChevronDown, ListOrdered, RefreshCw, Layers } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { AgGridReact } from 'ag-grid-react'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -80,10 +80,10 @@ const FolderManagePage: React.FC = () => {
 
   // 사이트 포맷 및 제어 설정 로드
   useEffect(() => {
-    axios.get('/aman/health')
-      .then(res => {
-        if (res.data && res.data.settings) {
-          setSettings(res.data.settings)
+    apiClient.get<any>('/health')
+      .then(data => {
+        if (data && data.settings) {
+          setSettings(data.settings)
         }
       })
       .catch(err => {
@@ -97,8 +97,7 @@ const FolderManagePage: React.FC = () => {
   const fetchTreeData = async () => {
     setLoading(true)
     try {
-      const response = await axios.get('/aman/docs/folders')
-      const rawData = response.data
+      const rawData = await apiClient.get<any>('/docs/folders')
       setFlatFolders(rawData)
       const tree = buildFolderTree(rawData)
       setTreeData(tree)
@@ -113,8 +112,8 @@ const FolderManagePage: React.FC = () => {
   // Load subfolders for the selected folder to display in AG Grid
   const loadSubFolders = async (folderId: number) => {
     try {
-      const response = await axios.get(`/aman/docs/folders/${folderId}/sub`)
-      setRowData(response.data || [])
+      const data = await apiClient.get<any>(`/docs/folders/${folderId}/sub`)
+      setRowData(data || [])
     } catch (error) {
       console.error('하위 메뉴 조회 실패:', error)
       showStatus('error', '하위 메뉴를 불러오지 못했습니다.')
@@ -124,10 +123,10 @@ const FolderManagePage: React.FC = () => {
   // Load root level folders (parentId is null)
   const loadRootFolders = async () => {
     try {
-      const response = await axios.get('/aman/docs/folders')
+      const data = await apiClient.get<any[]>('/docs/folders')
       // Note: `/docs/folders` returns root folders with child list serialized
       // Map to flat root list
-      const roots = response.data.map((f: any) => ({
+      const roots = data.map((f: any) => ({
         id: f.id,
         nums: f.nums,
         name: f.name,
@@ -356,7 +355,7 @@ const FolderManagePage: React.FC = () => {
     try {
       setSaving(true)
       for (const id of deleteIds) {
-        await axios.delete(`/aman/folder/${id}`)
+        await apiClient.delete(`/folder/${id}`)
       }
       setRowData(newRows)
       showStatus('success', '선택한 메뉴가 삭제되었습니다.')
@@ -383,7 +382,7 @@ const FolderManagePage: React.FC = () => {
     try {
       for (const row of rowData) {
         if (row.isNew) {
-          await axios.post('/aman/folder', {
+          await apiClient.post('/folder', {
             name: row.name,
             nums: row.nums,
             level: row.level,
@@ -391,7 +390,7 @@ const FolderManagePage: React.FC = () => {
             parentId: row.parentId
           })
         } else {
-          await axios.patch(`/aman/folder/${row.id}`, {
+          await apiClient.patch(`/folder/${row.id}`, {
             name: row.name,
             nums: row.nums,
             level: row.level,
@@ -434,15 +433,15 @@ const FolderManagePage: React.FC = () => {
 
     setSaving(true)
     try {
-      const response = await axios.post('/aman/folder/regenerate-all')
-      showStatus('success', response.data || '전체 번호가 성공적으로 재생성되었습니다.')
+      const data = await apiClient.post<any>('/folder/regenerate-all')
+      showStatus('success', data || '전체 번호가 성공적으로 재생성되었습니다.')
       
       // Reload left tree and current grid view
       await fetchTreeData()
       if (selectedFolder) {
         // Load latest version of selected folder to update grid context
-        const latestResponse = await axios.get(`/aman/docs/folders/${selectedFolder.id}`)
-        setSelectedFolder(latestResponse.data)
+        const latestData = await apiClient.get<any>(`/docs/folders/${selectedFolder.id}`)
+        setSelectedFolder(latestData)
         loadSubFolders(selectedFolder.id)
       } else {
         loadRootFolders()
@@ -463,15 +462,15 @@ const FolderManagePage: React.FC = () => {
 
     setSaving(true)
     try {
-      const response = await axios.post('/aman/folder/clear-all-nums')
-      showStatus('success', response.data || '전체 번호가 성공적으로 비워졌습니다.')
+      const data = await apiClient.post<any>('/folder/clear-all-nums')
+      showStatus('success', data || '전체 번호가 성공적으로 비워졌습니다.')
       
       // Reload left tree and current grid view
       await fetchTreeData()
       if (selectedFolder) {
         // Load latest version of selected folder to update grid context
-        const latestResponse = await axios.get(`/aman/docs/folders/${selectedFolder.id}`)
-        setSelectedFolder(latestResponse.data)
+        const latestData = await apiClient.get<any>(`/docs/folders/${selectedFolder.id}`)
+        setSelectedFolder(latestData)
         loadSubFolders(selectedFolder.id)
       } else {
         loadRootFolders()

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import { apiClient } from '@/lib/apiClient';
 import getCaretCoordinates from 'textarea-caret';
 
 interface Props {
@@ -88,9 +88,8 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
 
     // 에셋 목록 로드
     useEffect(() => {
-        axios.get<Asset[]>('/aman/assets')
-            .then(res => {
-                const data = res.data;
+        apiClient.get<Asset[]>('/assets')
+            .then(data => {
                 const emRaw = data.filter(x => x.atype === 'EMOJI');
                 const emParsed: Asset[] = [];
                 if (emRaw.length > 0) {
@@ -833,10 +832,10 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 try {
                     const formData = new FormData();
                     formData.append('file', file);
-                    const res = await axios.post<{ url: string }>('/aman/content/image', formData, {
+                    const res = await apiClient.post<{ url: string }>('/content/image', formData, {
                         headers: { 'Content-Type': 'multipart/form-data' },
                     });
-                    const actualUrl = res.data?.url ?? 'undefined_url_returned';
+                    const actualUrl = res?.url ?? 'undefined_url_returned';
                     const markdownImage = `![image](${actualUrl})\n`;
                     const finalContent = newContent.replace(loadingText, markdownImage);
                     setForm({ content: finalContent });

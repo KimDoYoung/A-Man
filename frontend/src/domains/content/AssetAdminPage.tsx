@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Search, Trash2, Save, RotateCcw, FileText, Layout, Info } from 'lucide-react'
-import axios from 'axios'
+import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { renderMarkdownToHtml } from '@/utils/markdownRenderer'
 
@@ -42,8 +42,8 @@ const AssetAdminPage: React.FC = () => {
   const fetchAssets = async () => {
     setLoading(true)
     try {
-      const response = await axios.get<Asset[]>('/aman/assets')
-      setAssets(response.data)
+      const data = await apiClient.get<Asset[]>('/assets')
+      setAssets(data)
     } catch (error) {
       console.error('자산 목록을 불러오지 못했습니다:', error)
       showStatus('error', '자산 목록을 불러오는데 실패했습니다.')
@@ -98,7 +98,7 @@ const AssetAdminPage: React.FC = () => {
 
     setDeleting(true)
     try {
-      await axios.delete(`/aman/assets/${selectedAsset.id}`)
+      await apiClient.delete(`/assets/${selectedAsset.id}`)
       showStatus('success', '자산이 성공적으로 삭제되었습니다.')
       setSelectedAsset(null)
       setFormName('')
@@ -136,9 +136,9 @@ const AssetAdminPage: React.FC = () => {
         payload.id = selectedAsset.id
       }
 
-      const response = await axios.post<Asset>('/aman/assets', payload)
+      const data = await apiClient.post<Asset>('/assets', payload)
       showStatus('success', selectedAsset ? '자산이 수정되었습니다.' : '새로운 자산이 추가되었습니다.')
-      setSelectedAsset(response.data)
+      setSelectedAsset(data)
       fetchAssets()
     } catch (error: any) {
       console.error('자산 저장 실패:', error)
