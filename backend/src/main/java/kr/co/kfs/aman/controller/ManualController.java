@@ -19,6 +19,7 @@ import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
+import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
 import java.util.Optional;
 
 @RestController
@@ -484,6 +485,15 @@ public class ManualController {
             "        a:hover {\n" +
             "            text-decoration: underline;\n" +
             "        }\n" +
+            "        \n" +
+            "        /* Task List Styles */\n" +
+            "        .task-list-item {\n" +
+            "            list-style-type: none !important;\n" +
+            "        }\n" +
+            "        .task-list-item-checkbox {\n" +
+            "            margin-right: 6px;\n" +
+            "            vertical-align: middle;\n" +
+            "        }\n" +
             "        .breadcrumbs {\n" +
             "            font-size: 13px;\n" +
             "            color: #64748b;\n" +
@@ -867,6 +877,15 @@ public class ManualController {
             "        .dark-mode .theme-switch-slider-knob {\n" +
             "            background-color: #cbd5e1;\n" +
             "        }\n" +
+            "        \n" +
+            "        /* Task List Styles */\n" +
+            "        .task-list-item {\n" +
+            "            list-style-type: none !important;\n" +
+            "        }\n" +
+            "        .task-list-item-checkbox {\n" +
+            "            margin-right: 6px;\n" +
+            "            vertical-align: middle;\n" +
+            "        }\n" +
             "    </style>\n" +
             targetBlankScript +
             settingsScript +
@@ -1139,7 +1158,8 @@ public class ManualController {
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, java.util.Arrays.asList(
             TablesExtension.create(),
-            StrikethroughExtension.create()
+            StrikethroughExtension.create(),
+            TaskListExtension.create()
         ));
         options.set(HtmlRenderer.SOFT_BREAK, "<br />\n");
 
