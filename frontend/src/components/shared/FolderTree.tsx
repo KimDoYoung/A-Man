@@ -86,6 +86,14 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
     setExpandedFolders(newExpanded);
   }, [location.pathname, folders])
 
+  // 마지막 활성화된 폴더 ID 캐싱
+  useEffect(() => {
+    const match = location.pathname.match(/\/admin\/folder\/(\d+)/)
+    if (match) {
+      localStorage.setItem('aman_last_active_folder_id', match[1])
+    }
+  }, [location.pathname])
+
   // 키보드로 선택된 폴더 노드를 스크롤 영역 안으로 이동 (jump 방지용 수동 스크롤 조절)
   useEffect(() => {
     if (focusedFolderId !== null) {

@@ -109,7 +109,12 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50 cursor-pointer"
             onClick={() => {
               if (onCloseImageEditor) onCloseImageEditor()
-              navigate('/admin')
+              const lastFolderId = localStorage.getItem('aman_last_active_folder_id')
+              if (lastFolderId) {
+                navigate(`/admin/folder/${lastFolderId}`)
+              } else {
+                navigate('/admin')
+              }
             }}
             title="문서 편집으로 이동"
           >
@@ -125,7 +130,12 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           <button
             onClick={() => {
               if (onCloseImageEditor) onCloseImageEditor()
-              navigate('/admin')
+              const lastFolderId = localStorage.getItem('aman_last_active_folder_id')
+              if (lastFolderId) {
+                navigate(`/admin/folder/${lastFolderId}`)
+              } else {
+                navigate('/admin')
+              }
             }}
             className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
               isDocEditPage && !isImageEditorOpen
@@ -136,6 +146,19 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             문서 편집
           </button>
+          {onOpenImageEditor && isDocEditPage && (
+            <button
+              onClick={isImageEditorOpen ? onCloseImageEditor : onOpenImageEditor}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border shadow-xs ${
+                isImageEditorOpen
+                  ? 'bg-pink-600 text-white border-pink-600 hover:bg-pink-700' 
+                  : 'bg-pink-500/10 text-pink-400 border-pink-500/20 hover:bg-pink-500/20'
+              }`}
+              title={isImageEditorOpen ? "도움말 편집 화면으로 복귀" : "도움말 가이드용 이미지 편집기 열기"}
+            >
+              이미지 편집
+            </button>
+          )}          
           <button
             onClick={() => navigate('/admin/assets')}
             className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
@@ -165,19 +188,6 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             작업이력
           </button>
-          {onOpenImageEditor && isDocEditPage && (
-            <button
-              onClick={isImageEditorOpen ? onCloseImageEditor : onOpenImageEditor}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border shadow-xs ${
-                isImageEditorOpen
-                  ? 'bg-pink-600 text-white border-pink-600 hover:bg-pink-700' 
-                  : 'bg-pink-500/10 text-pink-400 border-pink-500/20 hover:bg-pink-500/20'
-              }`}
-              title={isImageEditorOpen ? "도움말 편집 화면으로 복귀" : "도움말 가이드용 이미지 편집기 열기"}
-            >
-              이미지 편집
-            </button>
-          )}
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin/users')}

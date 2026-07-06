@@ -47,6 +47,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 생성된 물리 정적 이미지 URL 상태
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
   
+  // 현재 로드되어 편집 중인 임시작업의 레코드 ID
+  const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null)
+  
   // 임시 보관함 이력 상태
   const [historyList, setHistoryList] = useState<ImageWork[]>([])
   const [editorTitle, setEditorTitle] = useState('새 이미지 작업')
@@ -64,23 +67,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [undoStack, setUndoStack] = useState<CanvasItem[][]>([])
   const [redoStack, setRedoStack] = useState<CanvasItem[][]>([])
 
-  // 에디터 모달 열릴 때 초기화 및 리스트 조회
+  // 에디터 모달 열릴 때 이력 목록 갱신 및 메시지 클리어
   useEffect(() => {
     if (isOpen) {
       fetchHistory()
-      // 초기 기본 설정
-      setItems([])
-      setBgImage(null)
-      setBgImageSrc('')
-      setSelectedItemId(null)
-      setCircleCounter(1)
-      setEditorTitle('새 이미지 작업')
-      setUndoStack([])
-      setRedoStack([])
-      setSelectedWorkIds([])
-      setEditingId(null)
-      setGeneratedImageUrl('')
-      setLastSavedState({ title: '새 이미지 작업', bgImageSrc: '', items: [] })
       setSaveMessage({ text: '', type: '' })
     }
   }, [isOpen])
@@ -292,16 +282,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
-  // 데이터 및 배경 변경 시 리렌더링
+  // 데이터 및 배경 변경 시 리렌더링 (열고 닫힐 때 재그리기 보장)
   useEffect(() => {
     draw()
-  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool])
+  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen])
 
   // 파일 업로드 처리
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     loadImage(file)
+    e.target.value = '' // 동일 파일 연속 업로드 가능하도록 브라우저 인풋값 리셋
   }
 
   // 클립보드 Paste 처리
@@ -327,28 +318,108 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     return () => window.removeEventListener('paste', handlePaste)
   }, [isOpen])
 
-  // 이미지 파일을 HTMLImageElement로 로드
+  // Ctrl + S 임시저장 단축키 리스너
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOpen && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        handleSaveToHistory()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, items, bgImageSrc, editorTitle, activeHistoryId, historyList, circleCounter])
+
+  // 도화지 및 상태 초기화
+  const handleResetToEmpty = () => {
+    if (window.confirm('현재 작업 중인 캔버스 내용이 완전히 소실됩니다. 정말 초기화하시겠습니까?')) {
+      setItems([])
+      setBgImage(null)
+      setBgImageSrc('')
+      setSelectedItemId(null)
+      setCircleCounter(1)
+      setEditorTitle('새 이미지 작업')
+      setUndoStack([])
+      setRedoStack([])
+      setSelectedWorkIds([])
+      setEditingId(null)
+      setGeneratedImageUrl('')
+      setActiveHistoryId(null)
+      setLastSavedState({ title: '새 이미지 작업', bgImageSrc: '', items: [] })
+      showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
+    }
+  }
+
+  // 이미지 파일을 HTMLImageElement로 로드 및 비율 유지 축소 리사이징
   const loadImage = (file: File) => {
     const reader = new FileReader()
     reader.onload = (event) => {
       const img = new Image()
       img.onload = () => {
+        // 1. 최대 한계치 상수 정의
+        const MAX_CANVAS_WIDTH = 1200
+        const MAX_CANVAS_HEIGHT = 900
+
+        let targetWidth = img.width
+        let targetHeight = img.height
+
+        // 2. 가로세로 비율 유지 축소 비율 산출
+        if (targetWidth > MAX_CANVAS_WIDTH || targetHeight > MAX_CANVAS_HEIGHT) {
+          const widthRatio = MAX_CANVAS_WIDTH / targetWidth
+          const heightRatio = MAX_CANVAS_HEIGHT / targetHeight
+          const bestRatio = Math.min(widthRatio, heightRatio)
+
+          targetWidth = Math.round(targetWidth * bestRatio)
+          targetHeight = Math.round(targetHeight * bestRatio)
+        }
+
+        // 3. 캔버스 해상도 세팅
         const canvas = canvasRef.current
         if (canvas) {
-          canvas.width = img.width
-          canvas.height = img.height
+          canvas.width = targetWidth
+          canvas.height = targetHeight
         }
-        const resultSrc = event.target?.result as string || ''
-        setBgImage(img)
-        setBgImageSrc(resultSrc)
-        setItems([])
-        setCircleCounter(1)
-        setUndoStack([])
-        setRedoStack([])
-        setGeneratedImageUrl('')
-        setLastSavedState({ title: '새 이미지 작업', bgImageSrc: resultSrc, items: [] })
+
+        // 4. [용량 축소 핵심] 임시/메인 캔버스를 이용해 부드럽게 리사이징된 신규 Base64 이미지 소스 생성
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = targetWidth
+        tempCanvas.height = targetHeight
+        const tempCtx = tempCanvas.getContext('2d')
+        let finalSrc = event.target?.result as string || ''
+
+        if (tempCtx && (img.width > MAX_CANVAS_WIDTH || img.height > MAX_CANVAS_HEIGHT)) {
+          tempCtx.drawImage(img, 0, 0, targetWidth, targetHeight)
+          finalSrc = tempCanvas.toDataURL('image/png')
+          
+          // 축소된 데이터로 신규 HTMLImageElement 객체를 재성성하여 바인딩
+          const resizedImg = new Image()
+          resizedImg.onload = () => {
+            setBgImage(resizedImg)
+            setBgImageSrc(finalSrc)
+            setItems([])
+            setCircleCounter(1)
+            setUndoStack([])
+            setRedoStack([])
+            setGeneratedImageUrl('')
+            setActiveHistoryId(null)
+            setLastSavedState({ title: '새 이미지 작업', bgImageSrc: finalSrc, items: [] })
+          }
+          resizedImg.src = finalSrc
+        } else {
+          // 크기가 한계치 이하여서 축소가 불필요한 경우 그대로 보관
+          setBgImage(img)
+          setBgImageSrc(finalSrc)
+          setItems([])
+          setCircleCounter(1)
+          setUndoStack([])
+          setRedoStack([])
+          setGeneratedImageUrl('')
+          setActiveHistoryId(null)
+          setLastSavedState({ title: '새 이미지 작업', bgImageSrc: finalSrc, items: [] })
+        }
       }
-      img.src = event.target?.result as string
+      img.src = event.target?.result as string || ''
     }
     reader.readAsDataURL(file)
   }
@@ -672,23 +743,30 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       const canvas = canvasRef.current
       const editedBase64 = canvas?.toDataURL('image/png') || ''
 
-      // 자동 번호 접미사 붙이기 (예: 접두어_1, 접두어_2)
+      // 임시저장(Ctrl+S) 시에는 버전 이력 누적을 위해 언제나 새로운 레코드로 추가 저장 수행
       const prefix = editorTitle.trim() || '임시작업'
-      const count = historyList.filter(h => h.title === prefix || h.title.startsWith(prefix + '_')).length
-      const finalTitle = `${prefix}_${count + 1}`
+      const cleanPrefix = prefix.replace(/_\d+$/, '') // "작업_3" 형태일 때 중복 방지
+      const count = historyList.filter(h => h.title === cleanPrefix || h.title.startsWith(cleanPrefix + '_')).length
+      const finalTitle = `${cleanPrefix}_${count + 1}`
 
       const dataToSave = {
         title: finalTitle,
         originalImageUrl: bgImageSrc, // 원본 Base64 또는 URL
         editedImageUrl: editedBase64,  // 최종 편집본 Base64
         items: items,
-        circleCounter: circleCounter
+        circleCounter: circleCounter,
+        physicalUrl: generatedImageUrl // 물리 url이 이미 생성된 상태면 함께 저장
       }
 
-      await apiClient.post('/admin/image-work', {
+      // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
+      const res = await apiClient.post<{ id: number }>('/admin/image-work', {
         title: finalTitle,
         jsonData: JSON.stringify(dataToSave)
       })
+
+      if (res && res.id) {
+        setActiveHistoryId(res.id)
+      }
 
       // 저장 완료 후 기준 상태 동기화
       setLastSavedState({
@@ -735,7 +813,39 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         if (res && res.url) {
           setGeneratedImageUrl(res.url)
-          showSaveMessage('물리 이미지 저장 및 URL 획득에 성공했습니다!', 'success')
+          
+          // 1번: 클립보드에 마크다운 복사까지 즉시 수행
+          const markdownFormat = `![image](${res.url})\n`
+          await navigator.clipboard.writeText(markdownFormat)
+          
+          // 2번: 물리 url을 해당 이미지 작업 레코드에 영구적으로 귀속 저장 (덮어쓰기 업데이트)
+          if (activeHistoryId) {
+            const dataToSave = {
+              title: editorTitle,
+              originalImageUrl: bgImageSrc,
+              editedImageUrl: canvas.toDataURL('image/png') || '',
+              items: items,
+              circleCounter: circleCounter,
+              physicalUrl: res.url
+            }
+            
+            await apiClient.post('/admin/image-work', {
+              id: activeHistoryId,
+              title: editorTitle,
+              jsonData: JSON.stringify(dataToSave)
+            })
+            
+            // 기준 상태 동기화
+            setLastSavedState({
+              title: editorTitle,
+              bgImageSrc: bgImageSrc,
+              items: items
+            })
+            
+            fetchHistory()
+          }
+
+          showSaveMessage('물리 이미지 저장 성공 및 마크다운이 클립보드에 자동 복사되었습니다!', 'success')
         } else {
           showSaveMessage('서버로부터 업로드 URL을 받지 못했습니다.', 'error')
         }
@@ -816,7 +926,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setUndoStack([])
         setRedoStack([])
         setSelectedItemId(null)
-        setGeneratedImageUrl('')
+        
+        // 2번: 물리 url이 이미 존재한다면 바로 보여줍니다.
+        if (data.physicalUrl) {
+          setGeneratedImageUrl(data.physicalUrl)
+        } else {
+          setGeneratedImageUrl('')
+        }
+
+        // 현재 작업 중인 이력 ID 세팅
+        setActiveHistoryId(work.id)
+
         setLastSavedState({ title: work.title, bgImageSrc: data.originalImageUrl || '', items: data.items || [] })
       }
       img.src = data.originalImageUrl
@@ -943,15 +1063,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 >
                   이미지 파일 선택
                 </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  className="hidden"
-                />
               </div>
             )}
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
 
             {/* 실제 캔버스 영역 */}
             <div className="relative shadow-xl max-w-full max-h-full border border-gray-300 dark:border-slate-800 rounded bg-white overflow-auto custom-scroll">
@@ -1279,6 +1400,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             {bgImage && (
               <>
                 <button
+                  onClick={handleResetToEmpty}
+                  className="px-3.5 py-2 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/20 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 dark:text-red-400 rounded-md text-xs font-semibold cursor-pointer shadow-xs transition-colors"
+                  title="모든 도화지와 작업을 완전히 비우고 초기 화면으로 초기화"
+                >
+                  초기화
+                </button>
+                <button
                   onClick={handleSaveToHistory}
                   disabled={savingWork || !isDirty}
                   className="px-3.5 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-xs font-semibold text-gray-600 dark:text-slate-300 flex items-center space-x-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -1290,9 +1418,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 
                 <button
                   onClick={handleGenerateUrl}
-                  disabled={insertingImage || isDirty}
+                  disabled={insertingImage || isDirty || !bgImage || generatedImageUrl !== ''}
                   className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-400 text-white border border-indigo-700 disabled:border-transparent rounded-md text-xs font-semibold flex items-center space-x-1.5 cursor-pointer shadow-xs transition-all disabled:cursor-not-allowed"
-                  title="임시저장을 완료하여 변경사항이 없을 때 활성화"
+                  title={generatedImageUrl ? "이미 완성본 URL이 존재합니다." : "임시저장을 완료하여 변경사항이 없을 때 활성화"}
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>{insertingImage ? '업로드 중...' : '저장 및 URL 획득'}</span>

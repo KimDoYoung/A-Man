@@ -563,125 +563,127 @@ const DocUserMain: React.FC = () => {
 
       {/* 2. 메인 컨테이너 영역 */}
       <div className="flex flex-1 overflow-hidden items-stretch">
-        {isImageEditorOpen ? (
+        {/* 이미지 편집기 (상태 유지를 위해 display hidden 처리로 DOM 상주) */}
+        <div className={`flex-1 flex flex-col overflow-hidden ${isImageEditorOpen ? '' : 'hidden'}`}>
           <ActionImageEditor
             isOpen={isImageEditorOpen}
           />
-        ) : (
-          <>
-            {/* 2.1 왼쪽 트리 내비게이션 */}
-            <aside
-              className={`bg-white p-4 flex flex-col shrink-0 overflow-hidden border-r border-gray-200 ${
-                sidebarOpen ? '' : 'hidden'
-              }`}
-              style={{ width: `${sidebarWidth}px` }}
-            >
-              {/* 관리자 모드이므로 contextMenuEnable={true} 전달 */}
-              <FolderTree contextMenuEnable={true} isDocUser={true} />
-            </aside>
+        </div>
 
-            {/* 2.2 1번 스플리터 (사이드바 - 본문용) */}
-            <div
-              className={`w-1.5 cursor-col-resize hover:bg-indigo-500 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center z-20 ${
-                sidebarOpen ? '' : 'hidden'
-              } ${resizingSidebar ? 'bg-indigo-500' : 'bg-transparent'}`}
-              onMouseDown={() => setResizingSidebar(true)}
-            >
-              <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
+        {/* 도움말 폴더/에디터 영역 (이미지 편집기가 열리면 hidden 처리) */}
+        <div className={`flex-1 flex overflow-hidden items-stretch ${isImageEditorOpen ? 'hidden' : ''}`}>
+          {/* 2.1 왼쪽 트리 내비게이션 */}
+          <aside
+            className={`bg-white p-4 flex flex-col shrink-0 overflow-hidden border-r border-gray-200 ${
+              sidebarOpen ? '' : 'hidden'
+            }`}
+            style={{ width: `${sidebarWidth}px` }}
+          >
+            {/* 관리자 모드이므로 contextMenuEnable={true} 전달 */}
+            <FolderTree contextMenuEnable={true} isDocUser={true} />
+          </aside>
+
+          {/* 2.2 1번 스플리터 (사이드바 - 본문용) */}
+          <div
+            className={`w-1.5 cursor-col-resize hover:bg-indigo-500 border-r border-gray-200 transition-colors shrink-0 flex items-center justify-center z-20 ${
+              sidebarOpen ? '' : 'hidden'
+            } ${resizingSidebar ? 'bg-indigo-500' : 'bg-transparent'}`}
+            onMouseDown={() => setResizingSidebar(true)}
+          >
+            <div className="w-0.5 h-4 bg-gray-300 rounded-sm"></div>
+          </div>
+
+          {/* 2.3 중앙 본문 및 에디터 영역 */}
+          <main className="flex-1 bg-white p-6 flex flex-col overflow-hidden">
+            {/* Breadcrumbs */}
+            <FolderBreadcrumbs folderHierarchy={folderHierarchy} />
+
+            {/* 비어있는 상태 알림 */}
+            {page && !page.id && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-100 text-amber-800 rounded-md text-xs flex items-center justify-between shrink-0">
+                <span>⚠️ 현재 이 메뉴에 도움말 페이지가 비어 있습니다. 아래에 내용을 작성하여 새 도움말을 저장하십시오.</span>
+              </div>
+            )}
+
+            {/* 에러 메시지 표시 */}
+            {errorMsg && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-800 rounded-md text-xs shrink-0">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* 문서 제목 표시 */}
+            <div className="mb-4 shrink-0 flex items-center justify-between border-b border-gray-100 pb-2">
+              {page ? (
+                <h1 className="text-xl font-bold text-gray-900">
+                  {page.folder 
+                    ? `${page.folder.name}${page.folder.nums ? `(${page.folder.nums})` : ''}` 
+                    : '새 도움말 페이지'}
+                </h1>
+              ) : (
+                <h1 className="text-xl font-bold text-gray-400">편집할 메뉴를 선택하십시오.</h1>
+              )}
             </div>
 
-            {/* 2.3 중앙 본문 및 에디터 영역 */}
-            <main className="flex-1 bg-white p-6 flex flex-col overflow-hidden">
-              {/* Breadcrumbs */}
-              <FolderBreadcrumbs folderHierarchy={folderHierarchy} />
+            {page ? (
+              <>
+                {/* 스플릿 편집 및 미리보기 컨테이너 */}
+                <MarkdownSplitEditor
+                  page={page}
+                  pageContent={pageContent}
+                  setPageContent={setPageContent}
+                  pageAka={pageAka}
+                  setPageAka={setPageAka}
+                  previewOpen={previewOpen}
+                  setPreviewOpen={setPreviewOpen}
+                  previewWidthPercent={previewWidthPercent}
+                  setPreviewWidthPercent={setPreviewWidthPercent}
+                  resizingPreview={resizingPreview}
+                  setResizingPreview={setResizingPreview}
+                  pageTitle={page?.title || page?.folder?.name || 'document'}
+                  folderId={folder_id || page?.folder?.id?.toString()}
+                  settings={settings}
+                  insertMarkdown={insertMarkdown}
+                  insertLink={insertLink}
+                  insertBullet={insertBullet}
+                  insertNumber={insertNumber}
+                  selectAndUploadImage={selectAndUploadImage}
+                  handleSave={handleSave}
+                  textareaRef={textareaRef}
+                  containerRef={containerRef}
+                  previewContainerRef={previewContainerRef}
+                  onImportSuccess={(importedPage) => {
+                    isLeavingRef.current = true;
+                    navigate(`/admin/page/${importedPage.id}`);
+                    setTimeout(() => {
+                      isLeavingRef.current = false;
+                    }, 100);
+                  }}
+                />
 
-              {/* 비어있는 상태 알림 */}
-              {page && !page.id && (
-                <div className="mb-4 p-3 bg-amber-50 border border-amber-100 text-amber-800 rounded-md text-xs flex items-center justify-between shrink-0">
-                  <span>⚠️ 현재 이 메뉴에 도움말 페이지가 비어 있습니다. 아래에 내용을 작성하여 새 도움말을 저장하십시오.</span>
-                </div>
-              )}
-
-              {/* 에러 메시지 표시 */}
-              {errorMsg && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-800 rounded-md text-xs shrink-0">
-                  {errorMsg}
-                </div>
-              )}
-
-              {/* 문서 제목 표시 */}
-              <div className="mb-4 shrink-0 flex items-center justify-between border-b border-gray-100 pb-2">
-                {page ? (
-                  <h1 className="text-xl font-bold text-gray-900">
-                    {page.folder 
-                      ? `${page.folder.name}${page.folder.nums ? `(${page.folder.nums})` : ''}` 
-                      : '새 도움말 페이지'}
-                  </h1>
-                ) : (
-                  <h1 className="text-xl font-bold text-gray-400">편집할 메뉴를 선택하십시오.</h1>
-                )}
+                {/* 저장 액션바 */}
+                <EditorActionBar
+                  page={page}
+                  isDirty={isDirty}
+                  saving={saving}
+                  deleting={deleting}
+                  pageStatus={pageStatus}
+                  saveStatus={saveStatus}
+                  copied={copied}
+                  setCopied={setCopied}
+                  handleSave={handleSave}
+                  handleDelete={handleDelete}
+                  handleToggleStatus={handleToggleStatus}
+                  copyTextToClipboard={copyTextToClipboard}
+                />
+              </>
+            ) : (
+              <div className="flex-1 border border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50/50">
+                <p className="text-sm text-gray-400 font-medium">좌측 메뉴 트리 탐색기에서 편집할 도움말 메뉴 카테고리를 선택하세요.</p>
               </div>
-
-              {page ? (
-                <>
-                  {/* 스플릿 편집 및 미리보기 컨테이너 */}
-                  <MarkdownSplitEditor
-                    page={page}
-                    pageContent={pageContent}
-                    setPageContent={setPageContent}
-                    pageAka={pageAka}
-                    setPageAka={setPageAka}
-                    previewOpen={previewOpen}
-                    setPreviewOpen={setPreviewOpen}
-                    previewWidthPercent={previewWidthPercent}
-                    setPreviewWidthPercent={setPreviewWidthPercent}
-                    resizingPreview={resizingPreview}
-                    setResizingPreview={setResizingPreview}
-                    pageTitle={page?.title || page?.folder?.name || 'document'}
-                    folderId={folder_id || page?.folder?.id?.toString()}
-                    settings={settings}
-                    insertMarkdown={insertMarkdown}
-                    insertLink={insertLink}
-                    insertBullet={insertBullet}
-                    insertNumber={insertNumber}
-                    selectAndUploadImage={selectAndUploadImage}
-                    handleSave={handleSave}
-                    textareaRef={textareaRef}
-                    containerRef={containerRef}
-                    previewContainerRef={previewContainerRef}
-                    onImportSuccess={(importedPage) => {
-                      isLeavingRef.current = true;
-                      navigate(`/admin/page/${importedPage.id}`);
-                      setTimeout(() => {
-                        isLeavingRef.current = false;
-                      }, 100);
-                    }}
-                  />
-
-                  {/* 저장 액션바 */}
-                  <EditorActionBar
-                    page={page}
-                    isDirty={isDirty}
-                    saving={saving}
-                    deleting={deleting}
-                    pageStatus={pageStatus}
-                    saveStatus={saveStatus}
-                    copied={copied}
-                    setCopied={setCopied}
-                    handleSave={handleSave}
-                    handleDelete={handleDelete}
-                    handleToggleStatus={handleToggleStatus}
-                    copyTextToClipboard={copyTextToClipboard}
-                  />
-                </>
-              ) : (
-                <div className="flex-1 border border-dashed border-gray-200 rounded-lg flex items-center justify-center bg-gray-50/50">
-                  <p className="text-sm text-gray-400 font-medium">좌측 메뉴 트리 탐색기에서 편집할 도움말 메뉴 카테고리를 선택하세요.</p>
-                </div>
-              )}
-            </main>
-          </>
-        )}
+            )}
+          </main>
+        </div>
       </div>
 
       {/* 3. 변경사항 저장 확인 커스텀 모달 */}
