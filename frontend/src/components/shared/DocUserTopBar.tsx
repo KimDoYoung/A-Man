@@ -8,11 +8,13 @@ import RecentPagesModal from './RecentPagesModal'
 interface DocUserTopBarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
+  onOpenImageEditor?: () => void;
 }
 
 const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   sidebarOpen,
-  setSidebarOpen
+  setSidebarOpen,
+  onOpenImageEditor
 }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -153,6 +155,15 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             작업이력
           </button>
+          {onOpenImageEditor && isDocEditPage && (
+            <button
+              onClick={onOpenImageEditor}
+              className="flex items-center space-x-1 px-2.5 py-1 bg-pink-500/10 text-pink-400 border border-pink-500/20 hover:bg-pink-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold shadow-xs hover:scale-102"
+              title="도움말 가이드용 이미지 편집기 열기"
+            >
+              이미지 편집
+            </button>
+          )}
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin/users')}

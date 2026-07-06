@@ -9,6 +9,7 @@ import UnsavedChangesModal from './components/UnsavedChangesModal'
 import EditorActionBar from './components/EditorActionBar'
 import MarkdownSplitEditor from './components/MarkdownSplitEditor'
 import { useRecentPagesStore } from '@/store/useRecentPagesStore'
+import ActionImageEditor from '@/components/imageditor/ActionImageEditor'
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   if (navigator.clipboard && window.isSecureContext) {
@@ -45,6 +46,7 @@ const DocUserMain: React.FC = () => {
   // 레이아웃 인터랙션 상태
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [previewOpen, setPreviewOpen] = useState(true)
+  const [isImageEditorOpen, setIsImageEditorOpen] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [previewWidthPercent, setPreviewWidthPercent] = useState(50)
   const [resizingSidebar, setResizingSidebar] = useState(false)
@@ -551,7 +553,11 @@ const DocUserMain: React.FC = () => {
   return (
     <div className="bg-gray-100 text-gray-900 font-sans antialiased select-none h-screen flex flex-col">
       {/* 1. Header 영역 */}
-      <DocUserTopBar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <DocUserTopBar 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen} 
+        onOpenImageEditor={() => setIsImageEditorOpen(true)}
+      />
 
       {/* 2. 메인 컨테이너 영역 */}
       <div className="flex flex-1 overflow-hidden items-stretch">
@@ -673,6 +679,15 @@ const DocUserMain: React.FC = () => {
         blocker={blocker}
         handleSave={handleSave}
         isLeavingRef={isLeavingRef}
+      />
+
+      {/* 이미지 편집 모달 오버레이 */}
+      <ActionImageEditor
+        isOpen={isImageEditorOpen}
+        onClose={() => setIsImageEditorOpen(false)}
+        onInsertImage={(imageUrl) => {
+          insertMarkdown(`![image](${imageUrl})\n`)
+        }}
       />
     </div>
   )
