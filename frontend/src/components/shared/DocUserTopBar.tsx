@@ -9,12 +9,16 @@ interface DocUserTopBarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   onOpenImageEditor?: () => void;
+  isImageEditorOpen?: boolean;
+  onCloseImageEditor?: () => void;
 }
 
 const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   sidebarOpen,
   setSidebarOpen,
-  onOpenImageEditor
+  onOpenImageEditor,
+  isImageEditorOpen,
+  onCloseImageEditor
 }) => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -103,7 +107,10 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         <div className="flex items-center space-x-2">
           <span 
             className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50 cursor-pointer"
-            onClick={() => navigate('/admin')}
+            onClick={() => {
+              if (onCloseImageEditor) onCloseImageEditor()
+              navigate('/admin')
+            }}
             title="문서 편집으로 이동"
           >
             A-Man ({version})
@@ -116,9 +123,12 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             홈으로
           </button>
           <button
-            onClick={() => navigate('/admin')}
+            onClick={() => {
+              if (onCloseImageEditor) onCloseImageEditor()
+              navigate('/admin')
+            }}
             className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
-              isDocEditPage 
+              isDocEditPage && !isImageEditorOpen
                 ? 'bg-indigo-600 text-white border-indigo-600' 
                 : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
             }`}
@@ -157,9 +167,13 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           </button>
           {onOpenImageEditor && isDocEditPage && (
             <button
-              onClick={onOpenImageEditor}
-              className="flex items-center space-x-1 px-2.5 py-1 bg-pink-500/10 text-pink-400 border border-pink-500/20 hover:bg-pink-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold shadow-xs hover:scale-102"
-              title="도움말 가이드용 이미지 편집기 열기"
+              onClick={isImageEditorOpen ? onCloseImageEditor : onOpenImageEditor}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border shadow-xs ${
+                isImageEditorOpen
+                  ? 'bg-pink-600 text-white border-pink-600 hover:bg-pink-700' 
+                  : 'bg-pink-500/10 text-pink-400 border-pink-500/20 hover:bg-pink-500/20'
+              }`}
+              title={isImageEditorOpen ? "도움말 편집 화면으로 복귀" : "도움말 가이드용 이미지 편집기 열기"}
             >
               이미지 편집
             </button>

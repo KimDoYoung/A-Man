@@ -1,0 +1,28 @@
+export interface CanvasItem {
+  id: string
+  type: 'circle-number' | 'box' | 'text'
+  x: number
+  y: number
+  width?: number
+  height?: number
+  text?: string
+  style: {
+    borderColor?: string
+    borderWidth?: number
+    backgroundColor?: string
+    textColor?: string
+    fontSize?: number
+  }
+}
+
+export interface ImageWork {
+  id: number
+  title: string
+  jsonData: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ActionImageEditorProps {
+  isOpen: boolean
+}

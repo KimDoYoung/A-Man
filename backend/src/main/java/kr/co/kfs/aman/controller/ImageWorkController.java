@@ -135,18 +135,11 @@ public class ImageWorkController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증된 사용자를 찾을 수 없습니다.");
         }
 
-        Optional<ImageWork> existingOpt = imageWorkRepository.findById(id);
-        if (!existingOpt.isPresent()) {
+        int deletedCount = imageWorkRepository.deleteByIdNative(id);
+        if (deletedCount == 0) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 이미지 작업입니다.");
         }
 
-        ImageWork imageWork = existingOpt.get();
-        // 소유권 검사
-        if (!imageWork.getUser().getId().equals(user.getId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("본인의 이미지 작업만 삭제할 수 있습니다.");
-        }
-
-        imageWorkRepository.delete(imageWork);
         return ResponseEntity.ok("이미지 작업이 성공적으로 삭제되었습니다.");
     }
 }

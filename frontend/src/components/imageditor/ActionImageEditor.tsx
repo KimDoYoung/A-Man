@@ -1,42 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { X, Undo, Redo, Download, Copy, Plus, Trash2, Type, Square, CircleDot, Check, Save } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Trash2, Type, Square, CircleDot, Check, Save, MousePointer, Crop, Edit2 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import { formatRelativeTime } from '@/lib/utils'
 
-interface CanvasItem {
-  id: string
-  type: 'circle-number' | 'box' | 'text'
-  x: number
-  y: number
-  width?: number
-  height?: number
-  text?: string
-  style: {
-    borderColor?: string
-    borderWidth?: number
-    backgroundColor?: string
-    textColor?: string
-    fontSize?: number
-  }
-}
+import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
 
-interface ImageWork {
-  id: number
-  title: string
-  jsonData: string
-  createdAt: string
-  updatedAt: string
-}
-
-interface ActionImageEditorProps {
-  isOpen: boolean
-  onClose: () => void
-  onInsertImage: (imageUrl: string) => void
-}
 
 const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
-  isOpen,
-  onClose,
-  onInsertImage
+  isOpen
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -63,12 +34,31 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [fontSize, setFontSize] = useState(16)
   const [lineWidth, setLineWidth] = useState(3)
   
+  // 마지막 저장 시점 상태 (isDirty 체크용)
+  const [lastSavedState, setLastSavedState] = useState<{ title: string; bgImageSrc: string; items: CanvasItem[] }>({
+    title: '',
+    bgImageSrc: '',
+    items: []
+  })
+  
+  // 헤더 3초 알림 메시지 상태
+  const [saveMessage, setSaveMessage] = useState<{ text: string; type: 'success' | 'error' | '' }>({ text: '', type: '' })
+  
+  // 생성된 물리 정적 이미지 URL 상태
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string>('')
+  
   // 임시 보관함 이력 상태
   const [historyList, setHistoryList] = useState<ImageWork[]>([])
   const [editorTitle, setEditorTitle] = useState('새 이미지 작업')
   const [savingWork, setSavingWork] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [insertingImage, setInsertingImage] = useState(false)
+
+  // 다중 선택 삭제 상태
+  const [selectedWorkIds, setSelectedWorkIds] = useState<number[]>([])
+  // 제목 실시간 편집 상태
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingTitleValue, setEditingTitleValue] = useState('')
 
   // Undo / Redo 작업 스택
   const [undoStack, setUndoStack] = useState<CanvasItem[][]>([])
@@ -87,8 +77,33 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setEditorTitle('새 이미지 작업')
       setUndoStack([])
       setRedoStack([])
+      setSelectedWorkIds([])
+      setEditingId(null)
+      setGeneratedImageUrl('')
+      setLastSavedState({ title: '새 이미지 작업', bgImageSrc: '', items: [] })
+      setSaveMessage({ text: '', type: '' })
     }
   }, [isOpen])
+
+  // 변경사항 여부 계산 (isDirty)
+  const isDirty = bgImage !== null && (
+    editorTitle.trim() !== lastSavedState.title.trim() ||
+    bgImageSrc !== lastSavedState.bgImageSrc ||
+    JSON.stringify(items) !== JSON.stringify(lastSavedState.items)
+  )
+
+  // items 나 bgImageSrc가 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
+  useEffect(() => {
+    setGeneratedImageUrl('')
+  }, [items, bgImageSrc, editorTitle])
+
+  // 3초간 헤더에 메시지 표시 헬퍼
+  const showSaveMessage = (text: string, type: 'success' | 'error') => {
+    setSaveMessage({ text, type })
+    setTimeout(() => {
+      setSaveMessage((prev) => prev.text === text ? { text: '', type: '' } : prev)
+    }, 3000)
+  }
 
   // 임시 보관 목록 가져오기
   const fetchHistory = async () => {
@@ -323,12 +338,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           canvas.width = img.width
           canvas.height = img.height
         }
+        const resultSrc = event.target?.result as string || ''
         setBgImage(img)
-        setBgImageSrc(event.target?.result as string || '')
+        setBgImageSrc(resultSrc)
         setItems([])
         setCircleCounter(1)
         setUndoStack([])
         setRedoStack([])
+        setGeneratedImageUrl('')
+        setLastSavedState({ title: '새 이미지 작업', bgImageSrc: resultSrc, items: [] })
       }
       img.src = event.target?.result as string
     }
@@ -654,8 +672,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       const canvas = canvasRef.current
       const editedBase64 = canvas?.toDataURL('image/png') || ''
 
+      // 자동 번호 접미사 붙이기 (예: 접두어_1, 접두어_2)
+      const prefix = editorTitle.trim() || '임시작업'
+      const count = historyList.filter(h => h.title === prefix || h.title.startsWith(prefix + '_')).length
+      const finalTitle = `${prefix}_${count + 1}`
+
       const dataToSave = {
-        title: editorTitle,
+        title: finalTitle,
         originalImageUrl: bgImageSrc, // 원본 Base64 또는 URL
         editedImageUrl: editedBase64,  // 최종 편집본 Base64
         items: items,
@@ -663,17 +686,113 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
 
       await apiClient.post('/admin/image-work', {
-        title: editorTitle,
+        title: finalTitle,
         jsonData: JSON.stringify(dataToSave)
       })
 
-      alert('작업이 임시 보관함에 저장되었습니다.')
+      // 저장 완료 후 기준 상태 동기화
+      setLastSavedState({
+        title: finalTitle,
+        bgImageSrc: bgImageSrc,
+        items: items
+      })
+      setEditorTitle(finalTitle)
+
+      showSaveMessage(`작업이 '${finalTitle}' 명칭으로 임시 보관함에 저장되었습니다.`, 'success')
       fetchHistory()
     } catch (err) {
       console.error('작업 임시저장 에러:', err)
-      alert('작업 임시 저장 도중 오류가 발생했습니다.')
+      showSaveMessage('작업 임시 저장 도중 오류가 발생했습니다.', 'error')
     } finally {
       setSavingWork(false)
+    }
+  }
+
+  // 최종 이미지 서버 물리 저장 및 정적 URL 획득
+  const handleGenerateUrl = () => {
+    const canvas = canvasRef.current
+    if (!canvas || !bgImage) {
+      alert('저장할 이미지가 없습니다.')
+      return
+    }
+
+    setInsertingImage(true)
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setInsertingImage(false)
+        return
+      }
+
+      try {
+        const formData = new FormData()
+        const cleanTitle = editorTitle.replace(/[^a-zA-Z0-9가-힣]/g, '_')
+        const file = new File([blob], `${cleanTitle || 'edited'}_${Date.now()}.png`, { type: 'image/png' })
+        formData.append('file', file)
+
+        const res = await apiClient.post<{ url: string }>('/content/image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+
+        if (res && res.url) {
+          setGeneratedImageUrl(res.url)
+          showSaveMessage('물리 이미지 저장 및 URL 획득에 성공했습니다!', 'success')
+        } else {
+          showSaveMessage('서버로부터 업로드 URL을 받지 못했습니다.', 'error')
+        }
+      } catch (err) {
+        console.error('이미지 업로드 실패:', err)
+        showSaveMessage('이미지 업로드에 실패했습니다.', 'error')
+      } finally {
+        setInsertingImage(false)
+      }
+    }, 'image/png')
+  }
+
+  // 제목 인라인 수정 완료 처리
+  const handleUpdateTitle = async (work: ImageWork, newTitle: string) => {
+    if (!newTitle.trim()) {
+      alert('제목은 비워둘 수 없습니다.')
+      return
+    }
+    try {
+      let updatedJsonData = work.jsonData
+      try {
+        const parsed = JSON.parse(work.jsonData)
+        parsed.title = newTitle.trim()
+        updatedJsonData = JSON.stringify(parsed)
+      } catch (e) {
+        console.warn('jsonData 파싱 실패로 텍스트 치환 시도')
+      }
+
+      await apiClient.post('/admin/image-work', {
+        id: work.id,
+        title: newTitle.trim(),
+        jsonData: updatedJsonData
+      })
+      
+      setEditingId(null)
+      fetchHistory()
+    } catch (err) {
+      console.error('제목 수정 오류:', err)
+      alert('제목을 수정하지 못했습니다.')
+    }
+  }
+
+  // 선택된 항목 다중 삭제 (SQLite 락 충돌 방지를 위해 직렬 순차 처리)
+  const handleDeleteSelected = async () => {
+    if (selectedWorkIds.length === 0) return
+    if (!confirm(`선택된 ${selectedWorkIds.length}개의 항목을 정말 모두 삭제하시겠습니까?`)) return
+    
+    try {
+      for (const id of selectedWorkIds) {
+        await apiClient.delete(`/admin/image-work/${id}`)
+      }
+      setSelectedWorkIds([])
+      fetchHistory()
+    } catch (err) {
+      console.error('선택 항목 삭제 중 에러:', err)
+      alert('일부 항목 삭제를 실패했습니다.')
+      fetchHistory()
     }
   }
 
@@ -697,11 +816,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setUndoStack([])
         setRedoStack([])
         setSelectedItemId(null)
+        setGeneratedImageUrl('')
+        setLastSavedState({ title: work.title, bgImageSrc: data.originalImageUrl || '', items: data.items || [] })
       }
       img.src = data.originalImageUrl
     } catch (e) {
       console.error('Failed to parse load data:', e)
-      alert('이미지 작업 데이터를 복원하는 데 실패했습니다.')
+      showSaveMessage('이미지 작업 데이터를 복원하는 데 실패했습니다.', 'error')
     }
   }
 
@@ -717,53 +838,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
-  // [핵심] 최종 이미지를 마크다운 문서에 삽입
-  const handleInsertDocument = () => {
-    const canvas = canvasRef.current
-    if (!canvas || !bgImage) {
-      alert('문서에 추가할 이미지가 없습니다.')
-      return
-    }
 
-    setInsertingImage(true)
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        setInsertingImage(false)
-        return
-      }
-
-      try {
-        const formData = new FormData()
-        // 파일 이름을 타이틀을 기준해서 지정
-        const cleanTitle = editorTitle.replace(/[^a-zA-Z0-9가-힣]/g, '_')
-        const file = new File([blob], `${cleanTitle || 'edited'}_${Date.now()}.png`, { type: 'image/png' })
-        formData.append('file', file)
-
-        // 이미지 업로드 엔드포인트 호출
-        const res = await apiClient.post<{ url: string }>('/content/image', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-
-        if (res && res.url) {
-          // 마크다운 삽입 콜백 실행
-          onInsertImage(res.url)
-          onClose() // 에디터 닫기
-        } else {
-          alert('서버로부터 업로드 URL을 받지 못했습니다.')
-        }
-      } catch (err) {
-        console.error('문서용 이미지 업로드 실패:', err)
-        alert('이미지 업로드에 실패했습니다.')
-      } finally {
-        setInsertingImage(false)
-      }
-    }, 'image/png')
-  }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-slate-900 z-[999] flex flex-col overflow-hidden transition-all animate-in fade-in duration-200">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900 transition-all animate-in fade-in duration-200">
       <div className="w-full h-full flex flex-col overflow-hidden">
         
         {/* 헤더 영역 */}
@@ -771,8 +851,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           <div className="flex items-center space-x-3">
             <span className="font-bold text-gray-800 dark:text-slate-100 flex items-center space-x-1.5 text-sm">
               <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
-              <span>도움말 이미지 가이드 편집기 (Image Editor)</span>
+              <span>도움말 이미지 편집기</span>
             </span>
+            <label className="text-xs text-gray-500 dark:text-slate-400 font-semibold shrink-0 ml-3">임시보관 접두어:</label>
             <input
               type="text"
               value={editorTitle}
@@ -781,13 +862,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               placeholder="작업 제목 입력"
               title="이 작업의 임시보관용 제목"
             />
+            {saveMessage.text && (
+              <span className={`text-xs px-3 py-1 rounded-md font-bold animate-in fade-in slide-in-from-top-1 duration-200 ${
+                saveMessage.type === 'success' 
+                  ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50' 
+                  : 'bg-red-50 dark:bg-red-950/20 text-red-650 dark:text-red-400 border border-red-100 dark:border-red-900/50'
+              }`}>
+                {saveMessage.text}
+              </span>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* 바디 영역 */}
@@ -796,11 +880,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           {/* 1. 좌측 에디터 툴바 */}
           <aside className="w-14 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 flex flex-col items-center py-4 space-y-2 shrink-0">
             {[
-              { id: 'pointer', label: '선택 / 이동 (Del로 삭제)', icon: <Plus className="w-4 h-4 rotate-45" /> },
+              { id: 'pointer', label: '선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
               { id: 'circle-number', label: '원숫자 마크 스탬프', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
-              { id: 'crop', label: '러버밴드 점선 자르기', icon: <X className="w-4 h-4" /> }
+              { id: 'crop', label: '러버밴드 점선 자르기', icon: <Crop className="w-4 h-4" /> }
             ].map((tool) => (
               <button
                 key={tool.id}
@@ -810,7 +894,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 }}
                 className={`p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
                   activeTool === tool.id
-                    ? 'bg-indigo-600 text-white shadow-md scale-105'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 shadow-xs ring-1 ring-indigo-200 dark:ring-indigo-900/50 scale-105'
                     : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
                 }`}
                 title={tool.label}
@@ -825,7 +909,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             <button
               onClick={handleUndo}
               disabled={undoStack.length === 0}
-              className="p-2.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="p-2.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               title="실행 취소 (Undo)"
             >
               <Undo className="w-4 h-4" />
@@ -1057,8 +1141,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
           {/* 3. 우측 임시 보관 히스토리 사이드바 */}
           <aside className="w-64 border-l border-gray-200 dark:border-slate-800 flex flex-col shrink-0 overflow-hidden bg-white dark:bg-slate-900">
-            <div className="p-4 border-b border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
-              <p className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">임시 보관 작업 목록</p>
+            <div className="p-4 border-b border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0 flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">임시 보관 작업 목록</span>
+              {historyList.length > 0 && (
+                <div className="flex items-center space-x-1" title="전체 선택 / 해제">
+                  <input
+                    type="checkbox"
+                    checked={historyList.length > 0 && selectedWorkIds.length === historyList.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedWorkIds(historyList.map((h) => h.id))
+                      } else {
+                        setSelectedWorkIds([])
+                      }
+                    }}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-650 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-[10px] text-gray-400 font-medium select-none">전체</span>
+                </div>
+              )}
             </div>
             
             <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
@@ -1076,23 +1177,92 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                     onClick={() => handleLoadWork(work)}
                     className="p-2 border border-gray-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-lg cursor-pointer transition-all flex flex-col space-y-1.5 select-none relative group"
                   >
-                    <div className="flex justify-between items-start">
-                      <span className="font-semibold text-gray-800 dark:text-slate-200 text-xs truncate max-w-[170px]">{work.title}</span>
-                      <button
-                        onClick={(e) => handleDeleteHistory(work.id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer"
-                        title="기록 삭제"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedWorkIds.includes(work.id)}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          if (e.target.checked) {
+                            setSelectedWorkIds((prev) => [...prev, work.id])
+                          } else {
+                            setSelectedWorkIds((prev) => prev.filter((id) => id !== work.id))
+                          }
+                        }}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-650 focus:ring-indigo-500 cursor-pointer mr-2 shrink-0"
+                      />
+                      <div className="flex-1 flex justify-between items-center min-w-0">
+                        {editingId === work.id ? (
+                          <input
+                            type="text"
+                            value={editingTitleValue}
+                            onChange={(e) => setEditingTitleValue(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={() => handleUpdateTitle(work, editingTitleValue)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleUpdateTitle(work, editingTitleValue)
+                              } else if (e.key === 'Escape') {
+                                setEditingId(null)
+                              }
+                            }}
+                            autoFocus
+                            className="px-1.5 py-0.5 text-xs bg-white dark:bg-slate-900 border border-indigo-500 rounded font-semibold text-gray-800 dark:text-slate-100 w-full focus:outline-hidden"
+                          />
+                        ) : (
+                          <div className="flex items-center space-x-1 flex-1 min-w-0" onDoubleClick={(e) => {
+                            e.stopPropagation()
+                            setEditingId(work.id)
+                            setEditingTitleValue(work.title)
+                          }}>
+                            <span className="font-semibold text-gray-800 dark:text-slate-200 text-xs truncate max-w-[150px]" title={work.title}>
+                              {work.title}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-1 shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingId(work.id)
+                              setEditingTitleValue(work.title)
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-indigo-650 rounded transition-all cursor-pointer"
+                            title="제목 수정"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteHistory(work.id, e)}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer"
+                            title="기록 삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-gray-400 font-medium">
-                      수정: {new Date(work.updatedAt).toLocaleDateString()} {new Date(work.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <span className="text-[10px] text-gray-400 font-medium pl-5.5">
+                      수정: {new Date(work.updatedAt).toLocaleDateString()} {new Date(work.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({formatRelativeTime(work.updatedAt)})
                     </span>
                   </div>
                 ))
               )}
             </div>
+
+            {/* 선택 삭제 제어부 */}
+            {selectedWorkIds.length > 0 && (
+              <div className="p-3 border-t border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
+                <button
+                  onClick={handleDeleteSelected}
+                  className="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 dark:border-red-900/50 rounded-md text-[11px] font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>선택 항목 모두 삭제 ({selectedWorkIds.length})</span>
+                </button>
+              </div>
+            )}
           </aside>
 
         </div>
@@ -1107,15 +1277,63 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               새 이미지 업로드
             </button>
             {bgImage && (
-              <button
-                onClick={handleSaveToHistory}
-                disabled={savingWork}
-                className="px-3.5 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-xs font-semibold text-gray-600 dark:text-slate-300 flex items-center space-x-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
-                title="현재 작업 내역 임시보관함 저장"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{savingWork ? '저장 중...' : '임시 저장'}</span>
-              </button>
+              <>
+                <button
+                  onClick={handleSaveToHistory}
+                  disabled={savingWork || !isDirty}
+                  className="px-3.5 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-xs font-semibold text-gray-600 dark:text-slate-300 flex items-center space-x-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="변경사항이 있을 때만 임시저장 활성화"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savingWork ? '저장 중...' : '임시 저장'}</span>
+                </button>
+                
+                <button
+                  onClick={handleGenerateUrl}
+                  disabled={insertingImage || isDirty}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-100 dark:disabled:bg-slate-800 disabled:text-gray-400 text-white border border-indigo-700 disabled:border-transparent rounded-md text-xs font-semibold flex items-center space-x-1.5 cursor-pointer shadow-xs transition-all disabled:cursor-not-allowed"
+                  title="임시저장을 완료하여 변경사항이 없을 때 활성화"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{insertingImage ? '업로드 중...' : '저장 및 URL 획득'}</span>
+                </button>
+              </>
+            )}
+
+            {/* 생성된 URL 표시창 영역 */}
+            {generatedImageUrl && (
+              <div className="flex items-center space-x-2 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100 dark:border-emerald-900/40 px-2 py-1 rounded ml-3 shrink-0 animate-in fade-in duration-200">
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold shrink-0">URL:</span>
+                <input
+                  type="text"
+                  readOnly
+                  value={generatedImageUrl}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="text-[11px] font-mono bg-transparent border-0 text-indigo-650 dark:text-indigo-400 w-[360px] focus:outline-hidden"
+                  title="클릭하여 전체 선택"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedImageUrl)
+                    showSaveMessage('이미지 주소가 클립보드에 복사되었습니다.', 'success')
+                  }}
+                  className="px-2 py-0.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 rounded text-[10px] text-gray-600 dark:text-slate-300 font-bold cursor-pointer transition-colors"
+                  title="순수 이미지 URL 주소 복사"
+                >
+                  주소 복사
+                </button>
+                <button
+                  onClick={() => {
+                    const markdownFormat = `![image](${generatedImageUrl})\n`
+                    navigator.clipboard.writeText(markdownFormat)
+                    showSaveMessage('마크다운 이미지 태그가 클립보드에 복사되었습니다.', 'success')
+                  }}
+                  className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
+                  title="마크다운 이미지 태그(![image](url)) 포맷으로 복사"
+                >
+                  마크다운 복사
+                </button>
+              </div>
             )}
           </div>
           
@@ -1136,15 +1354,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>클립보드 복사</span>
-                </button>
-                <button
-                  onClick={handleInsertDocument}
-                  disabled={insertingImage}
-                  className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-md text-xs font-bold flex items-center space-x-1.5 cursor-pointer shadow-md transition-colors disabled:opacity-50"
-                  title="최종 이미지를 마크다운 에디터 본문에 삽입"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{insertingImage ? '서버 업로드 중...' : '문서에 삽입'}</span>
                 </button>
               </>
             )}
