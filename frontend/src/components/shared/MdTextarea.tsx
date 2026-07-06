@@ -69,8 +69,9 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     const [emojis, setEmojis] = useState<Asset[]>([]);
     const [symbols, setSymbols] = useState<Asset[]>([]);
     const [phrases, setPhrases] = useState<Asset[]>([]);
+    const [templates, setTemplates] = useState<Asset[]>([]);
     const [panelState, setPanelState] = useState<{
-        type: 'emoji' | 'symbol' | 'phrase' | null;
+        type: 'emoji' | 'symbol' | 'phrase' | 'template' | null;
         x: number;
         y: number;
     }>({ type: null, x: 0, y: 0 });
@@ -111,10 +112,12 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     });
                 }
                 const ph = data.filter(x => x.atype === 'PHRASE');
+                const tm = data.filter(x => x.atype === 'TEMPLATE');
                 
                 setEmojis(emParsed.length > 0 ? emParsed : FALLBACK_EMOJIS);
                 setSymbols(syParsed.length > 0 ? syParsed : FALLBACK_SYMBOLS);
                 setPhrases(ph);
+                setTemplates(tm);
             })
             .catch(err => {
                 console.error('Failed to load assets in MdTextarea:', err);
@@ -382,7 +385,8 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         if (panelState.type !== null) {
             const items = panelState.type === 'emoji' ? emojis
                         : panelState.type === 'symbol' ? symbols
-                        : phrases;
+                        : panelState.type === 'phrase' ? phrases
+                        : templates;
             
             const cols = panelState.type === 'emoji' ? 8
                        : panelState.type === 'symbol' ? 6
@@ -744,7 +748,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 }
                 return;
             }
-            if (['1', '2', '3'].includes(key)) {
+            if (['1', '2', '3', '4'].includes(key)) {
                 e.preventDefault();
                 const textarea = e.currentTarget;
                 const start = textarea.selectionStart;
@@ -760,15 +764,16 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 let y = rect.top + caret.top - textarea.scrollTop + 16;
 
                 // 패널 타입 매핑
-                const typeMap: Record<string, 'emoji' | 'symbol' | 'phrase'> = {
+                const typeMap: Record<string, 'emoji' | 'symbol' | 'phrase' | 'template'> = {
                     '1': 'emoji',
                     '2': 'symbol',
-                    '3': 'phrase'
+                    '3': 'phrase',
+                    '4': 'template'
                 };
                 const type = typeMap[key];
 
-                const panelWidths = { emoji: 192, symbol: 160, phrase: 320 };
-                const panelHeights = { emoji: 120, symbol: 120, phrase: 240 };
+                const panelWidths = { emoji: 192, symbol: 160, phrase: 320, template: 320 };
+                const panelHeights = { emoji: 120, symbol: 120, phrase: 240, template: 240 };
                 const w = panelWidths[type];
                 const h = panelHeights[type];
 
@@ -957,6 +962,37 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                                     focusedIndex === idx 
                                     ? 'bg-purple-100 border-purple-400 text-purple-900 ring-2 ring-purple-400 font-bold scale-105 z-10' 
                                     : 'bg-purple-50 hover:bg-purple-100 border-purple-100 text-purple-700'
+                                }`}
+                                title={`${item.name}\n---\n${item.value}`}
+                            >
+                                {item.name}
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
+
+            {/* 커서 근처 템플릿 패널 */}
+            {panelState.type === 'template' && (
+                <div
+                    className="fixed z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-2.5 max-h-60 overflow-y-auto w-80 flex flex-wrap gap-1.5 animate-in fade-in zoom-in-95 duration-100"
+                    style={{ top: panelState.y, left: panelState.x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {templates.length === 0 ? (
+                        <div className="w-full text-center text-xs text-gray-400 py-2">등록된 템플릿이 없습니다.</div>
+                    ) : (
+                        templates.map((item, idx) => (
+                            <button
+                                key={item.id}
+                                onClick={() => {
+                                    handleAction(`insert-${item.value}`);
+                                    setPanelState({ type: null, x: 0, y: 0 });
+                                }}
+                                className={`px-2 py-0.5 border rounded text-xs font-semibold cursor-pointer transition-all max-w-[130px] truncate ${
+                                    focusedIndex === idx 
+                                    ? 'bg-indigo-100 border-indigo-400 text-indigo-900 ring-2 ring-indigo-400 font-bold scale-105 z-10' 
+                                    : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-100 text-indigo-700'
                                 }`}
                                 title={`${item.name}\n---\n${item.value}`}
                             >

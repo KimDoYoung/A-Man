@@ -430,7 +430,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={() => setEmojiOpen(!emojiOpen)}
             className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${emojiOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
-            title="이모지 삽입"
+            title="이모지 삽입(ctrl+1)"
           >
             <Smile className="w-3.5 h-3.5" />
           </button>
@@ -458,7 +458,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={() => setSymbolOpen(!symbolOpen)}
             className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${symbolOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
-            title="특수기호 삽입"
+            title="특수기호 삽입(ctrl+2)"
           >
             <Type className="w-3.5 h-3.5" />
           </button>
@@ -486,7 +486,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={() => setPhraseOpen(!phraseOpen)}
             className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${phraseOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
-            title="상용구 삽입"
+            title="상용구 삽입(ctrl+3)"
           >
             <FileText className="w-3.5 h-3.5" />
           </button>
@@ -518,7 +518,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={() => setTemplateOpen(!templateOpen)}
             className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${templateOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
-            title="템플릿 삽입"
+            title="템플릿 삽입(ctrl+4)"
           >
             <Layout className="w-3.5 h-3.5" />
           </button>
@@ -675,6 +675,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         { name: '이모지 삽입 패널 (커서 위치)', keys: ['Ctrl', '1'] },
                         { name: '특수기호 삽입 패널 (커서 위치)', keys: ['Ctrl', '2'] },
                         { name: '상용구 삽입 패널 (커서 위치)', keys: ['Ctrl', '3'] },
+                        { name: '템플릿 삽입 패널 (커서 위치)', keys: ['Ctrl', '4'] },
                         { name: '인용구 (Blockquote) 변환', keys: ['Ctrl', '8'] },
                         { name: '굵게 (Bold) 텍스트 감싸기', keys: ['Ctrl', 'B'] },
                         { name: '기울임 (Italic) 텍스트 감싸기', keys: ['Ctrl', 'I'] },

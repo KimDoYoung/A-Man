@@ -19,23 +19,21 @@ DELETE FROM sqlite_sequence WHERE name='assets';
 INSERT INTO assets (id, atype, name, value) VALUES (1, 'EMOJI', '기본 이모지', '‼️, ❗, ✔️, 🚩, ➡️, 📝, ▶️, 🔴, 🔷, 🔵, 👉, 🚫, ❓, 💡, 🔥, ✨, 🎉, 📌, ⚠️, ✅, ❌, 💬, 👍');
 INSERT INTO assets (id, atype, name, value) VALUES (2, 'SYMBOL', '기본 특수기호', '※, ■, ▶, ○, ●, ★, ☆, ➔, ✓');
 INSERT INTO assets (id, atype, name, value) VALUES (3, 'PHRASE', '링크-한국펀드서비스', '[한국펀드서비스(주)](http://www.k-fs.co.kr/user1/index1)');
-INSERT INTO assets (id, atype, name, value) VALUES (4, 'TEMPLATE', '> ⚠️ **주의**: 주의할 내용을 기술해 주세요.')
-INSERT INTO assets (id, atype, name, value) VALUES (5, 'TEMPLATE', '> 💡 **팁**: 팁의 내용을 넣어주세요')
-INSERT INTO assets (id, atype, name, value) VALUES (5, 'TEMPLATE', '<details>
-<summary>📋 접기/펼치기</summary>
+INSERT INTO assets (id, atype, name, value) VALUES (4, 'TEMPLATE', '주의', '> ⚠️ **주의**: 주의할 내용을 기술해 주세요.');
+INSERT INTO assets (id, atype, name, value) VALUES (5, 'TEMPLATE', '팁', '> 💡 **팁**: 팁의 내용을 넣어주세요');
+INSERT INTO assets (id, atype, name, value) VALUES (6, 'TEMPLATE', '접기/펼치기', '<details>
+<summary>📋 접기/펼치기(제목)</summary>
 
-1. `파일` → `배치 처리` 선택
-2. 적용할 작업 선택:
+상세한 내용을 여기에 기술
+
+</details>
+');
+INSERT INTO assets (id, atype, name, value) VALUES (7, 'TEMPLATE', '항목 체크', '- 체크된 항목
    - [x] 크기 조정 (800x600)
    - [x] 워터마크 추가
    - [ ] 필터 적용
    - [x] 파일명 변경 (접두사 추가)
-3. 출력 형식 선택 (JPEG, PNG, WebP)
-  - 테스트 1
-  - 테스트 2
-5. `실행` 버튼 클릭
 ');
-
 
 -- -------------------------------------------------------------
 -- folders
