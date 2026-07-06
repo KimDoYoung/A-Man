@@ -137,12 +137,20 @@ const NormalUserMain: React.FC = () => {
                   <li 
                     key={idx}
                     className={`hover:text-gray-900 dark:hover:text-slate-200 py-0.5 cursor-pointer transition-colors ${
-                      item.level === 1 ? 'font-semibold text-gray-800 dark:text-slate-300' : 'pl-3'
+                      item.level === 1 || item.level === 2 ? 'font-semibold text-gray-800 dark:text-slate-300' : 'pl-3'
                     }`}
                     onClick={() => {
                       const element = document.getElementById(item.id)
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth' })
+                      const container = contentScrollRef.current
+                      if (element && container) {
+                        const containerRect = container.getBoundingClientRect()
+                        const elementRect = element.getBoundingClientRect()
+                        const relativeTop = elementRect.top - containerRect.top + container.scrollTop
+                        
+                        container.scrollTo({
+                          top: relativeTop - 20, // 상단 탑바와 여백을 고려한 오프셋
+                          behavior: 'smooth'
+                        })
                       }
                     }}
                   >
