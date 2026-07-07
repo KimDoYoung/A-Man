@@ -456,6 +456,12 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
 
+            if (e.ctrlKey) {
+                e.preventDefault();
+                updateContent(textarea, start, end, '<br/>', 5, 0);
+                return;
+            }
+
             if (e.shiftKey) {
                 e.preventDefault();
                 const nextNewline = value.indexOf('\n', start);
