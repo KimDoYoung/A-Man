@@ -21,8 +21,8 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
           <button
             key={col}
             onClick={() => onChangeColor(col)}
-            className={`w-5 h-5 rounded-full border border-white cursor-pointer transition-transform ${
-              selectedColor === col ? 'scale-125 ring-2 ring-indigo-500' : 'hover:scale-110'
+            className={`w-4 h-4 rounded-full border border-white cursor-pointer transition-transform ${
+              selectedColor === col ? 'scale-100 ring-2 ring-indigo-500' : 'hover:scale-110'
             }`}
             style={{ backgroundColor: col }}
             title={col}

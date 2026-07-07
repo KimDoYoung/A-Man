@@ -337,6 +337,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         // 사각형 강조 박스
         ctx.strokeStyle = item.style.borderColor || primaryColor
         ctx.lineWidth = item.style.borderWidth || lineWidth
+        if (item.style.lineStyle === 'dashed') {
+          ctx.setLineDash([4, 4])
+        } else {
+          ctx.setLineDash([])
+        }
         ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
 
         // 선택 영역 하이라이트
@@ -670,7 +675,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           backgroundColor: indigoColor,
           borderColor: primaryColor,
           borderWidth: lineWidth,
-          textColor: '#ffffff',
+          textColor: textColor,
           fontSize: fontSize
         }
       }
@@ -743,7 +748,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             height: Math.abs(h),
             style: {
               borderColor: primaryColor,
-              borderWidth: lineWidth
+              borderWidth: lineWidth,
+              lineStyle: 'solid'
             }
           }
           pushToUndo([...items, newItem])
