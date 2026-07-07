@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Minimize2, Maximize2, Settings, Layout, Type, Palette, Trash2 } from 'lucide-react'
+import { Minimize2, Maximize2, Settings, Layout, Type, Palette, Trash2, CircleDot, Square } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
+import ColorPicker from './ColorPicker'
+import RangeSlider from './RangeSlider'
 
 interface FloatingPropertyPanelProps {
   primaryColor: string
@@ -28,6 +30,11 @@ interface FloatingPropertyPanelProps {
 
   selectedItemId: string | null
   setSelectedItemId: (id: string | null) => void
+  circleCounter: number
+  setCircleCounter: (val: number) => void
+  textColor: string
+  setTextColor: (color: string) => void
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 }
@@ -55,6 +62,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setCaptionText,
   selectedItemId,
   setSelectedItemId,
+  circleCounter,
+  setCircleCounter,
+  textColor,
+  setTextColor,
+  activeTool,
   items,
   pushToUndo
 }) => {
@@ -62,6 +74,73 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   const [position, setPosition] = useState({ x: 100, y: 150 })
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<'basic' | 'border' | 'caption'>('basic')
+
+  const selectedItem = items.find(item => item.id === selectedItemId)
+  const isSelectedCircle = selectedItem?.type === 'circle-number'
+
+  const handleCircleNumberChange = (val: number) => {
+    const safeVal = Math.max(1, val)
+    setCircleCounter(safeVal)
+    if (selectedItemId && isSelectedCircle) {
+      const updated = items.map(item => {
+        if (item.id === selectedItemId) {
+          return { ...item, text: String(safeVal) }
+        }
+        return item
+      })
+      pushToUndo(updated)
+    }
+  }
+
+  const getSelectedIcon = () => {
+    // 1순위: 선택된 아이템이 있을 때
+    if (selectedItemId && selectedItem) {
+      switch (selectedItem.type) {
+        case 'circle-number':
+          return <CircleDot className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+        case 'box':
+          return <Square className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+        case 'text':
+          return <Type className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+      }
+    }
+    // 2순위: 선택된 아이템은 없지만 현재 활성화된 도구가 있을 때
+    switch (activeTool) {
+      case 'circle-number':
+        return <CircleDot className="w-3.5 h-3.5 text-indigo-500" />
+      case 'box':
+        return <Square className="w-3.5 h-3.5 text-red-500" />
+      case 'text':
+        return <Type className="w-3.5 h-3.5 text-blue-500" />
+      default:
+        return <Settings className="w-3.5 h-3.5 text-indigo-650" />
+    }
+  }
+
+  const getSelectedLabel = () => {
+    if (selectedItemId && selectedItem) {
+      switch (selectedItem.type) {
+        case 'circle-number':
+          return `속성 조절기 (${selectedItem.text}번 원숫자)`
+        case 'box':
+          return '속성 조절기 (강조 박스)'
+        case 'text':
+          return '속성 조절기 (설명 텍스트)'
+      }
+    }
+    switch (activeTool) {
+      case 'circle-number':
+        return '속성 조절기 (원숫자 도구)'
+      case 'box':
+        return '속성 조절기 (강조 박스 도구)'
+      case 'text':
+        return '속성 조절기 (설명 텍스트 도구)'
+      case 'crop':
+        return '속성 조절기 (이미지 자르기)'
+      default:
+        return '속성 조절기 판넬'
+    }
+  }
   
   const panelRef = useRef<HTMLDivElement>(null)
   const dragStartRef = useRef<{ mouseX: number; mouseY: number; panelX: number; panelY: number } | null>(null)
@@ -131,8 +210,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
         className="h-10 px-4 bg-gray-50 dark:bg-slate-950 border-b border-gray-150 dark:border-slate-850 flex items-center justify-between cursor-grab active:cursor-grabbing shrink-0"
       >
         <div className="flex items-center space-x-1.5 font-bold text-gray-700 dark:text-slate-200">
-          <Settings className="w-3.5 h-3.5 text-indigo-650" />
-          <span>속성 조절기 판넬</span>
+          {getSelectedIcon()}
+          <span>{getSelectedLabel()}</span>
         </div>
         
         <button
@@ -176,116 +255,134 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
             {activeTab === 'basic' && (
               <div className="space-y-4 animate-in fade-in duration-150">
                 {/* 강조선 색상 */}
-                <div className="space-y-1.5">
-                  <span className="font-bold text-gray-700 dark:text-slate-300">강조선 색상</span>
-                  <div className="flex space-x-1.5">
-                    {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a'].map((col) => (
-                      <button
-                        key={col}
-                        onClick={() => {
-                          setPrimaryColor(col)
-                          if (selectedItemId) {
-                            const updated = items.map(item => {
-                              if (item.id === selectedItemId) {
-                                return { ...item, style: { ...item.style, borderColor: col } }
-                              }
-                              return item
-                            })
-                            pushToUndo(updated)
+                <ColorPicker
+                  label="강조선 색상"
+                  selectedColor={primaryColor}
+                  onChangeColor={(col) => {
+                    setPrimaryColor(col)
+                    if (selectedItemId) {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          if (item.type === 'text') {
+                            return { ...item, style: { ...item.style, textColor: col } }
                           }
-                        }}
-                        className={`w-5 h-5 rounded-full border border-white cursor-pointer transition-transform ${
-                          primaryColor === col ? 'scale-125 ring-2 ring-indigo-500' : 'hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: col }}
-                      />
-                    ))}
-                  </div>
-                </div>
+                          return { ...item, style: { ...item.style, borderColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }
+                  }}
+                  colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                />
 
                 {/* 원배경 색상 */}
-                <div className="space-y-1.5">
-                  <span className="font-bold text-gray-700 dark:text-slate-300">원배경 색상</span>
-                  <div className="flex space-x-1.5">
-                    {['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444'].map((col) => (
-                      <button
-                        key={col}
-                        onClick={() => {
-                          setIndigoColor(col)
-                          if (selectedItemId) {
-                            const updated = items.map(item => {
-                              if (item.id === selectedItemId) {
-                                return { ...item, style: { ...item.style, backgroundColor: col } }
-                              }
-                              return item
-                            })
-                            pushToUndo(updated)
-                          }
-                        }}
-                        className={`w-5 h-5 rounded-full border border-white cursor-pointer transition-transform ${
-                          indigoColor === col ? 'scale-125 ring-2 ring-indigo-500' : 'hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: col }}
-                      />
-                    ))}
+                <ColorPicker
+                  label="원배경 색상"
+                  selectedColor={indigoColor}
+                  onChangeColor={(col) => {
+                    setIndigoColor(col)
+                    if (selectedItemId) {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, backgroundColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }
+                  }}
+                  colors={['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444']}
+                />
+
+                {/* 글자 색상 */}
+                <ColorPicker
+                  label="글자 색상"
+                  selectedColor={textColor}
+                  onChangeColor={(col) => {
+                    setTextColor(col)
+                    if (selectedItemId) {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, textColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }
+                  }}
+                  colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']}
+                />
+
+                {/* 원숫자 번호 카운터 설정 */}
+                <div className="space-y-2">
+                  <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">
+                    {isSelectedCircle ? '선택된 원숫자 번호' : '다음 원숫자 번호'}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleCircleNumberChange((isSelectedCircle ? Number(selectedItem.text) : circleCounter) - 1)}
+                      className="w-7 h-7 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-md flex items-center justify-center font-bold text-sm cursor-pointer shadow-xs transition-colors"
+                      title="1 감소"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={isSelectedCircle ? Number(selectedItem.text) : circleCounter}
+                      onChange={(e) => handleCircleNumberChange(parseInt(e.target.value) || 1)}
+                      className="w-20 px-2 py-1.5 text-center bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-850 dark:text-slate-100 font-bold focus:outline-hidden focus:border-indigo-500"
+                    />
+                    <button
+                      onClick={() => handleCircleNumberChange((isSelectedCircle ? Number(selectedItem.text) : circleCounter) + 1)}
+                      className="w-7 h-7 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-800 dark:text-slate-200 rounded-md flex items-center justify-center font-bold text-sm cursor-pointer shadow-xs transition-colors"
+                      title="1 증가"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
                 {/* 선 두께 */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-gray-700 dark:text-slate-300">선 두께</span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{lineWidth}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="8"
-                    value={lineWidth}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
-                      setLineWidth(val)
-                      if (selectedItemId) {
-                        const updated = items.map(item => {
-                          if (item.id === selectedItemId) {
-                            return { ...item, style: { ...item.style, borderWidth: val } }
-                          }
-                          return item
-                        })
-                        pushToUndo(updated)
-                      }
-                    }}
-                    className="w-full h-1 bg-gray-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                </div>
+                <RangeSlider
+                  label="선 두께"
+                  value={lineWidth}
+                  min={1}
+                  max={8}
+                  onChangeValue={(val) => {
+                    setLineWidth(val)
+                    if (selectedItemId) {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, borderWidth: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }
+                  }}
+                />
 
                 {/* 글자 크기 */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-gray-700 dark:text-slate-300">글자 크기</span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{fontSize}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="28"
-                    value={fontSize}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
-                      setFontSize(val)
-                      if (selectedItemId) {
-                        const updated = items.map(item => {
-                          if (item.id === selectedItemId) {
-                            return { ...item, style: { ...item.style, fontSize: val } }
-                          }
-                          return item
-                        })
-                        pushToUndo(updated)
-                      }
-                    }}
-                    className="w-full h-1 bg-gray-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                </div>
+                <RangeSlider
+                  label="글자 크기"
+                  value={fontSize}
+                  min={10}
+                  max={28}
+                  onChangeValue={(val) => {
+                    setFontSize(val)
+                    if (selectedItemId) {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, fontSize: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }
+                  }}
+                />
 
                 {selectedItemId && (
                   <div className="pt-2 border-t border-gray-100 dark:border-slate-850">
@@ -337,38 +434,21 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     </div>
 
                     {/* 테두리 색상 */}
-                    <div className="space-y-1.5">
-                      <span className="font-bold text-gray-700 dark:text-slate-300">테두리 색상</span>
-                      <div className="flex space-x-1.5">
-                        {['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981'].map((col) => (
-                          <button
-                            key={col}
-                            onClick={() => setBorderColor(col)}
-                            className={`w-5 h-5 rounded-full border border-white cursor-pointer transition-transform ${
-                              borderColor === col ? 'scale-125 ring-2 ring-indigo-500' : 'hover:scale-110'
-                            }`}
-                            style={{ backgroundColor: col }}
-                            title={col}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    <ColorPicker
+                      label="테두리 색상"
+                      selectedColor={borderColor}
+                      onChangeColor={setBorderColor}
+                      colors={['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']}
+                    />
 
                     {/* 테두리 두께 */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-gray-700 dark:text-slate-300">테두리 두께</span>
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{borderWidth}px</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="6"
-                        value={borderWidth}
-                        onChange={(e) => setBorderWidth(Number(e.target.value))}
-                        className="w-full h-1 bg-gray-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      />
-                    </div>
+                    <RangeSlider
+                      label="테두리 두께"
+                      value={borderWidth}
+                      min={1}
+                      max={6}
+                      onChangeValue={setBorderWidth}
+                    />
                   </div>
                 )}
               </div>

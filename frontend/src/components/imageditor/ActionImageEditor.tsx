@@ -20,6 +20,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [circleCounter, setCircleCounter] = useState<number>(1)
+  const [textColor, setTextColor] = useState<string>('#ffffff')
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -46,6 +47,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderStyle: 'basic' | 'rounded'
     hasCaption: boolean
     captionText: string
+    textColor: string
   }>({
     title: '',
     bgImageSrc: '',
@@ -55,7 +57,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderWidth: 2,
     borderStyle: 'basic',
     hasCaption: false,
-    captionText: ''
+    captionText: '',
+    textColor: '#ffffff'
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -296,7 +299,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ctx.save()
 
       if (item.type === 'circle-number') {
-        const radius = 14
+        const radius = (item.style.fontSize || 13) * 1.05
         // 테두리 및 그림자
         ctx.beginPath()
         ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
@@ -615,8 +618,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const item = items[i]
         
         if (item.type === 'circle-number') {
+          const radius = (item.style.fontSize || 13) * 1.05
           const dist = Math.hypot(item.x - x, item.y - y)
-          if (dist <= 16) {
+          if (dist <= radius + 2) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
             found = true
@@ -664,10 +668,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         text: String(circleCounter),
         style: {
           backgroundColor: indigoColor,
-          borderColor: '#ffffff',
-          borderWidth: 2,
+          borderColor: primaryColor,
+          borderWidth: lineWidth,
           textColor: '#ffffff',
-          fontSize: 13
+          fontSize: fontSize
         }
       }
       pushToUndo([...items, newItem])
@@ -797,7 +801,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         .filter((item) => {
           // 크롭 캔버스 범위 내부에 들어오는 것만 유지
           if (item.type === 'circle-number') {
-            return item.x >= -14 && item.x <= cW + 14 && item.y >= -14 && item.y <= cH + 14
+            const r = (item.style.fontSize || 13) * 1.05
+            return item.x >= -r && item.x <= cW + r && item.y >= -r && item.y <= cH + r
           } else if (item.type === 'box') {
             return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
           } else if (item.type === 'text') {
@@ -829,7 +834,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       y: dragStart.y,
       text: textInputValue,
       style: {
-        textColor: '#0f172a',
+        textColor: primaryColor,
         fontSize: fontSize
       }
     }
@@ -927,7 +932,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderWidth: borderWidth,
         borderStyle: borderStyle,
         hasCaption: hasCaption,
-        captionText: captionText
+        captionText: captionText,
+        textColor: textColor
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -950,7 +956,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderWidth: borderWidth,
         borderStyle: borderStyle,
         hasCaption: hasCaption,
-        captionText: captionText
+        captionText: captionText,
+        textColor: textColor
       })
       setEditorTitle(finalTitle)
 
@@ -1010,7 +1017,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderWidth: borderWidth,
               borderStyle: borderStyle,
               hasCaption: hasCaption,
-              captionText: captionText
+              captionText: captionText,
+              textColor: textColor
             }
             
             await apiClient.post('/admin/image-work', {
@@ -1029,7 +1037,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderWidth: borderWidth,
               borderStyle: borderStyle,
               hasCaption: hasCaption,
-              captionText: captionText
+              captionText: captionText,
+              textColor: textColor
             })
             
             fetchHistory()
@@ -1116,6 +1125,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const loadedBorderStyle = data.borderStyle ?? 'basic'
         const loadedHasCaption = data.hasCaption ?? false
         const loadedCaptionText = data.captionText ?? ''
+        const loadedTextColor = data.textColor ?? '#ffffff'
         
         setHasBorder(loadedHasBorder)
         setBorderColor(loadedBorderColor)
@@ -1123,6 +1133,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setBorderStyle(loadedBorderStyle)
         setHasCaption(loadedHasCaption)
         setCaptionText(loadedCaptionText)
+        setTextColor(loadedTextColor)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -1152,7 +1163,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           borderWidth: loadedBorderWidth,
           borderStyle: loadedBorderStyle,
           hasCaption: loadedHasCaption,
-          captionText: loadedCaptionText
+          captionText: loadedCaptionText,
+          textColor: loadedTextColor
         })
       }
       img.src = data.originalImageUrl
@@ -1399,6 +1411,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setCaptionText={setCaptionText}
                 selectedItemId={selectedItemId}
                 setSelectedItemId={setSelectedItemId}
+                circleCounter={circleCounter}
+                setCircleCounter={setCircleCounter}
+                textColor={textColor}
+                setTextColor={setTextColor}
+                activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}
               />
