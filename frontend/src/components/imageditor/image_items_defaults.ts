@@ -1,21 +1,24 @@
 export const SYSTEM_ITEM_DEFAULTS = {
-  // 강조 사각형 및 원숫자 등의 테두리 기본 색상 (기본: #0f1729)
-  primaryColor: '#0f1729',
+  // 강조 사각형 및 주요 요소의 테두리 기본 색상 (기본: #ef4444)
+  primaryColor: '#ef4444',
+  
+  // 원숫자의 기본 테두리 색상 (기본: #0f1729)
+  circleBorderColor: '#0f1729',
   
   // 원숫자의 기본 배경 색상 (기본: Red #ef4444)
   indigoColor: '#ef4444',
   
-  // 강조 상자의 기본 배경 색상
-  boxBgColor: 'transparent',
+  // 강조 상자의 기본 배경 색상 (기본: #f59e0b)
+  boxBgColor: '#f59e0b',
   
   // 강조 상자의 기본 배경 불투명도 (%)
   boxOpacity: 30,
   
-  // 강조 상자의 기본 선 스타일 (실선/점선)
-  boxLineStyle: 'solid' as 'solid' | 'dashed',
+  // 강조 상자의 기본 선 스타일 (실선/점선) (기본: dashed)
+  boxLineStyle: 'dashed' as 'solid' | 'dashed',
   
-  // 강조 상자의 기본 모서리 둥글기 반경 (px)
-  boxBorderRadius: 0,
+  // 강조 상자의 기본 모서리 둥글기 반경 (px) (기본: 7)
+  boxBorderRadius: 7,
   
   // 기본 선택된 이모지 심볼
   selectedEmoji: '💡',

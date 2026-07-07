@@ -148,6 +148,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [indigoColor, setIndigoColor] = useState(SYSTEM_ITEM_DEFAULTS.indigoColor) // 원숫자 기본 Indigo
   const [fontSize, setFontSize] = useState(SYSTEM_ITEM_DEFAULTS.fontSize)
   const [lineWidth, setLineWidth] = useState(SYSTEM_ITEM_DEFAULTS.lineWidth)
+  const [circleBorderColor, setCircleBorderColor] = useState(SYSTEM_ITEM_DEFAULTS.circleBorderColor) // 원숫자 테두리 기본 색상
   
   // 마지막 저장 시점 상태 (isDirty 체크용)
   const [lastSavedState, setLastSavedState] = useState<{
@@ -168,6 +169,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     selectedEmoji: string
     symbolScale: number
     boxBorderRadius: number
+    circleBorderColor: string
   }>({
     title: '',
     bgImageSrc: '',
@@ -180,12 +182,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     captionText: '',
     captionAlign: 'center',
     textColor: '#ffffff',
-    boxBgColor: 'transparent',
+    boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
     boxOpacity: 30,
-    boxLineStyle: 'solid',
+    boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
     selectedEmoji: '💡',
     symbolScale: 3,
-    boxBorderRadius: 0
+    boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    circleBorderColor: SYSTEM_ITEM_DEFAULTS.circleBorderColor
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -276,13 +279,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderStyle !== lastSavedState.borderStyle ||
     hasCaption !== lastSavedState.hasCaption ||
     captionText !== lastSavedState.captionText ||
-    captionAlign !== lastSavedState.captionAlign
+    captionAlign !== lastSavedState.captionAlign ||
+    circleBorderColor !== lastSavedState.circleBorderColor
   )
 
   // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
   useEffect(() => {
     setGeneratedImageUrl('')
-  }, [items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign])
+  }, [items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, circleBorderColor])
 
   // 3초간 헤더에 메시지 표시 헬퍼
   const showSaveMessage = (text: string, type: 'success' | 'error') => {
@@ -713,7 +717,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 데이터 및 배경 변경 시 리렌더링 (열고 닫힐 때 재그리기 보장)
   useEffect(() => {
     draw()
-  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign])
+  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, circleBorderColor])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
   const fetchUserSettings = async () => {
@@ -741,6 +745,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.fontSize !== undefined) setFontSize(config.fontSize)
         if (config.lineWidth !== undefined) setLineWidth(config.lineWidth)
         if (config.captionAlign) setCaptionAlign(config.captionAlign)
+        if (config.circleBorderColor) setCircleBorderColor(config.circleBorderColor)
       }
     } catch (e) {
       // 404 등 존재하지 않는 경우는 첫 사용이므로 에러 로그만 남기고 시스템 기본값을 유지합니다.
@@ -772,7 +777,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         textColor,
         fontSize,
         lineWidth,
-        captionAlign
+        captionAlign,
+        circleBorderColor
       }
 
       await apiClient.post('/admin/user-settings', {
@@ -853,6 +859,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setHasCaption(false)
       setCaptionText('')
       setCaptionAlign('center')
+      setCircleBorderColor(SYSTEM_ITEM_DEFAULTS.circleBorderColor)
       
       setLastSavedState({
         title: '새 이미지 작업',
@@ -866,12 +873,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         captionText: '',
         captionAlign: 'center',
         textColor: '#ffffff',
-        boxBgColor: 'transparent',
+        boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
         boxOpacity: 30,
-        boxLineStyle: 'solid',
+        boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
         selectedEmoji: '💡',
         symbolScale: 3,
-        boxBorderRadius: 0
+        boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+        circleBorderColor: SYSTEM_ITEM_DEFAULTS.circleBorderColor
       })
       showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
     }
@@ -1080,7 +1088,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         text: String(circleCounter),
         style: {
           backgroundColor: indigoColor,
-          borderColor: primaryColor,
+          borderColor: circleBorderColor,
           borderWidth: lineWidth,
           textColor: textColor,
           fontSize: fontSize
@@ -1476,7 +1484,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         boxLineStyle: boxLineStyle,
         selectedEmoji: selectedEmoji,
         symbolScale: symbolScale,
-        boxBorderRadius: boxBorderRadius
+        boxBorderRadius: boxBorderRadius,
+        circleBorderColor: circleBorderColor
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -1507,7 +1516,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         boxLineStyle: boxLineStyle,
         selectedEmoji: selectedEmoji,
         symbolScale: symbolScale,
-        boxBorderRadius: boxBorderRadius
+        boxBorderRadius: boxBorderRadius,
+        circleBorderColor: circleBorderColor
       })
       setEditorTitle(finalTitle)
 
@@ -1575,7 +1585,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               boxLineStyle: boxLineStyle,
               selectedEmoji: selectedEmoji,
               symbolScale: symbolScale,
-              boxBorderRadius: boxBorderRadius
+              boxBorderRadius: boxBorderRadius,
+              circleBorderColor: circleBorderColor
             }
             
             await apiClient.post('/admin/image-work', {
@@ -1602,7 +1613,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               boxLineStyle: boxLineStyle,
               selectedEmoji: selectedEmoji,
               symbolScale: symbolScale,
-              boxBorderRadius: boxBorderRadius
+              boxBorderRadius: boxBorderRadius,
+              circleBorderColor: circleBorderColor
             })
             
             fetchHistory()
@@ -1686,12 +1698,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const loadedCaptionText = data.captionText ?? ''
         const loadedCaptionAlign = data.captionAlign ?? 'center'
         const loadedTextColor = data.textColor ?? '#ffffff'
-        const loadedBoxBgColor = data.boxBgColor ?? 'transparent'
+        const loadedBoxBgColor = data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor
         const loadedBoxOpacity = data.boxOpacity ?? 30
-        const loadedBoxLineStyle = data.boxLineStyle ?? 'solid'
+        const loadedBoxLineStyle = data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.boxLineStyle
         const loadedSelectedEmoji = data.selectedEmoji ?? '💡'
         const loadedSymbolScale = data.symbolScale ?? 3
-        const loadedBoxBorderRadius = data.boxBorderRadius ?? 0
+        const loadedBoxBorderRadius = data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius
+        const loadedCircleBorderColor = data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleBorderColor
         
         setHasBorder(loadedHasBorder)
         setBorderColor(loadedBorderColor)
@@ -1707,6 +1720,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setSelectedEmoji(loadedSelectedEmoji)
         setSymbolScale(loadedSymbolScale)
         setBoxBorderRadius(loadedBoxBorderRadius)
+        setCircleBorderColor(loadedCircleBorderColor)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -1744,7 +1758,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           boxLineStyle: loadedBoxLineStyle,
           selectedEmoji: loadedSelectedEmoji,
           symbolScale: loadedSymbolScale,
-          boxBorderRadius: loadedBoxBorderRadius
+          boxBorderRadius: loadedBoxBorderRadius,
+          circleBorderColor: loadedCircleBorderColor
         })
       }
       img.src = data.originalImageUrl
@@ -1980,6 +1995,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setSymbolScale={setSymbolScale}
                 boxBorderRadius={boxBorderRadius}
                 setBoxBorderRadius={setBoxBorderRadius}
+                circleBorderColor={circleBorderColor}
+                setCircleBorderColor={setCircleBorderColor}
                 activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}

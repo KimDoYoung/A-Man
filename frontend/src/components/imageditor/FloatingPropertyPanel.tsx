@@ -29,6 +29,8 @@ interface FloatingPropertyPanelProps {
   setCaptionText: (text: string) => void
   captionAlign: 'left' | 'center'
   setCaptionAlign: (align: 'left' | 'center') => void
+  circleBorderColor: string
+  setCircleBorderColor: (color: string) => void
 
   selectedItemId: string | null
   setSelectedItemId: (id: string | null) => void
@@ -77,6 +79,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setCaptionText,
   captionAlign,
   setCaptionAlign,
+  circleBorderColor,
+  setCircleBorderColor,
   selectedItemId,
   setSelectedItemId,
   circleCounter,
@@ -507,9 +511,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 테두리 색상 */}
                   <ColorPicker
                     label="테두리 색상"
-                    selectedColor={selectedItem.style.borderColor || primaryColor}
+                    selectedColor={selectedItem.style.borderColor || circleBorderColor}
                     onChangeColor={(col) => {
-                      setPrimaryColor(col)
+                      setCircleBorderColor(col)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, borderColor: col } }
@@ -662,8 +666,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         />
                         <ColorPicker
                           label="테두리 색상"
-                          selectedColor={primaryColor}
-                          onChangeColor={setPrimaryColor}
+                          selectedColor={circleBorderColor}
+                          onChangeColor={setCircleBorderColor}
                           colors={['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']}
                         />
                         <RangeSlider
