@@ -4,6 +4,7 @@ import { apiClient } from '@/lib/apiClient'
 import { formatRelativeTime } from '@/lib/utils'
 
 import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
+import FloatingPropertyPanel from './FloatingPropertyPanel'
 
 
 const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
@@ -35,10 +36,26 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [lineWidth, setLineWidth] = useState(3)
   
   // 마지막 저장 시점 상태 (isDirty 체크용)
-  const [lastSavedState, setLastSavedState] = useState<{ title: string; bgImageSrc: string; items: CanvasItem[] }>({
+  const [lastSavedState, setLastSavedState] = useState<{
+    title: string
+    bgImageSrc: string
+    items: CanvasItem[]
+    hasBorder: boolean
+    borderColor: string
+    borderWidth: number
+    borderStyle: 'basic' | 'rounded'
+    hasCaption: boolean
+    captionText: string
+  }>({
     title: '',
     bgImageSrc: '',
-    items: []
+    items: [],
+    hasBorder: false,
+    borderColor: '#cbd5e1',
+    borderWidth: 2,
+    borderStyle: 'basic',
+    hasCaption: false,
+    captionText: ''
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -49,6 +66,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   
   // 현재 로드되어 편집 중인 임시작업의 레코드 ID
   const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null)
+
+  // 테두리(박스라인) 및 캡션 설정 상태
+  const [hasBorder, setHasBorder] = useState<boolean>(false)
+  const [borderColor, setBorderColor] = useState<string>('#cbd5e1')
+  const [borderWidth, setBorderWidth] = useState<number>(2)
+  const [borderStyle, setBorderStyle] = useState<'basic' | 'rounded'>('basic')
+  
+  const [hasCaption, setHasCaption] = useState<boolean>(false)
+  const [captionText, setCaptionText] = useState<string>('')
+  const captionHeight = 42 // 고정 높이 42px
   
   // 임시 보관함 이력 상태
   const [historyList, setHistoryList] = useState<ImageWork[]>([])
@@ -102,13 +129,19 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const isDirty = bgImage !== null && (
     editorTitle.trim() !== lastSavedState.title.trim() ||
     bgImageSrc !== lastSavedState.bgImageSrc ||
-    JSON.stringify(items) !== JSON.stringify(lastSavedState.items)
+    JSON.stringify(items) !== JSON.stringify(lastSavedState.items) ||
+    hasBorder !== lastSavedState.hasBorder ||
+    borderColor !== lastSavedState.borderColor ||
+    borderWidth !== lastSavedState.borderWidth ||
+    borderStyle !== lastSavedState.borderStyle ||
+    hasCaption !== lastSavedState.hasCaption ||
+    captionText !== lastSavedState.captionText
   )
 
-  // items 나 bgImageSrc가 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
+  // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
   useEffect(() => {
     setGeneratedImageUrl('')
-  }, [items, bgImageSrc, editorTitle])
+  }, [items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText])
 
   // 3초간 헤더에 메시지 표시 헬퍼
   const showSaveMessage = (text: string, type: 'success' | 'error') => {
@@ -160,6 +193,28 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setSelectedItemId(null)
   }
 
+  // 둥근 사각형 경로 생성 헬퍼 함수
+  const createRoundedRectPath = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number
+  ) => {
+    ctx.beginPath()
+    ctx.moveTo(x + radius, y)
+    ctx.lineTo(x + width - radius, y)
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
+    ctx.lineTo(x + width, y + height - radius)
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+    ctx.lineTo(x + radius, y + height)
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
+    ctx.lineTo(x, y + radius)
+    ctx.quadraticCurveTo(x, y, x + radius, y)
+    ctx.closePath()
+  }
+
   // 캔버스 그리기 함수
   const draw = () => {
     const canvas = canvasRef.current
@@ -167,9 +222,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     // bgImage가 존재하는 경우, 캔버스의 실제 해상도가 이미지 크기와 일치하도록 보정
     if (bgImage) {
-      if (canvas.width !== bgImage.width || canvas.height !== bgImage.height) {
+      const targetHeight = bgImage.height + (hasCaption ? captionHeight : 0)
+      if (canvas.width !== bgImage.width || canvas.height !== targetHeight) {
         canvas.width = bgImage.width
-        canvas.height = bgImage.height
+        canvas.height = targetHeight
       }
     } else {
       // 이미지가 없는 기본 상태의 크기로 복원 (안내문 렌더링용)
@@ -185,9 +241,43 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     // 1. 클리어
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    // 2. 배경 이미지 그리기
+    // 2. 배경 이미지 및 캡션 영역 그리기
     if (bgImage) {
+      ctx.save()
+      
+      // 만약 둥근 모서리 테두리가 적용되어 있다면 클리핑 처리
+      if (hasBorder && borderStyle === 'rounded') {
+        createRoundedRectPath(ctx, 0, 0, canvas.width, canvas.height, 8)
+        ctx.clip()
+      }
+
+      // 이미지 그리기
       ctx.drawImage(bgImage, 0, 0)
+
+      // 캡션 그리기
+      if (hasCaption) {
+        const captionY = bgImage.height
+        // 캡션 배경색 (옅은 회색)
+        ctx.fillStyle = '#f8fafc'
+        ctx.fillRect(0, captionY, canvas.width, captionHeight)
+
+        // 이미지와 캡션 사이 구분선
+        ctx.strokeStyle = '#e2e8f0'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(0, captionY)
+        ctx.lineTo(canvas.width, captionY)
+        ctx.stroke()
+
+        // 캡션 텍스트 그리기
+        ctx.fillStyle = '#475569'
+        ctx.font = 'bold 13px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(captionText || '여기에 이미지 설명 캡션을 입력하십시오.', canvas.width / 2, captionY + (captionHeight / 2))
+      }
+
+      ctx.restore()
     } else {
       // 배경 이미지가 없을 때 기본 안내문 렌더링
       ctx.fillStyle = '#f8fafc'
@@ -320,12 +410,30 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
       ctx.restore()
     }
+
+    // 5. 외곽 테두리(박스라인) 그리기 (맨 위 레이어에 씌움)
+    if (bgImage && hasBorder) {
+      ctx.save()
+      ctx.strokeStyle = borderColor
+      ctx.lineWidth = borderWidth
+      
+      if (borderStyle === 'rounded') {
+        const radius = 8
+        const offset = borderWidth / 2
+        createRoundedRectPath(ctx, offset, offset, canvas.width - borderWidth, canvas.height - borderWidth, radius - offset)
+        ctx.stroke()
+      } else {
+        const offset = borderWidth / 2
+        ctx.strokeRect(offset, offset, canvas.width - borderWidth, canvas.height - borderWidth)
+      }
+      ctx.restore()
+    }
   }
 
   // 데이터 및 배경 변경 시 리렌더링 (열고 닫힐 때 재그리기 보장)
   useEffect(() => {
     draw()
-  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen])
+  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText])
 
   // 파일 업로드 처리
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,7 +494,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setEditingId(null)
       setGeneratedImageUrl('')
       setActiveHistoryId(null)
-      setLastSavedState({ title: '새 이미지 작업', bgImageSrc: '', items: [] })
+      
+      setHasBorder(false)
+      setBorderColor('#cbd5e1')
+      setBorderWidth(2)
+      setBorderStyle('basic')
+      setHasCaption(false)
+      setCaptionText('')
+      
+      setLastSavedState({
+        title: '새 이미지 작업',
+        bgImageSrc: '',
+        items: [],
+        hasBorder: false,
+        borderColor: '#cbd5e1',
+        borderWidth: 2,
+        borderStyle: 'basic',
+        hasCaption: false,
+        captionText: ''
+      })
       showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
     }
   }
@@ -795,7 +921,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         editedImageUrl: editedBase64,  // 최종 편집본 Base64
         items: items,
         circleCounter: circleCounter,
-        physicalUrl: generatedImageUrl // 물리 url이 이미 생성된 상태면 함께 저장
+        physicalUrl: generatedImageUrl, // 물리 url이 이미 생성된 상태면 함께 저장
+        hasBorder: hasBorder,
+        borderColor: borderColor,
+        borderWidth: borderWidth,
+        borderStyle: borderStyle,
+        hasCaption: hasCaption,
+        captionText: captionText
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -812,7 +944,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setLastSavedState({
         title: finalTitle,
         bgImageSrc: bgImageSrc,
-        items: items
+        items: items,
+        hasBorder: hasBorder,
+        borderColor: borderColor,
+        borderWidth: borderWidth,
+        borderStyle: borderStyle,
+        hasCaption: hasCaption,
+        captionText: captionText
       })
       setEditorTitle(finalTitle)
 
@@ -866,7 +1004,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               editedImageUrl: canvas.toDataURL('image/png') || '',
               items: items,
               circleCounter: circleCounter,
-              physicalUrl: res.url
+              physicalUrl: res.url,
+              hasBorder: hasBorder,
+              borderColor: borderColor,
+              borderWidth: borderWidth,
+              borderStyle: borderStyle,
+              hasCaption: hasCaption,
+              captionText: captionText
             }
             
             await apiClient.post('/admin/image-work', {
@@ -879,7 +1023,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setLastSavedState({
               title: editorTitle,
               bgImageSrc: bgImageSrc,
-              items: items
+              items: items,
+              hasBorder: hasBorder,
+              borderColor: borderColor,
+              borderWidth: borderWidth,
+              borderStyle: borderStyle,
+              hasCaption: hasCaption,
+              captionText: captionText
             })
             
             fetchHistory()
@@ -958,6 +1108,22 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           canvas.width = img.width
           canvas.height = img.height
         }
+        
+        // 새로운 설정 값들 로드 및 적용
+        const loadedHasBorder = data.hasBorder ?? false
+        const loadedBorderColor = data.borderColor ?? '#cbd5e1'
+        const loadedBorderWidth = data.borderWidth ?? 2
+        const loadedBorderStyle = data.borderStyle ?? 'basic'
+        const loadedHasCaption = data.hasCaption ?? false
+        const loadedCaptionText = data.captionText ?? ''
+        
+        setHasBorder(loadedHasBorder)
+        setBorderColor(loadedBorderColor)
+        setBorderWidth(loadedBorderWidth)
+        setBorderStyle(loadedBorderStyle)
+        setHasCaption(loadedHasCaption)
+        setCaptionText(loadedCaptionText)
+
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
         setItems(data.items || [])
@@ -977,7 +1143,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         // 현재 작업 중인 이력 ID 세팅
         setActiveHistoryId(work.id)
 
-        setLastSavedState({ title: work.title, bgImageSrc: data.originalImageUrl || '', items: data.items || [] })
+        setLastSavedState({
+          title: work.title,
+          bgImageSrc: data.originalImageUrl || '',
+          items: data.items || [],
+          hasBorder: loadedHasBorder,
+          borderColor: loadedBorderColor,
+          borderWidth: loadedBorderWidth,
+          borderStyle: loadedBorderStyle,
+          hasCaption: loadedHasCaption,
+          captionText: loadedCaptionText
+        })
       }
       img.src = data.originalImageUrl
     } catch (e) {
@@ -1032,6 +1208,37 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               </span>
             )}
           </div>
+
+          {/* 캡션 / 테두리 레이아웃 켬/끔 토글 버튼 */}
+          {bgImage && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setHasBorder(!hasBorder)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer border ${
+                  hasBorder 
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs' 
+                    : 'bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-800 hover:bg-gray-50'
+                }`}
+                title="프로그램 화면임을 나타내는 외곽 테두리 박스라인 켬/끔"
+              >
+                <Square className="w-3.5 h-3.5" />
+                <span>외곽테두리 {hasBorder ? 'ON' : 'OFF'}</span>
+              </button>
+
+              <button
+                onClick={() => setHasCaption(!hasCaption)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer border ${
+                  hasCaption 
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs' 
+                    : 'bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-800 hover:bg-gray-50'
+                }`}
+                title="이미지 하단에 설명글을 표시하는 캡션 영역 켬/끔"
+              >
+                <Type className="w-3.5 h-3.5" />
+                <span>설명캡션 {hasCaption ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 바디 영역 */}
@@ -1123,7 +1330,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 onMouseUp={handleMouseUp}
                 className={`block ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
                 width={bgImage ? bgImage.width : 800}
-                height={bgImage ? bgImage.height : 500}
+                height={bgImage ? bgImage.height + (hasCaption ? captionHeight : 0) : 500}
               />
 
               {/* 텍스트 실시간 캔버스 오버레이 인풋 창 */}
@@ -1167,136 +1374,34 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               )}
             </div>
 
-            {/* 하단 속성 조절기 판넬 (도형 스타일 세팅용) */}
+            {/* 플로팅 속성 조절기 판넬 (드래그 가능 및 탭 구조) */}
             {bgImage && (
-              <div className="mt-4 px-4 py-2 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg shadow-sm flex items-center space-x-5 text-xs text-gray-500 select-none">
-                <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-gray-700 dark:text-slate-300">강조선 색상:</span>
-                  <div className="flex space-x-1">
-                    {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a'].map((col) => (
-                      <button
-                        key={col}
-                        onClick={() => {
-                          setPrimaryColor(col)
-                          if (selectedItemId) {
-                            const updated = items.map(item => {
-                              if (item.id === selectedItemId) {
-                                return { ...item, style: { ...item.style, borderColor: col } }
-                              }
-                              return item
-                            })
-                            pushToUndo(updated)
-                          }
-                        }}
-                        className={`w-4 h-4 rounded-full border border-white cursor-pointer transition-transform ${
-                          primaryColor === col ? 'scale-120 ring-2 ring-indigo-500' : 'hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: col }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <span className="w-px h-3.5 bg-gray-200 dark:bg-slate-800"></span>
-
-                <div className="flex items-center space-x-2">
-                  <span className="font-semibold text-gray-700 dark:text-slate-300">원배경 색상:</span>
-                  <div className="flex space-x-1">
-                    {['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444'].map((col) => (
-                      <button
-                        key={col}
-                        onClick={() => {
-                          setIndigoColor(col)
-                          if (selectedItemId) {
-                            const updated = items.map(item => {
-                              if (item.id === selectedItemId) {
-                                return { ...item, style: { ...item.style, backgroundColor: col } }
-                              }
-                              return item
-                            })
-                            pushToUndo(updated)
-                          }
-                        }}
-                        className={`w-4 h-4 rounded-full border border-white cursor-pointer transition-transform ${
-                          indigoColor === col ? 'scale-120 ring-2 ring-indigo-500' : 'hover:scale-110'
-                        }`}
-                        style={{ backgroundColor: col }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <span className="w-px h-3.5 bg-gray-200 dark:bg-slate-800"></span>
-
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-semibold text-gray-700 dark:text-slate-300">선 두께:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="8"
-                    value={lineWidth}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
-                      setLineWidth(val)
-                      if (selectedItemId) {
-                        const updated = items.map(item => {
-                          if (item.id === selectedItemId) {
-                            return { ...item, style: { ...item.style, borderWidth: val } }
-                          }
-                          return item
-                        })
-                        pushToUndo(updated)
-                      }
-                    }}
-                    className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span className="font-bold text-[10px] w-3">{lineWidth}px</span>
-                </div>
-
-                <span className="w-px h-3.5 bg-gray-200 dark:bg-slate-800"></span>
-
-                <div className="flex items-center space-x-1.5">
-                  <span className="font-semibold text-gray-700 dark:text-slate-300">글자 크기:</span>
-                  <input
-                    type="range"
-                    min="10"
-                    max="28"
-                    value={fontSize}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
-                      setFontSize(val)
-                      if (selectedItemId) {
-                        const updated = items.map(item => {
-                          if (item.id === selectedItemId) {
-                            return { ...item, style: { ...item.style, fontSize: val } }
-                          }
-                          return item
-                        })
-                        pushToUndo(updated)
-                      }
-                    }}
-                    className="w-16 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                  />
-                  <span className="font-bold text-[10px] w-4">{fontSize}px</span>
-                </div>
-
-                {selectedItemId && (
-                  <>
-                    <span className="w-px h-3.5 bg-gray-200 dark:bg-slate-800"></span>
-                    <button
-                      onClick={() => {
-                        const filtered = items.filter((x) => x.id !== selectedItemId)
-                        pushToUndo(filtered)
-                        setSelectedItemId(null)
-                      }}
-                      className="flex items-center space-x-1 text-red-500 hover:text-red-700 font-semibold cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>삭제 (Del)</span>
-                    </button>
-                  </>
-                )}
-              </div>
+              <FloatingPropertyPanel
+                primaryColor={primaryColor}
+                setPrimaryColor={setPrimaryColor}
+                indigoColor={indigoColor}
+                setIndigoColor={setIndigoColor}
+                lineWidth={lineWidth}
+                setLineWidth={setLineWidth}
+                fontSize={fontSize}
+                setFontSize={setFontSize}
+                hasBorder={hasBorder}
+                setHasBorder={setHasBorder}
+                borderColor={borderColor}
+                setBorderColor={setBorderColor}
+                borderWidth={borderWidth}
+                setBorderWidth={setBorderWidth}
+                borderStyle={borderStyle}
+                setBorderStyle={setBorderStyle}
+                hasCaption={hasCaption}
+                setHasCaption={setHasCaption}
+                captionText={captionText}
+                setCaptionText={setCaptionText}
+                selectedItemId={selectedItemId}
+                setSelectedItemId={setSelectedItemId}
+                items={items}
+                pushToUndo={pushToUndo}
+              />
             )}
           </main>
 
