@@ -1,10 +1,114 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Download, Copy, Trash2, Type, Square, CircleDot, Check, Save, MousePointer, Crop, Edit2 } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Trash2, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { formatRelativeTime } from '@/lib/utils'
 
+// 선분과 점 사이의 거리를 계산하는 수학 헬퍼 함수
+function getDistanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const lenSq = dx * dx + dy * dy
+  if (lenSq === 0) return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2)
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq
+  t = Math.max(0, Math.min(1, t))
+  const projX = x1 + t * dx
+  const projY = y1 + t * dy
+  return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2)
+}
+
+// 화살표 그리기 헬퍼 함수
+function drawArrow(
+  ctx: CanvasRenderingContext2D,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  color: string,
+  width: number,
+  lineStyle: 'solid' | 'dashed',
+  isSelected: boolean
+) {
+  ctx.save()
+
+  // 1. 선 스타일 설정
+  ctx.strokeStyle = color
+  ctx.lineWidth = width
+  if (lineStyle === 'dashed') {
+    ctx.setLineDash([4, 4])
+  } else {
+    ctx.setLineDash([])
+  }
+
+  // 2. 선택 상태일 때 외곽 파란색 하이라이트선 먼저 그리기
+  if (isSelected) {
+    ctx.save()
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'
+    ctx.lineWidth = width + 6
+    ctx.setLineDash([])
+    
+    // 메인 선분 그리기
+    ctx.beginPath()
+    ctx.moveTo(fromX, fromY)
+    ctx.lineTo(toX, toY)
+    ctx.stroke()
+
+    // 화살촉 그리기
+    const angle = Math.atan2(toY - fromY, toX - fromX)
+    const headLength = Math.max(12, width * 3)
+    const arrowAngle = Math.PI / 6
+    const leftX = toX - headLength * Math.cos(angle - arrowAngle)
+    const leftY = toY - headLength * Math.sin(angle - arrowAngle)
+    const rightX = toX - headLength * Math.cos(angle + arrowAngle)
+    const rightY = toY - headLength * Math.sin(angle + arrowAngle)
+
+    ctx.beginPath()
+    ctx.moveTo(toX, toY)
+    ctx.lineTo(leftX, leftY)
+    ctx.lineTo(rightX, rightY)
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.4)'
+    ctx.fill()
+    ctx.restore()
+  }
+
+  // 3. 메인 화살표 선 그리기
+  ctx.beginPath()
+  ctx.moveTo(fromX, fromY)
+  ctx.lineTo(toX, toY)
+  ctx.stroke()
+
+  // 4. 화살촉 채우기
+  const angle = Math.atan2(toY - fromY, toX - fromX)
+  const headLength = Math.max(12, width * 3)
+  const arrowAngle = Math.PI / 6
+  const leftX = toX - headLength * Math.cos(angle - arrowAngle)
+  const leftY = toY - headLength * Math.sin(angle - arrowAngle)
+  const rightX = toX - headLength * Math.cos(angle + arrowAngle)
+  const rightY = toY - headLength * Math.sin(angle + arrowAngle)
+
+  ctx.beginPath()
+  ctx.moveTo(toX, toY)
+  ctx.lineTo(leftX, leftY)
+  ctx.lineTo(rightX, rightY)
+  ctx.closePath()
+  ctx.fillStyle = color
+  ctx.fill()
+  
+  // 5. 선택 상태일 때 양 끝 앵커 포인트 그려서 조작감 극대화
+  if (isSelected) {
+    ctx.beginPath()
+    ctx.arc(fromX, fromY, 4, 0, 2 * Math.PI)
+    ctx.arc(toX, toY, 4, 0, 2 * Math.PI)
+    ctx.fillStyle = '#3b82f6'
+    ctx.fill()
+  }
+
+  ctx.restore()
+}
+
 import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
 import FloatingPropertyPanel from './FloatingPropertyPanel'
+import WorkHistory from './WorkHistory'
 
 
 const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
@@ -12,9 +116,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textInputRef = useRef<HTMLTextAreaElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
   const [items, setItems] = useState<CanvasItem[]>([])
@@ -96,15 +201,21 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [insertingImage, setInsertingImage] = useState(false)
 
-  // 다중 선택 삭제 상태
-  const [selectedWorkIds, setSelectedWorkIds] = useState<number[]>([])
-  // 제목 실시간 편집 상태
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editingTitleValue, setEditingTitleValue] = useState('')
+
 
   // Undo / Redo 작업 스택
   const [undoStack, setUndoStack] = useState<CanvasItem[][]>([])
   const [redoStack, setRedoStack] = useState<CanvasItem[][]>([])
+
+  // 텍스트 입력창이 켜질 때 명시적으로 인풋 포커스 이동
+  useEffect(() => {
+    if (textInput.visible) {
+      const timer = setTimeout(() => {
+        textInputRef.current?.focus()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [textInput.visible])
 
   // activeHistoryId 상태가 변경되면 localStorage에 자동 보관
   useEffect(() => {
@@ -371,6 +482,21 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
         }
       } 
+      else if (item.type === 'arrow') {
+        const toX = item.x + (item.width || 0)
+        const toY = item.y + (item.height || 0)
+        drawArrow(
+          ctx,
+          item.x,
+          item.y,
+          toX,
+          toY,
+          item.style.borderColor || primaryColor,
+          item.style.borderWidth || lineWidth,
+          item.style.lineStyle || 'solid',
+          isSelected
+        )
+      }
       else if (item.type === 'text') {
         // 텍스트 박스
         ctx.fillStyle = item.style.textColor || '#0f172a'
@@ -414,6 +540,18 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         ctx.lineWidth = lineWidth
         ctx.setLineDash([4, 4])
         ctx.strokeRect(dragStart.x, dragStart.y, dragCurrent.x - dragStart.x, dragCurrent.y - dragStart.y)
+      } else if (activeTool === 'arrow') {
+        drawArrow(
+          ctx,
+          dragStart.x,
+          dragStart.y,
+          dragCurrent.x,
+          dragCurrent.y,
+          primaryColor,
+          lineWidth,
+          boxLineStyle,
+          false
+        )
       } else if (activeTool === 'crop') {
         ctx.strokeStyle = '#6366f1'
         ctx.lineWidth = 1.5
@@ -665,6 +803,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             break
           }
         } 
+        else if (item.type === 'arrow') {
+          const x2 = item.x + (item.width || 0)
+          const y2 = item.y + (item.height || 0)
+          const dist = getDistanceToSegment(x, y, item.x, item.y, x2, y2)
+          if (dist <= 8) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
         else if (item.type === 'text') {
           // 텍스트 대략적인 선택 감지 바운딩 박스
           const textLength = item.text?.length || 1
@@ -702,7 +851,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setCircleCounter((prev) => prev + 1)
       setSelectedItemId(newItem.id)
     } 
-    else if (activeTool === 'box' || activeTool === 'crop') {
+    else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow') {
       setIsDrawing(true)
       setDragStart({ x, y })
       setDragCurrent({ x, y })
@@ -777,6 +926,26 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           setSelectedItemId(newItem.id)
         }
       } 
+      else if (activeTool === 'arrow') {
+        // 어느정도 선 길이가 있을 때만 화살표 생성
+        if (Math.hypot(w, h) > 8) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'arrow',
+            x: dragStart.x,
+            y: dragStart.y,
+            width: w,
+            height: h,
+            style: {
+              borderColor: primaryColor,
+              borderWidth: lineWidth,
+              lineStyle: boxLineStyle
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
       else if (activeTool === 'crop') {
         const cX = Math.min(dragStart.x, x)
         const cY = Math.min(dragStart.y, y)
@@ -1124,7 +1293,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         jsonData: updatedJsonData
       })
       
-      setEditingId(null)
       fetchHistory()
     } catch (err) {
       console.error('제목 수정 오류:', err)
@@ -1133,15 +1301,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 선택된 항목 다중 삭제 (SQLite 락 충돌 방지를 위해 직렬 순차 처리)
-  const handleDeleteSelected = async () => {
-    if (selectedWorkIds.length === 0) return
-    if (!confirm(`선택된 ${selectedWorkIds.length}개의 항목을 정말 모두 삭제하시겠습니까?`)) return
-    
+  const handleDeleteSelected = async (ids: number[]) => {
     try {
-      for (const id of selectedWorkIds) {
+      for (const id of ids) {
         await apiClient.delete(`/admin/image-work/${id}`)
       }
-      setSelectedWorkIds([])
       fetchHistory()
     } catch (err) {
       console.error('선택 항목 삭제 중 에러:', err)
@@ -1229,9 +1393,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 이력 삭제
-  const handleDeleteHistory = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!confirm('임시 보관된 이 작업을 정말 삭제하시겠습니까?')) return
+  const handleDeleteHistory = async (id: number) => {
     try {
       await apiClient.delete(`/admin/image-work/${id}`)
       fetchHistory()
@@ -1275,36 +1437,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             )}
           </div>
 
-          {/* 캡션 / 테두리 레이아웃 켬/끔 토글 버튼 */}
-          {bgImage && (
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setHasBorder(!hasBorder)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer border ${
-                  hasBorder 
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs' 
-                    : 'bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-800 hover:bg-gray-50'
-                }`}
-                title="프로그램 화면임을 나타내는 외곽 테두리 박스라인 켬/끔"
-              >
-                <Square className="w-3.5 h-3.5" />
-                <span>외곽테두리 {hasBorder ? 'ON' : 'OFF'}</span>
-              </button>
-
-              <button
-                onClick={() => setHasCaption(!hasCaption)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer border ${
-                  hasCaption 
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs' 
-                    : 'bg-white dark:bg-slate-900 text-gray-600 dark:text-slate-400 border-gray-200 dark:border-slate-800 hover:bg-gray-50'
-                }`}
-                title="이미지 하단에 설명글을 표시하는 캡션 영역 켬/끔"
-              >
-                <Type className="w-3.5 h-3.5" />
-                <span>설명캡션 {hasCaption ? 'ON' : 'OFF'}</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* 바디 영역 */}
@@ -1316,6 +1448,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'pointer', label: '선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
               { id: 'circle-number', label: '원숫자 마크 스탬프', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
+              { id: 'arrow', label: '가리키는 화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
               { id: 'crop', label: '러버밴드 점선 자르기', icon: <Crop className="w-4 h-4" /> }
             ].map((tool) => (
@@ -1407,6 +1540,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <textarea
+                    ref={textInputRef}
                     autoFocus
                     value={textInputValue}
                     onChange={(e) => setTextInputValue(e.target.value)}
@@ -1483,130 +1617,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           </main>
 
           {/* 3. 우측 임시 보관 히스토리 사이드바 */}
-          <aside className="w-64 border-l border-gray-200 dark:border-slate-800 flex flex-col shrink-0 overflow-hidden bg-white dark:bg-slate-900">
-            <div className="p-4 border-b border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0 flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">임시 보관 작업 목록</span>
-              {historyList.length > 0 && (
-                <div className="flex items-center space-x-1" title="전체 선택 / 해제">
-                  <input
-                    type="checkbox"
-                    checked={historyList.length > 0 && selectedWorkIds.length === historyList.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedWorkIds(historyList.map((h) => h.id))
-                      } else {
-                        setSelectedWorkIds([])
-                      }
-                    }}
-                    className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-650 focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <span className="text-[10px] text-gray-400 font-medium select-none">전체</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
-              {loadingHistory ? (
-                <div className="text-center text-xs text-gray-400 py-6">로딩 중...</div>
-              ) : historyList.length === 0 ? (
-                <div className="text-center text-xs text-gray-400 py-10 leading-relaxed select-none">
-                  임시 보관함이 비어 있습니다.<br />
-                  (이전 진행 상태를 여기에 임시 저장하고 불러올 수 있습니다.)
-                </div>
-              ) : (
-                historyList.map((work) => (
-                  <div
-                    key={work.id}
-                    onClick={() => handleLoadWork(work)}
-                    className="p-2 border border-gray-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-lg cursor-pointer transition-all flex flex-col space-y-1.5 select-none relative group"
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedWorkIds.includes(work.id)}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          if (e.target.checked) {
-                            setSelectedWorkIds((prev) => [...prev, work.id])
-                          } else {
-                            setSelectedWorkIds((prev) => prev.filter((id) => id !== work.id))
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-650 focus:ring-indigo-500 cursor-pointer mr-2 shrink-0"
-                      />
-                      <div className="flex-1 flex justify-between items-center min-w-0">
-                        {editingId === work.id ? (
-                          <input
-                            type="text"
-                            value={editingTitleValue}
-                            onChange={(e) => setEditingTitleValue(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            onBlur={() => handleUpdateTitle(work, editingTitleValue)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault()
-                                handleUpdateTitle(work, editingTitleValue)
-                              } else if (e.key === 'Escape') {
-                                setEditingId(null)
-                              }
-                            }}
-                            autoFocus
-                            className="px-1.5 py-0.5 text-xs bg-white dark:bg-slate-900 border border-indigo-500 rounded font-semibold text-gray-800 dark:text-slate-100 w-full focus:outline-hidden"
-                          />
-                        ) : (
-                          <div className="flex items-center space-x-1 flex-1 min-w-0" onDoubleClick={(e) => {
-                            e.stopPropagation()
-                            setEditingId(work.id)
-                            setEditingTitleValue(work.title)
-                          }}>
-                            <span className="font-semibold text-gray-800 dark:text-slate-200 text-xs truncate max-w-[150px]" title={work.title}>
-                              {work.title}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex items-center space-x-1 shrink-0">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingId(work.id)
-                              setEditingTitleValue(work.title)
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-indigo-650 rounded transition-all cursor-pointer"
-                            title="제목 수정"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteHistory(work.id, e)}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer"
-                            title="기록 삭제"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-gray-400 font-medium pl-5.5">
-                      수정: {new Date(work.updatedAt).toLocaleDateString()} {new Date(work.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({formatRelativeTime(work.updatedAt)})
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* 선택 삭제 제어부 */}
-            {selectedWorkIds.length > 0 && (
-              <div className="p-3 border-t border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0">
-                <button
-                  onClick={handleDeleteSelected}
-                  className="w-full py-1.5 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 dark:border-red-900/50 rounded-md text-[11px] font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>선택 항목 모두 삭제 ({selectedWorkIds.length})</span>
-                </button>
-              </div>
-            )}
-          </aside>
+          <WorkHistory
+            historyList={historyList}
+            loadingHistory={loadingHistory}
+            onLoadWork={handleLoadWork}
+            onUpdateTitle={handleUpdateTitle}
+            onDeleteHistory={handleDeleteHistory}
+            onDeleteSelected={handleDeleteSelected}
+          />
 
         </div>
 

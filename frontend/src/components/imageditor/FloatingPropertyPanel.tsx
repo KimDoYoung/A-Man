@@ -40,7 +40,7 @@ interface FloatingPropertyPanelProps {
   setBoxOpacity: (val: number) => void
   boxLineStyle: 'solid' | 'dashed'
   setBoxLineStyle: (style: 'solid' | 'dashed') => void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop'
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 }
@@ -242,8 +242,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
             /* A. 개별 아이템 선택 모드 (인스펙터) */
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
               
-              {/* box 타입 인스펙터 */}
-              {selectedItem.type === 'box' && (
+              {/* box 또는 arrow 타입 인스펙터 */}
+              {(selectedItem.type === 'box' || selectedItem.type === 'arrow') && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   {/* 강조선 색상 */}
                   <ColorPicker
@@ -262,41 +262,46 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
                   />
 
-                  {/* 배경색 */}
-                  <ColorPicker
-                    label="배경색"
-                    selectedColor={selectedItem.style.backgroundColor || boxBgColor}
-                    onChangeColor={(col) => {
-                      setBoxBgColor(col)
-                      const updated = items.map(item => {
-                        if (item.id === selectedItemId) {
-                          return { ...item, style: { ...item.style, backgroundColor: col } }
-                        }
-                        return item
-                      })
-                      pushToUndo(updated)
-                    }}
-                    colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
-                  />
+                  {/* 배경색 및 투명도: box 타입일 때만 */}
+                  {selectedItem.type === 'box' && (
+                    <>
+                      {/* 배경색 */}
+                      <ColorPicker
+                        label="배경색"
+                        selectedColor={selectedItem.style.backgroundColor || boxBgColor}
+                        onChangeColor={(col) => {
+                          setBoxBgColor(col)
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, backgroundColor: col } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                        colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                      />
 
-                  {/* 투명도 */}
-                  <RangeSlider
-                    label="투명도"
-                    value={selectedItem.style.opacity !== undefined ? Math.round(selectedItem.style.opacity * 100) : boxOpacity}
-                    min={0}
-                    max={100}
-                    unit="%"
-                    onChangeValue={(val) => {
-                      setBoxOpacity(val)
-                      const updated = items.map(item => {
-                        if (item.id === selectedItemId) {
-                          return { ...item, style: { ...item.style, opacity: val / 100 } }
-                        }
-                        return item
-                      })
-                      pushToUndo(updated)
-                    }}
-                  />
+                      {/* 투명도 */}
+                      <RangeSlider
+                        label="투명도"
+                        value={selectedItem.style.opacity !== undefined ? Math.round(selectedItem.style.opacity * 100) : boxOpacity}
+                        min={0}
+                        max={100}
+                        unit="%"
+                        onChangeValue={(val) => {
+                          setBoxOpacity(val)
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, opacity: val / 100 } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                      />
+                    </>
+                  )}
 
                   {/* 선 타입 (실선/점선) */}
                   <div className="space-y-1.5">
@@ -591,7 +596,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       </>
                     )}
 
-                    {activeTool === 'box' && (
+                    {(activeTool === 'box' || activeTool === 'arrow') && (
                       <>
                         <ColorPicker
                           label="강조선 색상"
@@ -599,20 +604,24 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           onChangeColor={setPrimaryColor}
                           colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
                         />
-                        <ColorPicker
-                          label="배경색"
-                          selectedColor={boxBgColor}
-                          onChangeColor={setBoxBgColor}
-                          colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
-                        />
-                        <RangeSlider
-                          label="투명도"
-                          value={boxOpacity}
-                          min={0}
-                          max={100}
-                          unit="%"
-                          onChangeValue={setBoxOpacity}
-                        />
+                        {activeTool === 'box' && (
+                          <>
+                            <ColorPicker
+                              label="배경색"
+                              selectedColor={boxBgColor}
+                              onChangeColor={setBoxBgColor}
+                              colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                            />
+                            <RangeSlider
+                              label="투명도"
+                              value={boxOpacity}
+                              min={0}
+                              max={100}
+                              unit="%"
+                              onChangeValue={setBoxOpacity}
+                            />
+                          </>
+                        )}
                         {/* 선 종류 */}
                         <div className="space-y-1.5">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 종류</span>
