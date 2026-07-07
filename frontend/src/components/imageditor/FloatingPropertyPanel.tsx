@@ -40,7 +40,13 @@ interface FloatingPropertyPanelProps {
   setBoxOpacity: (val: number) => void
   boxLineStyle: 'solid' | 'dashed'
   setBoxLineStyle: (style: 'solid' | 'dashed') => void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow'
+  selectedEmoji: string
+  setSelectedEmoji: (emoji: string) => void
+  symbolScale: number
+  setSymbolScale: (scale: number) => void
+  boxBorderRadius: number
+  setBoxBorderRadius: (val: number) => void
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'symbol'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 }
@@ -78,6 +84,12 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setBoxOpacity,
   boxLineStyle,
   setBoxLineStyle,
+  selectedEmoji,
+  setSelectedEmoji,
+  symbolScale,
+  setSymbolScale,
+  boxBorderRadius,
+  setBoxBorderRadius,
   activeTool,
   items,
   pushToUndo
@@ -300,6 +312,25 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           pushToUndo(updated)
                         }}
                       />
+
+                      {/* 모서리 둥글기 */}
+                      <RangeSlider
+                        label="모서리 둥글기"
+                        value={selectedItem.style.borderRadius !== undefined ? selectedItem.style.borderRadius : boxBorderRadius}
+                        min={0}
+                        max={40}
+                        unit="px"
+                        onChangeValue={(val) => {
+                          setBoxBorderRadius(val)
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, borderRadius: val } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                      />
                     </>
                   )}
 
@@ -352,6 +383,81 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       pushToUndo(updated)
                     }}
                   />
+                </div>
+              )}
+
+              {/* symbol 타입 인스펙터 */}
+              {selectedItem.type === 'symbol' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 심볼 이모지 선택 */}
+                  <div className="space-y-2">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
+                    <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
+                      {['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬'].map((emoji) => {
+                        const isCurrent = selectedItem.text === emoji
+                        return (
+                          <button
+                            key={emoji}
+                            onClick={() => {
+                              setSelectedEmoji(emoji)
+                              const updated = items.map(item => {
+                                if (item.id === selectedItemId) {
+                                  return { ...item, text: emoji }
+                                }
+                                return item
+                              })
+                              pushToUndo(updated)
+                            }}
+                            className={`py-1.5 text-center text-lg rounded-md transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'bg-indigo-600 shadow-sm transform scale-110'
+                                : 'hover:bg-gray-150 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 크기 단계 선택 (1-5) */}
+                  <div className="space-y-2">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                    <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
+                      {[1, 2, 3, 4, 5].map((scale) => {
+                        const scaleMapping = [20, 32, 48, 64, 80]
+                        const currentSize = selectedItem.style.fontSize || 48
+                        // 픽셀 값에 가장 가까운 스케일 단계를 매칭하여 판별
+                        const currentScale = scaleMapping.findIndex(s => s === currentSize) + 1 || 3
+                        const isCurrent = currentScale === scale
+
+                        return (
+                          <button
+                            key={scale}
+                            onClick={() => {
+                              setSymbolScale(scale)
+                              const actualSize = scaleMapping[scale - 1]
+                              const updated = items.map(item => {
+                                if (item.id === selectedItemId) {
+                                  return { ...item, style: { ...item.style, fontSize: actualSize } }
+                                }
+                                return item
+                              })
+                              pushToUndo(updated)
+                            }}
+                            className={`flex-1 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'bg-white dark:bg-slate-900 text-indigo-650 dark:text-indigo-400 shadow-xs border border-gray-200 dark:border-slate-800'
+                                : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                            }`}
+                          >
+                            {scale}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -501,20 +607,6 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                 </div>
               )}
 
-              {/* 요소 삭제 공통 */}
-              <div className="pt-3 border-t border-gray-150 dark:border-slate-850">
-                <button
-                  onClick={() => {
-                    const filtered = items.filter((x) => x.id !== selectedItemId)
-                    pushToUndo(filtered)
-                    setSelectedItemId(null)
-                  }}
-                  className="w-full py-1.5 flex items-center justify-center space-x-1 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-md font-bold cursor-pointer transition-colors border border-red-100 dark:border-red-900/50"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>선택 요소 삭제 (Del)</span>
-                </button>
-              </div>
             </div>
           ) : (
             /* B. 일반 전역 설정 모드 (아무것도 선택되지 않았을 때) */
@@ -620,6 +712,14 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               unit="%"
                               onChangeValue={setBoxOpacity}
                             />
+                            <RangeSlider
+                              label="모서리 둥글기"
+                              value={boxBorderRadius}
+                              min={0}
+                              max={40}
+                              unit="px"
+                              onChangeValue={setBoxBorderRadius}
+                            />
                           </>
                         )}
                         {/* 선 종류 */}
@@ -652,6 +752,56 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           max={8}
                           onChangeValue={setLineWidth}
                         />
+                      </>
+                    )}
+
+                    {activeTool === 'symbol' && (
+                      <>
+                        {/* 심볼 이모지 선택 */}
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
+                          <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
+                            {['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬'].map((emoji) => {
+                              const isCurrent = selectedEmoji === emoji
+                              return (
+                                <button
+                                  key={emoji}
+                                  onClick={() => setSelectedEmoji(emoji)}
+                                  className={`py-1.5 text-center text-lg rounded-md transition-all cursor-pointer ${
+                                    isCurrent
+                                      ? 'bg-indigo-600 shadow-sm transform scale-110'
+                                      : 'hover:bg-gray-150 dark:hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {emoji}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 크기 단계 선택 (1-5) */}
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                          <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
+                            {[1, 2, 3, 4, 5].map((scale) => {
+                              const isCurrent = symbolScale === scale
+                              return (
+                                <button
+                                  key={scale}
+                                  onClick={() => setSymbolScale(scale)}
+                                  className={`flex-1 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                    isCurrent
+                                      ? 'bg-white dark:bg-slate-900 text-indigo-650 dark:text-indigo-400 shadow-xs border border-gray-200 dark:border-slate-800'
+                                      : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                                  }`}
+                                >
+                                  {scale}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </>
                     )}
 

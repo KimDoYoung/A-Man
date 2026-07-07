@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Download, Copy, Trash2, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Trash2, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { formatRelativeTime } from '@/lib/utils'
 
@@ -119,7 +119,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const textInputRef = useRef<HTMLTextAreaElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'symbol'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
   const [items, setItems] = useState<CanvasItem[]>([])
@@ -129,6 +129,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [boxBgColor, setBoxBgColor] = useState<string>('transparent')
   const [boxOpacity, setBoxOpacity] = useState<number>(30)
   const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>('solid')
+  const [selectedEmoji, setSelectedEmoji] = useState<string>('💡')
+  const [symbolScale, setSymbolScale] = useState<number>(3)
+  const [boxBorderRadius, setBoxBorderRadius] = useState<number>(0)
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -137,6 +140,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textInput, setTextInput] = useState<{ x: number; y: number; visible: boolean; id?: string }>({ x: 0, y: 0, visible: false })
   const [textInputValue, setTextInputValue] = useState('')
   const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null)
   
   // 기본 스타일 상태
   const [primaryColor, setPrimaryColor] = useState('#ef4444') // 강조 사각형 기본 Red
@@ -159,6 +163,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor: string
     boxOpacity: number
     boxLineStyle: 'solid' | 'dashed'
+    selectedEmoji: string
+    symbolScale: number
+    boxBorderRadius: number
   }>({
     title: '',
     bgImageSrc: '',
@@ -172,7 +179,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textColor: '#ffffff',
     boxBgColor: 'transparent',
     boxOpacity: 30,
-    boxLineStyle: 'solid'
+    boxLineStyle: 'solid',
+    selectedEmoji: '💡',
+    symbolScale: 3,
+    boxBorderRadius: 0
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -454,13 +464,31 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         }
       } 
       else if (item.type === 'box') {
-        // 사각형 강조 박스
+        // 사각형 강조 박스 (둥글기 borderRadius 반영)
+        const radius = Math.min(item.style.borderRadius || 0, Math.min(Math.abs(item.width || 0), Math.abs(item.height || 0)) / 2)
+        
+        ctx.save()
         // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
         if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent') {
           ctx.save()
           ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
           ctx.fillStyle = item.style.backgroundColor
-          ctx.fillRect(item.x, item.y, item.width || 0, item.height || 0)
+          if (radius > 0) {
+            ctx.beginPath()
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(item.x, item.y, item.width || 0, item.height || 0, radius)
+            } else {
+              const x = item.x, y = item.y, w = item.width || 0, h = item.height || 0
+              ctx.moveTo(x + radius, y)
+              ctx.arcTo(x + w, y, x + w, y + h, radius)
+              ctx.arcTo(x + w, y + h, x, y + h, radius)
+              ctx.arcTo(x, y + h, x, y, radius)
+              ctx.arcTo(x, y, x + w, y, radius)
+            }
+            ctx.fill()
+          } else {
+            ctx.fillRect(item.x, item.y, item.width || 0, item.height || 0)
+          }
           ctx.restore()
         }
 
@@ -472,14 +500,50 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         } else {
           ctx.setLineDash([])
         }
-        ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
+        
+        if (radius > 0) {
+          ctx.beginPath()
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(item.x, item.y, item.width || 0, item.height || 0, radius)
+          } else {
+            const x = item.x, y = item.y, w = item.width || 0, h = item.height || 0
+            ctx.moveTo(x + radius, y)
+            ctx.arcTo(x + w, y, x + w, y + h, radius)
+            ctx.arcTo(x + w, y + h, x, y + h, radius)
+            ctx.arcTo(x, y + h, x, y, radius)
+            ctx.arcTo(x, y, x + w, y, radius)
+          }
+          ctx.stroke()
+        } else {
+          ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
+        }
+        ctx.restore()
 
-        // 선택 영역 하이라이트
+        // 선택 영역 하이라이트 및 4꼭지점 조절 핸들
         if (isSelected) {
           ctx.strokeStyle = '#3b82f6'
           ctx.lineWidth = 1.5
           ctx.setLineDash([4, 4])
           ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
+
+          // 4꼭지점 핸들 그리기
+          ctx.save()
+          ctx.setLineDash([])
+          ctx.fillStyle = '#ffffff'
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          const handleSize = 6
+          const points = [
+            { x: item.x, y: item.y }, // TL
+            { x: item.x + (item.width || 0), y: item.y }, // TR
+            { x: item.x, y: item.y + (item.height || 0) }, // BL
+            { x: item.x + (item.width || 0), y: item.y + (item.height || 0) } // BR
+          ]
+          points.forEach((pt) => {
+            ctx.fillRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
+            ctx.strokeRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
+          })
+          ctx.restore()
         }
       } 
       else if (item.type === 'arrow') {
@@ -496,6 +560,30 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           item.style.lineStyle || 'solid',
           isSelected
         )
+      }
+      else if (item.type === 'symbol') {
+        // 이모지 심볼 그리기 (중앙 정렬)
+        const emojiSize = item.style.fontSize || 48
+        ctx.font = `bold ${emojiSize}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        
+        ctx.shadowColor = 'rgba(0,0,0,0.1)'
+        ctx.shadowBlur = 4
+        ctx.shadowOffsetY = 2
+        
+        ctx.fillText(item.text || '💡', item.x, item.y)
+
+        // 선택 영역 하이라이트 (중앙 원형 점선)
+        if (isSelected) {
+          ctx.shadowColor = 'transparent'
+          ctx.beginPath()
+          ctx.arc(item.x, item.y, (emojiSize / 2) + 4, 0, 2 * Math.PI)
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 4])
+          ctx.stroke()
+        }
       }
       else if (item.type === 'text') {
         // 텍스트 박스
@@ -539,7 +627,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         ctx.strokeStyle = primaryColor
         ctx.lineWidth = lineWidth
         ctx.setLineDash([4, 4])
-        ctx.strokeRect(dragStart.x, dragStart.y, dragCurrent.x - dragStart.x, dragCurrent.y - dragStart.y)
+        const w = dragCurrent.x - dragStart.x
+        const h = dragCurrent.y - dragStart.y
+        const radius = Math.min(boxBorderRadius, Math.min(Math.abs(w), Math.abs(h)) / 2)
+        if (radius > 0) {
+          ctx.beginPath()
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(dragStart.x, dragStart.y, w, h, radius)
+          } else {
+            const x = dragStart.x, y = dragStart.y
+            ctx.moveTo(x + radius, y)
+            ctx.arcTo(x + w, y, x + w, y + h, radius)
+            ctx.arcTo(x + w, y + h, x, y + h, radius)
+            ctx.arcTo(x, y + h, x, y, radius)
+            ctx.arcTo(x, y, x + w, y, radius)
+          }
+          ctx.stroke()
+        } else {
+          ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+        }
       } else if (activeTool === 'arrow') {
         drawArrow(
           ctx,
@@ -774,6 +880,40 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     const { x, y } = getCanvasCoords(e)
 
     if (activeTool === 'pointer') {
+      // 1순위: 선택된 사각형이 존재할 때 네 꼭지점 리사이즈 핸들 클릭 여부를 우선 판정!
+      if (selectedItemId) {
+        const selectedItem = items.find(item => item.id === selectedItemId)
+        if (selectedItem && selectedItem.type === 'box') {
+          const tl = { x: selectedItem.x, y: selectedItem.y }
+          const tr = { x: selectedItem.x + (selectedItem.width || 0), y: selectedItem.y }
+          const bl = { x: selectedItem.x, y: selectedItem.y + (selectedItem.height || 0) }
+          const br = { x: selectedItem.x + (selectedItem.width || 0), y: selectedItem.y + (selectedItem.height || 0) }
+          const clickRadius = 8 // 클릭 반경 8px 허용
+
+          if (Math.hypot(tl.x - x, tl.y - y) <= clickRadius) {
+            setResizeHandle('tl')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(tr.x - x, tr.y - y) <= clickRadius) {
+            setResizeHandle('tr')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(bl.x - x, bl.y - y) <= clickRadius) {
+            setResizeHandle('bl')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(br.x - x, br.y - y) <= clickRadius) {
+            setResizeHandle('br')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
+        }
+      }
+
       // 가장 마지막에 추가된 도형부터 역순으로 클릭 타겟 판정 (상위 레이어 우선)
       let found = false
       for (let i = items.length - 1; i >= 0; i--) {
@@ -808,6 +948,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           const y2 = item.y + (item.height || 0)
           const dist = getDistanceToSegment(x, y, item.x, item.y, x2, y2)
           if (dist <= 8) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+        else if (item.type === 'symbol') {
+          const radius = (item.style.fontSize || 48) / 2
+          const dist = Math.hypot(item.x - x, item.y - y)
+          if (dist <= radius + 4) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
             found = true
@@ -851,6 +1001,22 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setCircleCounter((prev) => prev + 1)
       setSelectedItemId(newItem.id)
     } 
+    else if (activeTool === 'symbol') {
+      const scaleMapping = [20, 32, 48, 64, 80]
+      const actualSize = scaleMapping[symbolScale - 1] || 48
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'symbol',
+        x,
+        y,
+        text: selectedEmoji,
+        style: {
+          fontSize: actualSize
+        }
+      }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
+    }
     else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow') {
       setIsDrawing(true)
       setDragStart({ x, y })
@@ -878,6 +1044,54 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     if (isDrawing && dragStart) {
       setDragCurrent({ x, y })
+    }
+
+    // 포인터 모드 리사이징 처리
+    if (activeTool === 'pointer' && selectedItemId && resizeHandle) {
+      const updated = items.map((item) => {
+        if (item.id === selectedItemId && item.type === 'box') {
+          const originalX = item.x
+          const originalY = item.y
+          const originalW = item.width || 0
+          const originalH = item.height || 0
+          
+          let newX = originalX
+          let newY = originalY
+          let newW = originalW
+          let newH = originalH
+
+          const minSize = 5 // 최소 크기 제한
+
+          if (resizeHandle === 'br') {
+            newW = Math.max(minSize, x - originalX)
+            newH = Math.max(minSize, y - originalY)
+          } 
+          else if (resizeHandle === 'bl') {
+            const originalRight = originalX + originalW
+            newW = Math.max(minSize, originalRight - x)
+            newX = originalRight - newW
+            newH = Math.max(minSize, y - originalY)
+          } 
+          else if (resizeHandle === 'tr') {
+            const originalBottom = originalY + originalH
+            newW = Math.max(minSize, x - originalX)
+            newH = Math.max(minSize, originalBottom - y)
+            newY = originalBottom - newH
+          } 
+          else if (resizeHandle === 'tl') {
+            const originalRight = originalX + originalW
+            const originalBottom = originalY + originalH
+            newW = Math.max(minSize, originalRight - x)
+            newX = originalRight - newW
+            newH = Math.max(minSize, originalBottom - y)
+            newY = originalBottom - newH
+          }
+
+          return { ...item, x: newX, y: newY, width: newW, height: newH }
+        }
+        return item
+      })
+      setItems(updated)
     }
 
     // 포인터 모드 드래그 이동
@@ -919,7 +1133,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderWidth: lineWidth,
               lineStyle: boxLineStyle,
               backgroundColor: boxBgColor,
-              opacity: boxBgColor === 'transparent' ? 1.0 : boxOpacity / 100
+              opacity: boxBgColor === 'transparent' ? 1.0 : boxOpacity / 100,
+              borderRadius: boxBorderRadius
             }
           }
           pushToUndo([...items, newItem])
@@ -956,6 +1171,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           cropImage(cX, cY, cW, cH)
         }
       }
+      // 리사이즈 드래그 끝마침 처리
+      if (resizeHandle) {
+        setResizeHandle(null)
+        pushToUndo([...items])
+      }
+
       setDragStart(null)
       setDragCurrent(null)
     }
@@ -1041,7 +1262,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setDragStart(null)
   }
 
-  // 키보드로 지우기 감지
+  // 키보드로 지우기 감지 및 ESC/복제(Ctrl+D) 핸들링
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return
@@ -1051,6 +1272,30 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       if (e.key === 'Escape') {
         setSelectedItemId(null)
         setActiveTool('pointer')
+        return
+      }
+
+      // Ctrl + D / Cmd + D (Duplicate 복제)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        if (selectedItemId) {
+          e.preventDefault() // 브라우저 북마크 추가 동작 방지
+          const targetItem = items.find(item => item.id === selectedItemId)
+          if (targetItem) {
+            const duplicatedItem: CanvasItem = {
+              ...targetItem,
+              id: `item-${Date.now()}`,
+              x: targetItem.x + 20,
+              y: targetItem.y + 20,
+              style: {
+                ...targetItem.style
+              }
+            }
+            const newItems = [...items, duplicatedItem]
+            pushToUndo(newItems)
+            setItems(newItems)
+            setSelectedItemId(duplicatedItem.id)
+          }
+        }
         return
       }
 
@@ -1138,7 +1383,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         textColor: textColor,
         boxBgColor: boxBgColor,
         boxOpacity: boxOpacity,
-        boxLineStyle: boxLineStyle
+        boxLineStyle: boxLineStyle,
+        selectedEmoji: selectedEmoji,
+        symbolScale: symbolScale,
+        boxBorderRadius: boxBorderRadius
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -1165,7 +1413,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         textColor: textColor,
         boxBgColor: boxBgColor,
         boxOpacity: boxOpacity,
-        boxLineStyle: boxLineStyle
+        boxLineStyle: boxLineStyle,
+        selectedEmoji: selectedEmoji,
+        symbolScale: symbolScale,
+        boxBorderRadius: boxBorderRadius
       })
       setEditorTitle(finalTitle)
 
@@ -1229,7 +1480,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               textColor: textColor,
               boxBgColor: boxBgColor,
               boxOpacity: boxOpacity,
-              boxLineStyle: boxLineStyle
+              boxLineStyle: boxLineStyle,
+              selectedEmoji: selectedEmoji,
+              symbolScale: symbolScale,
+              boxBorderRadius: boxBorderRadius
             }
             
             await apiClient.post('/admin/image-work', {
@@ -1252,7 +1506,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               textColor: textColor,
               boxBgColor: boxBgColor,
               boxOpacity: boxOpacity,
-              boxLineStyle: boxLineStyle
+              boxLineStyle: boxLineStyle,
+              selectedEmoji: selectedEmoji,
+              symbolScale: symbolScale,
+              boxBorderRadius: boxBorderRadius
             })
             
             fetchHistory()
@@ -1338,6 +1595,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const loadedBoxBgColor = data.boxBgColor ?? 'transparent'
         const loadedBoxOpacity = data.boxOpacity ?? 30
         const loadedBoxLineStyle = data.boxLineStyle ?? 'solid'
+        const loadedSelectedEmoji = data.selectedEmoji ?? '💡'
+        const loadedSymbolScale = data.symbolScale ?? 3
+        const loadedBoxBorderRadius = data.boxBorderRadius ?? 0
         
         setHasBorder(loadedHasBorder)
         setBorderColor(loadedBorderColor)
@@ -1349,6 +1609,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setBoxBgColor(loadedBoxBgColor)
         setBoxOpacity(loadedBoxOpacity)
         setBoxLineStyle(loadedBoxLineStyle)
+        setSelectedEmoji(loadedSelectedEmoji)
+        setSymbolScale(loadedSymbolScale)
+        setBoxBorderRadius(loadedBoxBorderRadius)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -1382,7 +1645,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           textColor: loadedTextColor,
           boxBgColor: loadedBoxBgColor,
           boxOpacity: loadedBoxOpacity,
-          boxLineStyle: loadedBoxLineStyle
+          boxLineStyle: loadedBoxLineStyle,
+          selectedEmoji: loadedSelectedEmoji,
+          symbolScale: loadedSymbolScale,
+          boxBorderRadius: loadedBoxBorderRadius
         })
       }
       img.src = data.originalImageUrl
@@ -1449,6 +1715,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'circle-number', label: '원숫자 마크 스탬프', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'arrow', label: '가리키는 화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
+              { id: 'symbol', label: '아이콘 이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
               { id: 'crop', label: '러버밴드 점선 자르기', icon: <Crop className="w-4 h-4" /> }
             ].map((tool) => (
@@ -1609,6 +1876,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setBoxOpacity={setBoxOpacity}
                 boxLineStyle={boxLineStyle}
                 setBoxLineStyle={setBoxLineStyle}
+                selectedEmoji={selectedEmoji}
+                setSelectedEmoji={setSelectedEmoji}
+                symbolScale={symbolScale}
+                setSymbolScale={setSymbolScale}
+                boxBorderRadius={boxBorderRadius}
+                setBoxBorderRadius={setBoxBorderRadius}
                 activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}
