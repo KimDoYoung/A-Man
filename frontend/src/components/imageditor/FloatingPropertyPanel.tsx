@@ -27,6 +27,8 @@ interface FloatingPropertyPanelProps {
   setHasCaption: (val: boolean) => void
   captionText: string
   setCaptionText: (text: string) => void
+  captionAlign: 'left' | 'center'
+  setCaptionAlign: (align: 'left' | 'center') => void
 
   selectedItemId: string | null
   setSelectedItemId: (id: string | null) => void
@@ -73,6 +75,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setHasCaption,
   captionText,
   setCaptionText,
+  captionAlign,
+  setCaptionAlign,
   selectedItemId,
   setSelectedItemId,
   circleCounter,
@@ -900,7 +904,30 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                     {hasCaption && (
                       <div className="space-y-2.5 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
-                        <span className="font-bold text-gray-700 dark:text-slate-300">설명 캡션 문구 기입</span>
+                        {/* 정렬 방식 선택 */}
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">정렬 방식</span>
+                          <div className="flex space-x-1.5">
+                            {[
+                              { id: 'center', label: '중앙 정렬 (Center)' },
+                              { id: 'left', label: '왼쪽 정렬 (Left)' }
+                            ].map((a) => (
+                              <button
+                                key={a.id}
+                                onClick={() => setCaptionAlign(a.id as 'left' | 'center')}
+                                className={`flex-1 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
+                                  captionAlign === a.id
+                                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                                    : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                                }`}
+                              >
+                                {a.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <span className="font-bold text-gray-700 dark:text-slate-300 block mt-2">설명 캡션 문구 기입</span>
                         <textarea
                           value={captionText}
                           onChange={(e) => setCaptionText(e.target.value)}

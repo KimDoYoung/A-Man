@@ -9,5 +9,6 @@ export const SYSTEM_ITEM_DEFAULTS = {
   symbolScale: 3,
   textColor: '#ffffff',
   fontSize: 16,
-  lineWidth: 3
+  lineWidth: 3,
+  captionAlign: 'center' as 'left' | 'center'
 } as const

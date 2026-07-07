@@ -160,6 +160,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderStyle: 'basic' | 'rounded'
     hasCaption: boolean
     captionText: string
+    captionAlign: 'left' | 'center'
     textColor: string
     boxBgColor: string
     boxOpacity: number
@@ -177,6 +178,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderStyle: 'basic',
     hasCaption: false,
     captionText: '',
+    captionAlign: 'center',
     textColor: '#ffffff',
     boxBgColor: 'transparent',
     boxOpacity: 30,
@@ -203,6 +205,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   
   const [hasCaption, setHasCaption] = useState<boolean>(false)
   const [captionText, setCaptionText] = useState<string>('')
+  const [captionAlign, setCaptionAlign] = useState<'left' | 'center'>(SYSTEM_ITEM_DEFAULTS.captionAlign)
   const captionHeight = 42 // 고정 높이 42px
   
   // 임시 보관함 이력 상태
@@ -272,13 +275,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderWidth !== lastSavedState.borderWidth ||
     borderStyle !== lastSavedState.borderStyle ||
     hasCaption !== lastSavedState.hasCaption ||
-    captionText !== lastSavedState.captionText
+    captionText !== lastSavedState.captionText ||
+    captionAlign !== lastSavedState.captionAlign
   )
 
   // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
   useEffect(() => {
     setGeneratedImageUrl('')
-  }, [items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText])
+  }, [items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign])
 
   // 3초간 헤더에 메시지 표시 헬퍼
   const showSaveMessage = (text: string, type: 'success' | 'error') => {
@@ -409,9 +413,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         // 캡션 텍스트 그리기
         ctx.fillStyle = '#475569'
         ctx.font = 'bold 13px sans-serif'
-        ctx.textAlign = 'center'
+        ctx.textAlign = captionAlign === 'left' ? 'left' : 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillText(captionText || '여기에 이미지 설명 캡션을 입력하십시오.', canvas.width / 2, captionY + (captionHeight / 2))
+        const textX = captionAlign === 'left' ? 16 : canvas.width / 2
+        ctx.fillText(captionText || '여기에 이미지 설명 캡션을 입력하십시오.', textX, captionY + (captionHeight / 2))
       }
 
       ctx.restore()
@@ -708,7 +713,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 데이터 및 배경 변경 시 리렌더링 (열고 닫힐 때 재그리기 보장)
   useEffect(() => {
     draw()
-  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText])
+  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
   const fetchUserSettings = async () => {
@@ -735,6 +740,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.textColor) setTextColor(config.textColor)
         if (config.fontSize !== undefined) setFontSize(config.fontSize)
         if (config.lineWidth !== undefined) setLineWidth(config.lineWidth)
+        if (config.captionAlign) setCaptionAlign(config.captionAlign)
       }
     } catch (e) {
       // 404 등 존재하지 않는 경우는 첫 사용이므로 에러 로그만 남기고 시스템 기본값을 유지합니다.
@@ -765,7 +771,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         symbolScale,
         textColor,
         fontSize,
-        lineWidth
+        lineWidth,
+        captionAlign
       }
 
       await apiClient.post('/admin/user-settings', {
@@ -845,6 +852,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setBorderStyle('basic')
       setHasCaption(false)
       setCaptionText('')
+      setCaptionAlign('center')
       
       setLastSavedState({
         title: '새 이미지 작업',
@@ -855,7 +863,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderWidth: 2,
         borderStyle: 'basic',
         hasCaption: false,
-        captionText: ''
+        captionText: '',
+        captionAlign: 'center',
+        textColor: '#ffffff',
+        boxBgColor: 'transparent',
+        boxOpacity: 30,
+        boxLineStyle: 'solid',
+        selectedEmoji: '💡',
+        symbolScale: 3,
+        boxBorderRadius: 0
       })
       showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
     }
@@ -1453,6 +1469,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderStyle: borderStyle,
         hasCaption: hasCaption,
         captionText: captionText,
+        captionAlign: captionAlign,
         textColor: textColor,
         boxBgColor: boxBgColor,
         boxOpacity: boxOpacity,
@@ -1483,6 +1500,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderStyle: borderStyle,
         hasCaption: hasCaption,
         captionText: captionText,
+        captionAlign: captionAlign,
         textColor: textColor,
         boxBgColor: boxBgColor,
         boxOpacity: boxOpacity,
@@ -1550,6 +1568,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderStyle: borderStyle,
               hasCaption: hasCaption,
               captionText: captionText,
+              captionAlign: captionAlign,
               textColor: textColor,
               boxBgColor: boxBgColor,
               boxOpacity: boxOpacity,
@@ -1576,6 +1595,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderStyle: borderStyle,
               hasCaption: hasCaption,
               captionText: captionText,
+              captionAlign: captionAlign,
               textColor: textColor,
               boxBgColor: boxBgColor,
               boxOpacity: boxOpacity,
@@ -1664,6 +1684,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const loadedBorderStyle = data.borderStyle ?? 'basic'
         const loadedHasCaption = data.hasCaption ?? false
         const loadedCaptionText = data.captionText ?? ''
+        const loadedCaptionAlign = data.captionAlign ?? 'center'
         const loadedTextColor = data.textColor ?? '#ffffff'
         const loadedBoxBgColor = data.boxBgColor ?? 'transparent'
         const loadedBoxOpacity = data.boxOpacity ?? 30
@@ -1678,6 +1699,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setBorderStyle(loadedBorderStyle)
         setHasCaption(loadedHasCaption)
         setCaptionText(loadedCaptionText)
+        setCaptionAlign(loadedCaptionAlign)
         setTextColor(loadedTextColor)
         setBoxBgColor(loadedBoxBgColor)
         setBoxOpacity(loadedBoxOpacity)
@@ -1715,6 +1737,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           borderStyle: loadedBorderStyle,
           hasCaption: loadedHasCaption,
           captionText: loadedCaptionText,
+          captionAlign: loadedCaptionAlign,
           textColor: loadedTextColor,
           boxBgColor: loadedBoxBgColor,
           boxOpacity: loadedBoxOpacity,
@@ -1937,6 +1960,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setHasCaption={setHasCaption}
                 captionText={captionText}
                 setCaptionText={setCaptionText}
+                captionAlign={captionAlign}
+                setCaptionAlign={setCaptionAlign}
                 selectedItemId={selectedItemId}
                 setSelectedItemId={setSelectedItemId}
                 circleCounter={circleCounter}
