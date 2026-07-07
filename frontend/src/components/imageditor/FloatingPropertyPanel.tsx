@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Minimize2, Maximize2, Settings, Layout, Type, Palette, Trash2, CircleDot, Square } from 'lucide-react'
+import { Minimize2, Maximize2, Settings, Layout, Type, Palette, Trash2, CircleDot, Square, Save } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ColorPicker from './ColorPicker'
 import RangeSlider from './RangeSlider'
@@ -46,6 +46,7 @@ interface FloatingPropertyPanelProps {
   setSymbolScale: (scale: number) => void
   boxBorderRadius: number
   setBoxBorderRadius: (val: number) => void
+  onSaveDefaults: () => Promise<void> | void
   activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'symbol'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
@@ -90,6 +91,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setSymbolScale,
   boxBorderRadius,
   setBoxBorderRadius,
+  onSaveDefaults,
   activeTool,
   items,
   pushToUndo
@@ -915,6 +917,20 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
               </div>
             </>
+          )}
+
+          {/* 기본 속성으로 지정 버튼: 개별 요소 선택이 아닐 때만 렌더링 */}
+          {!selectedItemId && (
+            <div className="p-3 pt-0 border-t border-gray-150 dark:border-slate-850 shrink-0">
+              <button
+                onClick={onSaveDefaults}
+                className="w-full py-1.5 flex items-center justify-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 rounded-md font-bold cursor-pointer transition-colors border border-indigo-100 dark:border-indigo-900/50 text-xs shadow-2xs"
+                title="현재 지정된 색상, 두께, 둥글기 등의 전역 설정을 개인 기본값으로 영구 지정합니다."
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>현재 설정을 내 기본값으로 지정</span>
+              </button>
+            </div>
           )}
         </div>
       )}

@@ -152,7 +152,6 @@ insert into settings (setting_key, setting_value, note) values ('AKA_NUMS_FIRST'
 insert into settings (setting_key, setting_value, note) values ('LINK_BLANK', 'true', '마크다운 링크표현을 blank로 띄울지 여부, true: _blank, false: _self');
 
 
-
 CREATE TABLE user_settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id  INTEGER NOT NULL,
@@ -161,5 +160,5 @@ CREATE TABLE user_settings (
     note TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_setting_key UNIQUE (setting_key)
+    CONSTRAINT uk_user_setting_key UNIQUE (setting_key)
 );

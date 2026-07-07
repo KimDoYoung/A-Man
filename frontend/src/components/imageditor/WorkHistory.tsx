@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Edit2, Trash2, Search } from 'lucide-react'
+import { Edit2, Trash2, Search, RotateCcw } from 'lucide-react'
 import { ImageWork } from './image_editor_types'
 import { formatRelativeTime } from '@/lib/utils'
 
@@ -60,6 +60,15 @@ const WorkHistory: React.FC<WorkHistoryProps> = ({
     setAppliedText(filterText)
     setAppliedDays(filterDays)
     setSelectedWorkIds([]) // 검색 결과가 달라지므로 선택 내역 초기화
+  }
+
+  // 검색 조건 초기화 버튼 클릭
+  const handleReset = () => {
+    setFilterText('')
+    setFilterDays('all')
+    setAppliedText('')
+    setAppliedDays('all')
+    setSelectedWorkIds([])
   }
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
@@ -142,13 +151,23 @@ const WorkHistory: React.FC<WorkHistoryProps> = ({
             <option value="7">7일 이전</option>
           </select>
         </div>
-        <button
-          onClick={handleSearch}
-          className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center space-x-1"
-        >
-          <Search className="w-3 h-3" />
-          <span>검색 조건 조회</span>
-        </button>
+        <div className="flex space-x-1.5">
+          <button
+            onClick={handleSearch}
+            className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center space-x-1"
+          >
+            <Search className="w-3 h-3" />
+            <span>조회</span>
+          </button>
+          <button
+            onClick={handleReset}
+            className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-md text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center space-x-1"
+            title="검색 조건 초기화"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>초기화</span>
+          </button>
+        </div>
       </div>
 
       {/* C. 목록 리스트 영역 */}

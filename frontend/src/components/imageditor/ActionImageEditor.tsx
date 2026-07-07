@@ -109,6 +109,7 @@ function drawArrow(
 import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
 import FloatingPropertyPanel from './FloatingPropertyPanel'
 import WorkHistory from './WorkHistory'
+import { SYSTEM_ITEM_DEFAULTS } from './image_items_defaults'
 
 
 const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
@@ -125,13 +126,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [circleCounter, setCircleCounter] = useState<number>(1)
-  const [textColor, setTextColor] = useState<string>('#ffffff')
-  const [boxBgColor, setBoxBgColor] = useState<string>('transparent')
-  const [boxOpacity, setBoxOpacity] = useState<number>(30)
-  const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>('solid')
-  const [selectedEmoji, setSelectedEmoji] = useState<string>('💡')
-  const [symbolScale, setSymbolScale] = useState<number>(3)
-  const [boxBorderRadius, setBoxBorderRadius] = useState<number>(0)
+  const [textColor, setTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textColor)
+  const [boxBgColor, setBoxBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBgColor)
+  const [boxOpacity, setBoxOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxOpacity)
+  const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
+  const [selectedEmoji, setSelectedEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.selectedEmoji)
+  const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
+  const [boxBorderRadius, setBoxBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -143,10 +144,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null)
   
   // 기본 스타일 상태
-  const [primaryColor, setPrimaryColor] = useState('#ef4444') // 강조 사각형 기본 Red
-  const [indigoColor, setIndigoColor] = useState('#4f46e5') // 원숫자 기본 Indigo
-  const [fontSize, setFontSize] = useState(16)
-  const [lineWidth, setLineWidth] = useState(3)
+  const [primaryColor, setPrimaryColor] = useState(SYSTEM_ITEM_DEFAULTS.primaryColor) // 강조 사각형 기본 Red
+  const [indigoColor, setIndigoColor] = useState(SYSTEM_ITEM_DEFAULTS.indigoColor) // 원숫자 기본 Indigo
+  const [fontSize, setFontSize] = useState(SYSTEM_ITEM_DEFAULTS.fontSize)
+  const [lineWidth, setLineWidth] = useState(SYSTEM_ITEM_DEFAULTS.lineWidth)
   
   // 마지막 저장 시점 상태 (isDirty 체크용)
   const [lastSavedState, setLastSavedState] = useState<{
@@ -241,6 +242,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (isOpen) {
       setSaveMessage({ text: '', type: '' })
       
+      // 사용자 지정 기본 스타일 로드 시도
+      fetchUserSettings()
+
       const savedIdStr = localStorage.getItem('aman_active_image_work_id')
       const savedId = savedIdStr ? parseInt(savedIdStr, 10) : null
       
@@ -706,6 +710,77 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     draw()
   }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText])
 
+  // 사용자 속성조절기 로딩 시 기본값 적용
+  const fetchUserSettings = async () => {
+    try {
+      const userStr = localStorage.getItem('aman_user')
+      const user = userStr ? JSON.parse(userStr) : null
+      const userId = user?.id
+      if (!userId) return
+
+      const key = `image_editor_defaults_user_${userId}`
+      const res = await apiClient.get<{ value: string }>(`/admin/user-settings/${key}`)
+      if (res && res.value) {
+        const config = JSON.parse(res.value)
+        
+        // 각각의 상태 변수 갱신
+        if (config.primaryColor) setPrimaryColor(config.primaryColor)
+        if (config.indigoColor) setIndigoColor(config.indigoColor)
+        if (config.boxBgColor) setBoxBgColor(config.boxBgColor)
+        if (config.boxOpacity !== undefined) setBoxOpacity(config.boxOpacity)
+        if (config.boxLineStyle) setBoxLineStyle(config.boxLineStyle)
+        if (config.boxBorderRadius !== undefined) setBoxBorderRadius(config.boxBorderRadius)
+        if (config.selectedEmoji) setSelectedEmoji(config.selectedEmoji)
+        if (config.symbolScale !== undefined) setSymbolScale(config.symbolScale)
+        if (config.textColor) setTextColor(config.textColor)
+        if (config.fontSize !== undefined) setFontSize(config.fontSize)
+        if (config.lineWidth !== undefined) setLineWidth(config.lineWidth)
+      }
+    } catch (e) {
+      // 404 등 존재하지 않는 경우는 첫 사용이므로 에러 로그만 남기고 시스템 기본값을 유지합니다.
+      console.log('No user settings found or error fetching settings:', e)
+    }
+  }
+
+  // 사용자 지정 기본값 저장 (Post)
+  const handleSaveUserSettings = async () => {
+    try {
+      const userStr = localStorage.getItem('aman_user')
+      const user = userStr ? JSON.parse(userStr) : null
+      const userId = user?.id
+      if (!userId) {
+        showSaveMessage('사용자 정보를 획득할 수 없어 저장할 수 없습니다.', 'error')
+        return
+      }
+
+      const key = `image_editor_defaults_user_${userId}`
+      const config = {
+        primaryColor,
+        indigoColor,
+        boxBgColor,
+        boxOpacity,
+        boxLineStyle,
+        boxBorderRadius,
+        selectedEmoji,
+        symbolScale,
+        textColor,
+        fontSize,
+        lineWidth
+      }
+
+      await apiClient.post('/admin/user-settings', {
+        key,
+        value: JSON.stringify(config),
+        note: '사용자 지정 이미지 편집 기본 속성'
+      })
+
+      showSaveMessage('현재 속성들이 개인 기본값으로 영구 보관되었습니다.', 'success')
+    } catch (e) {
+      console.error('Failed to save user settings:', e)
+      showSaveMessage('기본값 보관 처리 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
   // 파일 업로드 처리
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -761,8 +836,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setEditorTitle('새 이미지 작업')
       setUndoStack([])
       setRedoStack([])
-      setSelectedWorkIds([])
-      setEditingId(null)
       setGeneratedImageUrl('')
       setActiveHistoryId(null)
       
@@ -1885,6 +1958,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}
+                onSaveDefaults={handleSaveUserSettings}
               />
             )}
           </main>
