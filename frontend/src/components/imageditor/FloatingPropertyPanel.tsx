@@ -512,13 +512,13 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           label="테두리 색상"
                           selectedColor={primaryColor}
                           onChangeColor={setPrimaryColor}
-                          colors={['#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                          colors={['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']}
                         />
                         <RangeSlider
                           label="테두리 두께"
                           value={lineWidth}
                           min={1}
-                          max={8}
+                          max={5}
                           onChangeValue={setLineWidth}
                         />
                         <div className="space-y-2">
