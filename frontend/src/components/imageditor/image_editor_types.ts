@@ -13,6 +13,7 @@ export interface CanvasItem {
     textColor?: string
     fontSize?: number
     lineStyle?: 'solid' | 'dashed'
+    opacity?: number
   }
 }
 

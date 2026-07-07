@@ -21,6 +21,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [circleCounter, setCircleCounter] = useState<number>(1)
   const [textColor, setTextColor] = useState<string>('#ffffff')
+  const [boxBgColor, setBoxBgColor] = useState<string>('transparent')
+  const [boxOpacity, setBoxOpacity] = useState<number>(30)
+  const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>('solid')
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -48,6 +51,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     hasCaption: boolean
     captionText: string
     textColor: string
+    boxBgColor: string
+    boxOpacity: number
+    boxLineStyle: 'solid' | 'dashed'
   }>({
     title: '',
     bgImageSrc: '',
@@ -58,7 +64,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderStyle: 'basic',
     hasCaption: false,
     captionText: '',
-    textColor: '#ffffff'
+    textColor: '#ffffff',
+    boxBgColor: 'transparent',
+    boxOpacity: 30,
+    boxLineStyle: 'solid'
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -335,6 +344,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       } 
       else if (item.type === 'box') {
         // 사각형 강조 박스
+        // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
+        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent') {
+          ctx.save()
+          ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
+          ctx.fillStyle = item.style.backgroundColor
+          ctx.fillRect(item.x, item.y, item.width || 0, item.height || 0)
+          ctx.restore()
+        }
+
+        // 2순위: 테두리선 그리기
         ctx.strokeStyle = item.style.borderColor || primaryColor
         ctx.lineWidth = item.style.borderWidth || lineWidth
         if (item.style.lineStyle === 'dashed') {
@@ -749,7 +768,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             style: {
               borderColor: primaryColor,
               borderWidth: lineWidth,
-              lineStyle: 'solid'
+              lineStyle: boxLineStyle,
+              backgroundColor: boxBgColor,
+              opacity: boxBgColor === 'transparent' ? 1.0 : boxOpacity / 100
             }
           }
           pushToUndo([...items, newItem])
@@ -858,6 +879,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 인풋을 작성 중일 땐 차단
       if (textInput.visible) return
 
+      if (e.key === 'Escape') {
+        setSelectedItemId(null)
+        setActiveTool('pointer')
+        return
+      }
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedItemId) {
           const filtered = items.filter((x) => x.id !== selectedItemId)
@@ -939,7 +966,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderStyle: borderStyle,
         hasCaption: hasCaption,
         captionText: captionText,
-        textColor: textColor
+        textColor: textColor,
+        boxBgColor: boxBgColor,
+        boxOpacity: boxOpacity,
+        boxLineStyle: boxLineStyle
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -963,7 +993,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         borderStyle: borderStyle,
         hasCaption: hasCaption,
         captionText: captionText,
-        textColor: textColor
+        textColor: textColor,
+        boxBgColor: boxBgColor,
+        boxOpacity: boxOpacity,
+        boxLineStyle: boxLineStyle
       })
       setEditorTitle(finalTitle)
 
@@ -1024,7 +1057,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderStyle: borderStyle,
               hasCaption: hasCaption,
               captionText: captionText,
-              textColor: textColor
+              textColor: textColor,
+              boxBgColor: boxBgColor,
+              boxOpacity: boxOpacity,
+              boxLineStyle: boxLineStyle
             }
             
             await apiClient.post('/admin/image-work', {
@@ -1044,7 +1080,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderStyle: borderStyle,
               hasCaption: hasCaption,
               captionText: captionText,
-              textColor: textColor
+              textColor: textColor,
+              boxBgColor: boxBgColor,
+              boxOpacity: boxOpacity,
+              boxLineStyle: boxLineStyle
             })
             
             fetchHistory()
@@ -1132,6 +1171,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const loadedHasCaption = data.hasCaption ?? false
         const loadedCaptionText = data.captionText ?? ''
         const loadedTextColor = data.textColor ?? '#ffffff'
+        const loadedBoxBgColor = data.boxBgColor ?? 'transparent'
+        const loadedBoxOpacity = data.boxOpacity ?? 30
+        const loadedBoxLineStyle = data.boxLineStyle ?? 'solid'
         
         setHasBorder(loadedHasBorder)
         setBorderColor(loadedBorderColor)
@@ -1140,6 +1182,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setHasCaption(loadedHasCaption)
         setCaptionText(loadedCaptionText)
         setTextColor(loadedTextColor)
+        setBoxBgColor(loadedBoxBgColor)
+        setBoxOpacity(loadedBoxOpacity)
+        setBoxLineStyle(loadedBoxLineStyle)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -1170,7 +1215,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           borderStyle: loadedBorderStyle,
           hasCaption: loadedHasCaption,
           captionText: loadedCaptionText,
-          textColor: loadedTextColor
+          textColor: loadedTextColor,
+          boxBgColor: loadedBoxBgColor,
+          boxOpacity: loadedBoxOpacity,
+          boxLineStyle: loadedBoxLineStyle
         })
       }
       img.src = data.originalImageUrl
@@ -1421,6 +1469,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setCircleCounter={setCircleCounter}
                 textColor={textColor}
                 setTextColor={setTextColor}
+                boxBgColor={boxBgColor}
+                setBoxBgColor={setBoxBgColor}
+                boxOpacity={boxOpacity}
+                setBoxOpacity={setBoxOpacity}
+                boxLineStyle={boxLineStyle}
+                setBoxLineStyle={setBoxLineStyle}
                 activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}

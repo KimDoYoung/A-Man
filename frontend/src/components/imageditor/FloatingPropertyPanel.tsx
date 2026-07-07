@@ -34,6 +34,12 @@ interface FloatingPropertyPanelProps {
   setCircleCounter: (val: number) => void
   textColor: string
   setTextColor: (color: string) => void
+  boxBgColor: string
+  setBoxBgColor: (color: string) => void
+  boxOpacity: number
+  setBoxOpacity: (val: number) => void
+  boxLineStyle: 'solid' | 'dashed'
+  setBoxLineStyle: (style: 'solid' | 'dashed') => void
   activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
@@ -66,6 +72,12 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setCircleCounter,
   textColor,
   setTextColor,
+  boxBgColor,
+  setBoxBgColor,
+  boxOpacity,
+  setBoxOpacity,
+  boxLineStyle,
+  setBoxLineStyle,
   activeTool,
   items,
   pushToUndo
@@ -250,6 +262,42 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
                   />
 
+                  {/* 배경색 */}
+                  <ColorPicker
+                    label="배경색"
+                    selectedColor={selectedItem.style.backgroundColor || boxBgColor}
+                    onChangeColor={(col) => {
+                      setBoxBgColor(col)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, backgroundColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                    colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                  />
+
+                  {/* 투명도 */}
+                  <RangeSlider
+                    label="투명도"
+                    value={selectedItem.style.opacity !== undefined ? Math.round(selectedItem.style.opacity * 100) : boxOpacity}
+                    min={0}
+                    max={100}
+                    unit="%"
+                    onChangeValue={(val) => {
+                      setBoxOpacity(val)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, opacity: val / 100 } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
+
                   {/* 선 타입 (실선/점선) */}
                   <div className="space-y-1.5">
                     <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 타입</span>
@@ -261,6 +309,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         <button
                           key={t.id}
                           onClick={() => {
+                            setBoxLineStyle(t.id as any)
                             const updated = items.map(item => {
                               if (item.id === selectedItemId) {
                                 return { ...item, style: { ...item.style, lineStyle: t.id as any } }
@@ -376,7 +425,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 원숫자 번호 */}
                   <div className="space-y-2">
                     <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">
-                      선택된 원숫자 번호
+                      다음번호
                     </span>
                     <input
                       type="number"
@@ -521,16 +570,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           max={5}
                           onChangeValue={setLineWidth}
                         />
-                        <div className="space-y-2">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">다음 원숫자 번호</span>
-                          <input
-                            type="number"
-                            min="1"
-                            value={circleCounter}
-                            onChange={(e) => setCircleCounter(Math.max(1, parseInt(e.target.value) || 1))}
-                            className="w-20 px-2 py-1.5 text-center bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-850 dark:text-slate-100 font-bold focus:outline-hidden focus:border-indigo-500"
-                          />
-                        </div>
+
                         <RangeSlider
                           label="글자 크기"
                           value={fontSize}
@@ -538,6 +578,16 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           max={28}
                           onChangeValue={setFontSize}
                         />
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">다음번호</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={circleCounter}
+                            onChange={(e) => setCircleCounter(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-20 px-2 py-1.5 text-center bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-850 dark:text-slate-100 font-bold focus:outline-hidden focus:border-indigo-500"
+                          />
+                        </div>                        
                       </>
                     )}
 
@@ -549,6 +599,43 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           onChangeColor={setPrimaryColor}
                           colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
                         />
+                        <ColorPicker
+                          label="배경색"
+                          selectedColor={boxBgColor}
+                          onChangeColor={setBoxBgColor}
+                          colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                        />
+                        <RangeSlider
+                          label="투명도"
+                          value={boxOpacity}
+                          min={0}
+                          max={100}
+                          unit="%"
+                          onChangeValue={setBoxOpacity}
+                        />
+                        {/* 선 종류 */}
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 종류</span>
+                          <div className="flex space-x-1.5">
+                            {[
+                              { id: 'solid', label: '실선' },
+                              { id: 'dashed', label: '점선' }
+                            ].map((t) => (
+                              <button
+                                key={t.id}
+                                onClick={() => setBoxLineStyle(t.id as any)}
+                                className={`px-3 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
+                                  boxLineStyle === t.id
+                                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                                    : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                                }`}
+                              >
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         <RangeSlider
                           label="선 두께"
                           value={lineWidth}
