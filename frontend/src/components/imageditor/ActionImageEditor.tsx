@@ -67,11 +67,34 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [undoStack, setUndoStack] = useState<CanvasItem[][]>([])
   const [redoStack, setRedoStack] = useState<CanvasItem[][]>([])
 
+  // activeHistoryId 상태가 변경되면 localStorage에 자동 보관
+  useEffect(() => {
+    if (activeHistoryId !== null) {
+      localStorage.setItem('aman_active_image_work_id', activeHistoryId.toString())
+    } else {
+      localStorage.removeItem('aman_active_image_work_id')
+    }
+  }, [activeHistoryId])
+
   // 에디터 모달 열릴 때 이력 목록 갱신 및 메시지 클리어
   useEffect(() => {
     if (isOpen) {
-      fetchHistory()
       setSaveMessage({ text: '', type: '' })
+      
+      const savedIdStr = localStorage.getItem('aman_active_image_work_id')
+      const savedId = savedIdStr ? parseInt(savedIdStr, 10) : null
+      
+      fetchHistory().then((data) => {
+        if (savedId && activeHistoryId !== savedId) {
+          const savedWork = data.find(w => w.id === savedId)
+          if (savedWork) {
+            // display: none 해제 및 탭 전환 애니메이션 레이아웃 계산을 위한 약간의 지연 처리
+            setTimeout(() => {
+              handleLoadWork(savedWork)
+            }, 100)
+          }
+        }
+      })
     }
   }, [isOpen])
 
@@ -96,13 +119,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 임시 보관 목록 가져오기
-  const fetchHistory = async () => {
+  const fetchHistory = async (): Promise<ImageWork[]> => {
     setLoadingHistory(true)
     try {
       const data = await apiClient.get<ImageWork[]>('/admin/image-work')
       setHistoryList(data)
+      return data
     } catch (err) {
       console.error('이미지 작업 목록 로드 실패:', err)
+      return []
     } finally {
       setLoadingHistory(false)
     }
@@ -139,6 +164,21 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const draw = () => {
     const canvas = canvasRef.current
     if (!canvas) return
+
+    // bgImage가 존재하는 경우, 캔버스의 실제 해상도가 이미지 크기와 일치하도록 보정
+    if (bgImage) {
+      if (canvas.width !== bgImage.width || canvas.height !== bgImage.height) {
+        canvas.width = bgImage.width
+        canvas.height = bgImage.height
+      }
+    } else {
+      // 이미지가 없는 기본 상태의 크기로 복원 (안내문 렌더링용)
+      if (canvas.width !== 800 || canvas.height !== 500) {
+        canvas.width = 800
+        canvas.height = 500
+      }
+    }
+
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -907,7 +947,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 임시 보관 작업 복원하기
-  const handleLoadWork = (work: ImageWork) => {
+  function handleLoadWork(work: ImageWork) {
     try {
       const data = JSON.parse(work.jsonData)
       
@@ -1081,9 +1121,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                className={`block max-w-full ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
-                width={800}
-                height={500}
+                className={`block ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
+                width={bgImage ? bgImage.width : 800}
+                height={bgImage ? bgImage.height : 500}
               />
 
               {/* 텍스트 실시간 캔버스 오버레이 인풋 창 */}
