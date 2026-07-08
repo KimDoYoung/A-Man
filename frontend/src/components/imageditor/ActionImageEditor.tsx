@@ -249,6 +249,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   
   // 임시 보관함 이력 상태
   const [historyList, setHistoryList] = useState<ImageWork[]>([])
+  const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0)
   const [editorTitle, setEditorTitle] = useState('새 이미지 작업')
   const [savingWork, setSavingWork] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -358,9 +359,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const fetchHistory = async (): Promise<ImageWork[]> => {
     setLoadingHistory(true)
     try {
-      const data = await apiClient.get<ImageWork[]>('/admin/image-work')
-      setHistoryList(data)
-      return data
+      const res = await apiClient.get<{ totalCount: number, list: ImageWork[] }>('/admin/image-work')
+      setHistoryList(res.list || [])
+      setTotalHistoryCount(res.totalCount || 0)
+      return res.list || []
     } catch (err) {
       console.error('이미지 작업 목록 로드 실패:', err)
       return []
@@ -947,77 +949,80 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // 도화지 및 상태 초기화
   const handleResetToEmpty = () => {
-    if (window.confirm('현재 작업 중인 캔버스 내용이 완전히 소실됩니다. 정말 초기화하시겠습니까?')) {
-      setItems([])
-      setBgImage(null)
-      setBgImageSrc('')
-      setSelectedItemId(null)
-      setCircleCounter(1)
-      setEditorTitle('새 이미지 작업')
-      setUndoStack([])
-      setRedoStack([])
-      setGeneratedImageUrl('')
-      setActiveHistoryId(null)
-      
-      setHasBorder(false)
-      setBorderColor('#cbd5e1')
-      setBorderWidth(2)
-      setBorderStyle('basic')
-      setHasCaption(false)
-      setCaptionText('')
-      setCaptionAlign('center')
-      
-      setCircleNumberBgColor(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
-      setCircleNumberTextColor(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
-      setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
-      setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
-      setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
-      setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
-      setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
-      setBoxLineStyle(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
-      setBoxBgColor(SYSTEM_ITEM_DEFAULTS.boxBgColor)
-      setBoxOpacity(SYSTEM_ITEM_DEFAULTS.boxOpacity)
-      setBoxBorderRadius(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
-      setArrowColor(SYSTEM_ITEM_DEFAULTS.arrowColor)
-      setArrowLineWidth(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
-      setArrowLineStyle(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
-      setTextTextColor(SYSTEM_ITEM_DEFAULTS.textTextColor)
-      setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
-      setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
-      setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
-      
-      setLastSavedState({
-        title: '새 이미지 작업',
-        bgImageSrc: '',
-        items: [],
-        hasBorder: false,
-        borderColor: '#cbd5e1',
-        borderWidth: 2,
-        borderStyle: 'basic',
-        hasCaption: false,
-        captionText: '',
-        captionAlign: 'center',
-        circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
-        circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
-        circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
-        circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
-        circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
-        boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
-        boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
-        boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
-        boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
-        boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
-        boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
-        arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
-        arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
-        arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
-        textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
-        textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
-        symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
-        symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale
-      })
-      showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
+    if (isDirty && !window.confirm('저장되지 않은 변경 사항이 있습니다. 정말 초기화하시겠습니까?')) {
+      return
     }
+
+    setItems([])
+    setBgImage(null)
+    setBgImageSrc('')
+    setSelectedItemId(null)
+    setCircleCounter(1)
+    setEditorTitle('새 이미지 작업')
+    setUndoStack([])
+    setRedoStack([])
+    setGeneratedImageUrl('')
+    setActiveHistoryId(null)
+    setActiveTool('pointer')
+    
+    setHasBorder(false)
+    setBorderColor('#cbd5e1')
+    setBorderWidth(2)
+    setBorderStyle('basic')
+    setHasCaption(false)
+    setCaptionText('')
+    setCaptionAlign('center')
+    
+    setCircleNumberBgColor(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
+    setCircleNumberTextColor(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
+    setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
+    setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
+    setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+    setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
+    setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
+    setBoxLineStyle(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
+    setBoxBgColor(SYSTEM_ITEM_DEFAULTS.boxBgColor)
+    setBoxOpacity(SYSTEM_ITEM_DEFAULTS.boxOpacity)
+    setBoxBorderRadius(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+    setArrowColor(SYSTEM_ITEM_DEFAULTS.arrowColor)
+    setArrowLineWidth(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
+    setArrowLineStyle(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
+    setTextTextColor(SYSTEM_ITEM_DEFAULTS.textTextColor)
+    setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
+    setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
+    setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
+    
+    setLastSavedState({
+      title: '새 이미지 작업',
+      bgImageSrc: '',
+      items: [],
+      hasBorder: false,
+      borderColor: '#cbd5e1',
+      borderWidth: 2,
+      borderStyle: 'basic',
+      hasCaption: false,
+      captionText: '',
+      captionAlign: 'center',
+      circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
+      circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
+      circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
+      circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
+      circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+      boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
+      boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
+      boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
+      boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
+      boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
+      boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+      arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
+      arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
+      arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+      textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
+      textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
+      symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
+      symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale
+    })
+    showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
   }
 
   // 이미지 파일을 HTMLImageElement로 로드 및 비율 유지 축소 리사이징
@@ -2292,6 +2297,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           {/* 3. 우측 임시 보관 히스토리 사이드바 */}
           <WorkHistory
             historyList={historyList}
+            totalHistoryCount={totalHistoryCount}
             loadingHistory={loadingHistory}
             onLoadWork={handleLoadWork}
             onUpdateTitle={handleUpdateTitle}

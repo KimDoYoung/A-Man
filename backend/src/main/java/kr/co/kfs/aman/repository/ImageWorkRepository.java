@@ -13,6 +13,8 @@ import java.util.List;
 @Repository
 public interface ImageWorkRepository extends JpaRepository<ImageWork, Long> {
     List<ImageWork> findByUserIdOrderByUpdatedAtDesc(Long userId);
+    List<ImageWork> findTop200ByUserIdOrderByUpdatedAtDesc(Long userId);
+    long countByUserId(Long userId);
 
     @Modifying
     @Transactional

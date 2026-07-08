@@ -48,8 +48,9 @@ public class ImageWorkController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증된 사용자를 찾을 수 없습니다.");
         }
 
-        List<ImageWork> list = imageWorkRepository.findByUserIdOrderByUpdatedAtDesc(user.getId());
-        List<Map<String, Object>> response = new ArrayList<>();
+        long totalCount = imageWorkRepository.countByUserId(user.getId());
+        List<ImageWork> list = imageWorkRepository.findTop200ByUserIdOrderByUpdatedAtDesc(user.getId());
+        List<Map<String, Object>> responseList = new ArrayList<>();
 
         for (ImageWork item : list) {
             Map<String, Object> map = new HashMap<>();
@@ -64,8 +65,12 @@ public class ImageWorkController {
                         .toEpochMilli();
                 map.put("updatedAt", epochMillis);
             }
-            response.add(map);
+            responseList.add(map);
         }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalCount", totalCount);
+        response.put("list", responseList);
 
         return ResponseEntity.ok(response);
     }

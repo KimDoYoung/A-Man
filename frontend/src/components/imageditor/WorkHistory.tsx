@@ -5,6 +5,7 @@ import { formatRelativeTime } from '@/lib/utils'
 
 interface WorkHistoryProps {
   historyList: ImageWork[]
+  totalHistoryCount: number
   loadingHistory: boolean
   onLoadWork: (work: ImageWork) => void
   onUpdateTitle: (work: ImageWork, title: string) => Promise<void> | void
@@ -14,6 +15,7 @@ interface WorkHistoryProps {
 
 const WorkHistory: React.FC<WorkHistoryProps> = ({
   historyList,
+  totalHistoryCount,
   loadingHistory,
   onLoadWork,
   onUpdateTitle,
@@ -116,7 +118,14 @@ const WorkHistory: React.FC<WorkHistoryProps> = ({
       
       {/* A. 타이틀 영역 */}
       <div className="p-4 border-b border-gray-150 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 shrink-0 flex items-center justify-between">
-        <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider">임시 보관 작업 목록</span>
+        <span className="text-xs font-bold text-gray-400 dark:text-slate-500 uppercase tracking-wider flex flex-col gap-0.5">
+          <span>임시작업 목록</span>
+          {totalHistoryCount > 0 && (
+            <span className="text-[10px] text-gray-500 dark:text-slate-400 normal-case font-semibold">
+              ({historyList.length === totalHistoryCount ? `총 ${totalHistoryCount}개` : `최근 ${historyList.length}개 / 전체 ${totalHistoryCount}개`})
+            </span>
+          )}
+        </span>
         {filteredList.length > 0 && (
           <div className="flex items-center space-x-1" title="조회 결과 전체 선택 / 해제">
             <input
@@ -149,6 +158,9 @@ const WorkHistory: React.FC<WorkHistoryProps> = ({
             <option value="1">1일 이전</option>
             <option value="3">3일 이전</option>
             <option value="7">7일 이전</option>
+            <option value="30">30일 이전</option>
+            <option value="180">6개월 이전</option>
+            <option value="365">1년 이전</option>
           </select>
         </div>
         <div className="flex space-x-1.5">
@@ -169,6 +181,12 @@ const WorkHistory: React.FC<WorkHistoryProps> = ({
           </button>
         </div>
       </div>
+
+      {totalHistoryCount > historyList.length && (
+        <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/20 border-b border-amber-100 dark:border-amber-900/50 text-[10px] text-amber-600 dark:text-amber-400 text-center font-medium shrink-0">
+          최근 200개의 작업만 로드되었습니다.
+        </div>
+      )}
 
       {/* C. 목록 리스트 영역 */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scroll">
