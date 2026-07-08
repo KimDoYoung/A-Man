@@ -1464,7 +1464,7 @@ public class ManualController {
                 "</html>";
 
             return ResponseEntity.ok(fullHtml);
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
             return ResponseEntity.status(500).body("도움말 로드 중 오류가 발생했습니다.");
         }
     }
@@ -1484,7 +1484,7 @@ public class ManualController {
             return ResponseEntity.ok()
                     .contentType(filename.endsWith(".png") ? MediaType.IMAGE_PNG : MediaType.IMAGE_JPEG)
                     .body(bos.toByteArray());
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
             return ResponseEntity.status(500).build();
         }
     }

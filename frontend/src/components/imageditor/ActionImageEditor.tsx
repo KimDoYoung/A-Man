@@ -106,6 +106,36 @@ function drawArrow(
   ctx.restore()
 }
 
+// HTTP 및 HTTPS 모두 호환되는 텍스트 클립보드 복사 헬퍼 함수
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch (err) {
+      console.warn('navigator.clipboard 실패, fallback 사용:', err)
+    }
+  }
+
+  // 비보안 환경(HTTP)용 fallback
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.style.position = 'fixed'
+  textArea.style.left = '-999999px'
+  textArea.style.top = '-999999px'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    const successful = document.execCommand('copy')
+    textArea.remove()
+    if (!successful) throw new Error('execCommand 복사 실패')
+  } catch (err) {
+    textArea.remove()
+    throw new Error('클립보드 복사 최종 실패: ' + err)
+  }
+}
+
 import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
 import FloatingPropertyPanel from './FloatingPropertyPanel'
 import WorkHistory from './WorkHistory'
@@ -1779,7 +1809,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           
           // 1번: 클립보드에 마크다운 복사까지 즉시 수행
           const markdownFormat = `![image](${res.url})\n`
-          await navigator.clipboard.writeText(markdownFormat)
+          await copyTextToClipboard(markdownFormat)
           
           // 2번: 물리 url을 해당 이미지 작업 레코드에 영구적으로 귀속 저장 (덮어쓰기 업데이트)
           if (activeHistoryId) {
@@ -2360,9 +2390,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   title="클릭하여 전체 선택"
                 />
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedImageUrl)
-                    showSaveMessage('이미지 주소가 클립보드에 복사되었습니다.', 'success')
+                  onClick={async () => {
+                    try {
+                      await copyTextToClipboard(generatedImageUrl)
+                      showSaveMessage('이미지 주소가 클립보드에 복사되었습니다.', 'success')
+                    } catch (err) {
+                      console.error(err)
+                      showSaveMessage('주소 복사에 실패했습니다.', 'error')
+                    }
                   }}
                   className="px-2 py-0.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:bg-gray-100 rounded text-[10px] text-gray-600 dark:text-slate-300 font-bold cursor-pointer transition-colors"
                   title="순수 이미지 URL 주소 복사"
@@ -2370,10 +2405,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   주소 복사
                 </button>
                 <button
-                  onClick={() => {
-                    const markdownFormat = `![image](${generatedImageUrl})\n`
-                    navigator.clipboard.writeText(markdownFormat)
-                    showSaveMessage('마크다운 이미지 태그가 클립보드에 복사되었습니다.', 'success')
+                  onClick={async () => {
+                    try {
+                      const markdownFormat = `![image](${generatedImageUrl})\n`
+                      await copyTextToClipboard(markdownFormat)
+                      showSaveMessage('마크다운 이미지 태그가 클립보드에 복사되었습니다.', 'success')
+                    } catch (err) {
+                      console.error(err)
+                      showSaveMessage('마크다운 복사에 실패했습니다.', 'error')
+                    }
                   }}
                   className="px-2 py-0.5 bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-700 rounded text-[10px] font-bold cursor-pointer transition-colors"
                   title="마크다운 이미지 태그(![image](url)) 포맷으로 복사"

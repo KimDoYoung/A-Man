@@ -349,7 +349,9 @@ public class ContentController {
                     maxDepth--;
                     for (File nz : nestedZips) {
                         unzip(nz, nz.getParentFile());
-                        nz.delete(); // 해제 후 중첩 zip 파일 제거
+                        if (!nz.delete()) {
+                            nz.deleteOnExit();
+                        }
                     }
                 }
             }
