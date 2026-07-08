@@ -75,6 +75,20 @@ interface FloatingPropertyPanelProps {
   activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
+
+  // 7. 이미지 아이템 (image) 관련 속성
+  imageSrcBorderColor: string
+  setImageSrcBorderColor: (color: string) => void
+  imageSrcBorderWidth: number
+  setImageSrcBorderWidth: (width: number) => void
+  imageSrcBorderStyle: 'solid' | 'dashed'
+  setImageSrcBorderStyle: (style: 'solid' | 'dashed') => void
+  imageSrcHasBorder: boolean
+  setImageSrcHasBorder: (val: boolean) => void
+  imageSrcCaptionText: string
+  setImageSrcCaptionText: (text: string) => void
+  imageSrcHasCaption: boolean
+  setImageSrcHasCaption: (val: boolean) => void
 }
 
 const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
@@ -134,7 +148,19 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   onSaveDefaults,
   activeTool,
   items,
-  pushToUndo
+  pushToUndo,
+  imageSrcBorderColor,
+  setImageSrcBorderColor,
+  imageSrcBorderWidth,
+  setImageSrcBorderWidth,
+  imageSrcBorderStyle,
+  setImageSrcBorderStyle,
+  imageSrcHasBorder,
+  setImageSrcHasBorder,
+  imageSrcCaptionText,
+  setImageSrcCaptionText,
+  imageSrcHasCaption,
+  setImageSrcHasCaption
 }) => {
   // 초기 띄우는 위치 (부모 캔버스 위에 뜨도록 고정/절대 좌표 적용)
   const [position, setPosition] = useState({ x: 100, y: 150 })
@@ -167,6 +193,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
           return <Square className="w-3.5 h-3.5 text-red-500 animate-pulse" />
         case 'text':
           return <Type className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+        case 'image':
+          return <Layout className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
       }
     }
     return null
@@ -610,6 +638,149 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                 </div>
               )}
 
+              {/* image 타입 인스펙터 */}
+              {selectedItem.type === 'image' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 테두리선 사용 여부 */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-gray-700 dark:text-slate-300">테두리선 사용</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedItem.style.hasBorder || false}
+                        onChange={(e) => {
+                          const val = e.target.checked
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, hasBorder: val } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                        className="sr-only peer cursor-pointer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  {/* 테두리 상세 설정 (테두리선이 켜져있을 때만) */}
+                  {(selectedItem.style.hasBorder) && (
+                    <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
+                      {/* 테두리 색상 */}
+                      <ColorPicker
+                        label="테두리 색상"
+                        selectedColor={selectedItem.style.borderColor || imageSrcBorderColor}
+                        onChangeColor={(col) => {
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, borderColor: col } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                        colors={['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']}
+                      />
+
+                      {/* 테두리 두께 */}
+                      <RangeSlider
+                        label="테두리 두께"
+                        value={selectedItem.style.borderWidth || imageSrcBorderWidth}
+                        min={1}
+                        max={8}
+                        onChangeValue={(val) => {
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, borderWidth: val } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                      />
+
+                      {/* 테두리 종류 */}
+                      <div className="space-y-1.5">
+                        <span className="block font-bold text-gray-705 dark:text-slate-300 mb-1 text-[11px]">테두리 종류</span>
+                        <div className="flex space-x-1.5">
+                          {[
+                            { id: 'solid', label: '실선' },
+                            { id: 'dashed', label: '점선' }
+                          ].map((t) => (
+                            <button
+                              key={t.id}
+                              onClick={() => {
+                                const updated = items.map(item => {
+                                  if (item.id === selectedItemId) {
+                                    return { ...item, style: { ...item.style, lineStyle: t.id as any } }
+                                  }
+                                  return item
+                                })
+                                pushToUndo(updated)
+                              }}
+                              className={`px-3 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
+                                (selectedItem.style.lineStyle || 'solid') === t.id
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 설명캡션 사용 여부 */}
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-850">
+                    <span className="font-bold text-xs text-gray-700 dark:text-slate-300">설명캡션 사용</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedItem.style.hasCaption || false}
+                        onChange={(e) => {
+                          const val = e.target.checked
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, style: { ...item.style, hasCaption: val } }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                        className="sr-only peer cursor-pointer"
+                      />
+                      <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  {/* 설명캡션 내용 기입 */}
+                  {(selectedItem.style.hasCaption) && (
+                    <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
+                      <span className="font-bold text-[11px] text-gray-700 dark:text-slate-300 block">설명 캡션 문구</span>
+                      <textarea
+                        value={selectedItem.text || ''}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          const updated = items.map(item => {
+                            if (item.id === selectedItemId) {
+                              return { ...item, text: val }
+                            }
+                            return item
+                          })
+                          pushToUndo(updated)
+                        }}
+                        placeholder="이미지 하단 설명 문구 입력..."
+                        rows={3}
+                        className="w-full p-2.5 bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-800 dark:text-slate-100 font-semibold focus:outline-hidden focus:border-indigo-500 resize-none font-sans"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           ) : (
             /* B. 일반 전역 설정 모드 (아무것도 선택되지 않았을 때) */
@@ -833,8 +1004,95 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     )}
 
                     {activeTool === 'pointer' && (
-                      <div className="text-center text-gray-400 dark:text-slate-500 py-8 leading-relaxed">
-                        캔버스 위의 요소를 클릭하면<br />그 요소의 세부 속성을 수정할 수 있습니다.
+                      <div className="space-y-4 pt-2 animate-in slide-in-from-top-1 duration-200">
+                        <div className="text-center text-gray-400 dark:text-slate-500 py-3 text-xs leading-relaxed border-b border-gray-100 dark:border-slate-850">
+                          캔버스 위의 요소를 클릭하면<br />그 요소의 세부 속성을 수정할 수 있습니다.
+                        </div>
+                        <div className="space-y-3 pt-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-350 text-xs tracking-wider">
+                            [기본 설정] 붙여넣기 이미지 속성
+                          </span>
+                          
+                          {/* 테두리선 여부 */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600 dark:text-slate-400">테두리선 사용</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={imageSrcHasBorder}
+                                onChange={(e) => setImageSrcHasBorder(e.target.checked)}
+                                className="sr-only peer cursor-pointer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                          </div>
+
+                          {imageSrcHasBorder && (
+                            <div className="space-y-3 pl-2.5 border-l-2 border-indigo-500/20 dark:border-indigo-500/40 animate-in slide-in-from-top-1 duration-200">
+                              <ColorPicker
+                                label="테두리 색상"
+                                selectedColor={imageSrcBorderColor}
+                                onChangeColor={setImageSrcBorderColor}
+                                colors={['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']}
+                              />
+                              <RangeSlider
+                                label="테두리 두께"
+                                value={imageSrcBorderWidth}
+                                min={1}
+                                max={8}
+                                onChangeValue={setImageSrcBorderWidth}
+                              />
+                              <div className="space-y-1.5">
+                                <span className="block font-bold text-gray-650 dark:text-slate-400 text-[10px]">테두리 종류</span>
+                                <div className="flex space-x-1.5">
+                                  {[
+                                    { id: 'solid', label: '실선' },
+                                    { id: 'dashed', label: '점선' }
+                                  ].map((t) => (
+                                    <button
+                                      key={t.id}
+                                      onClick={() => setImageSrcBorderStyle(t.id as any)}
+                                      className={`px-2.5 py-0.5 border rounded-md font-bold text-[10px] cursor-pointer transition-all ${
+                                        imageSrcBorderStyle === t.id
+                                          ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                                          : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                                      }`}
+                                    >
+                                      {t.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 설명캡션 사용 여부 */}
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="text-xs text-gray-600 dark:text-slate-400">설명캡션 사용</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={imageSrcHasCaption}
+                                onChange={(e) => setImageSrcHasCaption(e.target.checked)}
+                                className="sr-only peer cursor-pointer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                          </div>
+
+                          {imageSrcHasCaption && (
+                            <div className="space-y-1.5 pl-2.5 border-l-2 border-indigo-500/20 dark:border-indigo-500/40 animate-in slide-in-from-top-1 duration-200">
+                              <span className="block font-bold text-gray-650 dark:text-slate-400 text-[10px]">설명 캡션 문구</span>
+                              <textarea
+                                value={imageSrcCaptionText}
+                                onChange={(e) => setImageSrcCaptionText(e.target.value)}
+                                placeholder="기본 설명 문구 입력..."
+                                rows={2}
+                                className="w-full p-2 bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-800 dark:text-slate-100 font-semibold focus:outline-hidden focus:border-indigo-500 resize-none font-sans"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

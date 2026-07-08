@@ -1,11 +1,12 @@
 export interface CanvasItem {
   id: string
-  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'symbol'
+  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'image'
   x: number
   y: number
   width?: number
   height?: number
   text?: string
+  imageSrc?: string
   style: {
     borderColor?: string
     borderWidth?: number
@@ -16,6 +17,8 @@ export interface CanvasItem {
     opacity?: number
     borderRadius?: number
     midX?: number
+    hasBorder?: boolean
+    hasCaption?: boolean
   }
 }
 

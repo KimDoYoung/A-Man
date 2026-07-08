@@ -266,6 +266,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [zoom, setZoom] = useState<number>(1.0)
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  // 서브 이미지용 프리로드 캐시
+  const subImageCache = useRef<Map<string, HTMLImageElement>>(new Map())
+  const [cacheTrigger, setCacheTrigger] = useState<number>(0)
   const [circleCounter, setCircleCounter] = useState<number>(1)
   // 1. 원숫자 (circle-number) 관련 속성
   const [circleNumberBgColor, setCircleNumberBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
@@ -294,6 +297,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 5. 이모지 심볼 (symbol) 관련 속성
   const [symbolEmoji, setSymbolEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
   const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
+
+  // 6. 이미지 아이템 (image) 관련 속성
+  const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
+  const [imageSrcBorderWidth, setImageSrcBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
+  const [imageSrcBorderStyle, setImageSrcBorderStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle)
+  const [imageSrcHasBorder, setImageSrcHasBorder] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
+  const [imageSrcCaptionText, setImageSrcCaptionText] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
+  const [imageSrcHasCaption, setImageSrcHasCaption] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -336,6 +347,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textFontSize: number
     symbolEmoji: string
     symbolScale: number
+    imageSrcBorderColor: string
+    imageSrcBorderWidth: number
+    imageSrcBorderStyle: 'solid' | 'dashed'
+    imageSrcHasBorder: boolean
+    imageSrcCaptionText: string
+    imageSrcHasCaption: boolean
   }>({
     title: '',
     bgImageSrc: '',
@@ -365,7 +382,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
     textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
     symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
-    symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale
+    symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale,
+    imageSrcBorderColor: SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
+    imageSrcBorderWidth: SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth,
+    imageSrcBorderStyle: SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
+    imageSrcHasBorder: SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
+    imageSrcCaptionText: SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
+    imageSrcHasCaption: SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -421,6 +444,23 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }, [activeHistoryId])
 
+  // 추가 이미지 프리로드 및 캐시 갱신 리스너
+  useEffect(() => {
+    items.forEach((item) => {
+      if (item.type === 'image' && item.imageSrc) {
+        if (!subImageCache.current.has(item.imageSrc)) {
+          const img = new Image()
+          img.onload = () => {
+            subImageCache.current.set(item.imageSrc!, img)
+            setCacheTrigger((prev) => prev + 1)
+          }
+          img.src = item.imageSrc
+          subImageCache.current.set(item.imageSrc, img) // 임시 중복 로딩 차단용
+        }
+      }
+    })
+  }, [items])
+
   // 에디터 모달 열릴 때 이력 목록 갱신 및 메시지 클리어
   useEffect(() => {
     if (isOpen) {
@@ -475,7 +515,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textTextColor !== lastSavedState.textTextColor ||
     textFontSize !== lastSavedState.textFontSize ||
     symbolEmoji !== lastSavedState.symbolEmoji ||
-    symbolScale !== lastSavedState.symbolScale
+    symbolScale !== lastSavedState.symbolScale ||
+    imageSrcBorderColor !== lastSavedState.imageSrcBorderColor ||
+    imageSrcBorderWidth !== lastSavedState.imageSrcBorderWidth ||
+    imageSrcBorderStyle !== lastSavedState.imageSrcBorderStyle ||
+    imageSrcHasBorder !== lastSavedState.imageSrcHasBorder ||
+    imageSrcCaptionText !== lastSavedState.imageSrcCaptionText ||
+    imageSrcHasCaption !== lastSavedState.imageSrcHasCaption
   )
 
   // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
@@ -485,7 +531,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
-    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
+    imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption
   ])
 
   // 3초간 헤더에 메시지 표시 헬퍼
@@ -760,6 +807,94 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           ctx.restore()
         }
       } 
+      else if (item.type === 'image') {
+        // 추가 서브 이미지 그리기
+        const hasSubBorder = item.style.hasBorder ?? false
+        const hasSubCaption = item.style.hasCaption ?? false
+        const subCaptionHeight = 24
+        const drawW = item.width || 100
+        const drawH = item.height || 100
+        const imageRenderH = hasSubCaption ? Math.max(10, drawH - subCaptionHeight) : drawH
+
+        if (item.imageSrc) {
+          const cachedImg = subImageCache.current.get(item.imageSrc)
+          if (cachedImg && cachedImg.complete && cachedImg.naturalWidth > 0) {
+            ctx.drawImage(cachedImg, item.x, item.y, drawW, imageRenderH)
+          } else {
+            // 로드 대기 중 가이드 박스 표시
+            ctx.strokeStyle = '#cbd5e1'
+            ctx.lineWidth = 1
+            ctx.setLineDash([4, 4])
+            ctx.strokeRect(item.x, item.y, drawW, imageRenderH)
+          }
+        }
+
+        // 설명 캡션 그리기
+        if (hasSubCaption) {
+          const captionY = item.y + imageRenderH
+          ctx.save()
+          ctx.fillStyle = '#f8fafc'
+          ctx.fillRect(item.x, captionY, drawW, subCaptionHeight)
+
+          // 이미지와 캡션 구분선
+          ctx.strokeStyle = '#e2e8f0'
+          ctx.lineWidth = 1
+          ctx.setLineDash([])
+          ctx.beginPath()
+          ctx.moveTo(item.x, captionY)
+          ctx.lineTo(item.x + drawW, captionY)
+          ctx.stroke()
+
+          // 캡션 텍스트
+          ctx.fillStyle = '#475569'
+          ctx.font = 'bold 11px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText(item.text || '설명 입력', item.x + drawW / 2, captionY + subCaptionHeight / 2)
+          ctx.restore()
+        }
+
+        // 개별 이미지 외곽 테두리선 그리기
+        if (hasSubBorder) {
+          ctx.save()
+          ctx.strokeStyle = item.style.borderColor || imageSrcBorderColor
+          ctx.lineWidth = item.style.borderWidth || imageSrcBorderWidth
+          if (item.style.lineStyle === 'dashed') {
+            ctx.setLineDash([4, 4])
+          } else {
+            ctx.setLineDash([])
+          }
+          ctx.strokeRect(item.x, item.y, drawW, drawH)
+          ctx.restore()
+        }
+
+        // 선택 영역 하이라이트 및 4꼭지점 조절 핸들 (box와 완전히 동일)
+        if (isSelected) {
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 4])
+          ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
+
+          // 4꼭지점 핸들 그리기
+          ctx.save()
+          ctx.setLineDash([])
+          ctx.fillStyle = '#ffffff'
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          const handleSize = 6
+          const points = [
+            { x: item.x, y: item.y }, // TL
+            { x: item.x + (item.width || 0), y: item.y }, // TR
+            { x: item.x, y: item.y + (item.height || 0) }, // BL
+            { x: item.x + (item.width || 0), y: item.y + (item.height || 0) } // BR
+          ]
+          points.forEach((pt) => {
+            ctx.fillRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
+            ctx.strokeRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
+          })
+          ctx.restore()
+        }
+      }
       else if (item.type === 'arrow') {
         const toX = item.x + (item.width || 0)
         const toY = item.y + (item.height || 0)
@@ -953,7 +1088,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
-    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
+    cacheTrigger
   ])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
@@ -1020,6 +1156,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         if (config.symbolScale !== undefined) setSymbolScale(config.symbolScale)
 
+        // 6. 이미지 아이템
+        if (config.imageSrcBorderColor) setImageSrcBorderColor(config.imageSrcBorderColor)
+        if (config.imageSrcBorderWidth !== undefined) setImageSrcBorderWidth(config.imageSrcBorderWidth)
+        if (config.imageSrcBorderStyle) setImageSrcBorderStyle(config.imageSrcBorderStyle)
+        if (config.imageSrcHasBorder !== undefined) setImageSrcHasBorder(config.imageSrcHasBorder)
+        if (config.imageSrcCaptionText !== undefined) setImageSrcCaptionText(config.imageSrcCaptionText)
+        if (config.imageSrcHasCaption !== undefined) setImageSrcHasCaption(config.imageSrcHasCaption)
+
         if (config.captionAlign) setCaptionAlign(config.captionAlign)
       }
     } catch (e) {
@@ -1059,6 +1203,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         textFontSize,
         symbolEmoji,
         symbolScale,
+        imageSrcBorderColor,
+        imageSrcBorderWidth,
+        imageSrcBorderStyle,
+        imageSrcHasBorder,
+        imageSrcCaptionText,
+        imageSrcHasCaption,
         captionAlign
       }
 
@@ -1075,6 +1225,60 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
+  // 서브 이미지 레이어로 이미지 추가
+  const addSubImage = (file: File) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        // 원본 이미지 크기
+        const origW = img.width
+        const origH = img.height
+
+        // zoom 비율 적용하여 삽입 크기 결정
+        const targetW = Math.round(origW * zoom)
+        const targetH = Math.round(origH * zoom)
+
+        // 캔버스의 중앙 좌표 계산
+        const canvas = canvasRef.current
+        const canvasW = canvas ? canvas.width : 800
+        const canvasH = canvas ? canvas.height : 500
+
+        const posX = Math.round((canvasW - targetW) / 2)
+        const posY = Math.round((canvasH - targetH) / 2)
+
+        const finalSrc = event.target?.result as string || ''
+
+        // CanvasItem 생성
+        const newItem: CanvasItem = {
+          id: `item-${Date.now()}`,
+          type: 'image',
+          x: posX,
+          y: posY,
+          width: targetW,
+          height: targetH,
+          imageSrc: finalSrc,
+          text: imageSrcHasCaption ? imageSrcCaptionText : '',
+          style: {
+            borderColor: imageSrcBorderColor,
+            borderWidth: imageSrcBorderWidth,
+            lineStyle: imageSrcBorderStyle,
+            hasBorder: imageSrcHasBorder,
+            hasCaption: imageSrcHasCaption
+          }
+        }
+
+        // 캐시에 미리 이미지 등록해 로드 시 깜빡임 방지
+        subImageCache.current.set(finalSrc, img)
+
+        pushToUndo([...items, newItem])
+        setSelectedItemId(newItem.id)
+      }
+      img.src = event.target?.result as string || ''
+    }
+    reader.readAsDataURL(file)
+  }
+
   // 파일 업로드 처리
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1087,14 +1291,18 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       if (!isOpen) return
-      const items = e.clipboardData?.items
-      if (!items) return
+      const clipboardItems = e.clipboardData?.items
+      if (!clipboardItems) return
       
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf('image') !== -1) {
-          const blob = items[i].getAsFile()
+      for (let i = 0; i < clipboardItems.length; i++) {
+        if (clipboardItems[i].type.indexOf('image') !== -1) {
+          const blob = clipboardItems[i].getAsFile()
           if (blob) {
-            loadImage(blob)
+            if (bgImage) {
+              addSubImage(blob)
+            } else {
+              loadImage(blob)
+            }
             e.preventDefault()
             break
           }
@@ -1104,7 +1312,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     window.addEventListener('paste', handlePaste)
     return () => window.removeEventListener('paste', handlePaste)
-  }, [isOpen])
+  }, [isOpen, bgImage, zoom, items])
 
   // Ctrl + S 임시저장 단축키 리스너
   useEffect(() => {
@@ -1164,6 +1372,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
     setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
     setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
+    setImageSrcBorderColor(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
+    setImageSrcBorderWidth(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
+    setImageSrcBorderStyle(SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle)
+    setImageSrcHasBorder(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
+    setImageSrcCaptionText(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
+    setImageSrcHasCaption(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
     
     setLastSavedState({
       title: '새 이미지 작업',
@@ -1193,7 +1407,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
       textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
       symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
-      symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale
+      symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale,
+      imageSrcBorderColor: SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
+      imageSrcBorderWidth: SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth,
+      imageSrcBorderStyle: SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
+      imageSrcHasBorder: SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
+      imageSrcCaptionText: SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
+      imageSrcHasCaption: SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption
     })
     showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
   }
@@ -1279,7 +1499,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               textTextColor,
               textFontSize,
               symbolEmoji,
-              symbolScale
+              symbolScale,
+              imageSrcBorderColor,
+              imageSrcBorderWidth,
+              imageSrcBorderStyle,
+              imageSrcHasBorder,
+              imageSrcCaptionText,
+              imageSrcHasCaption
             })
           }
           resizedImg.src = finalSrc
@@ -1322,7 +1548,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             textTextColor,
             textFontSize,
             symbolEmoji,
-            symbolScale
+            symbolScale,
+            imageSrcBorderColor,
+            imageSrcBorderWidth,
+            imageSrcBorderStyle,
+            imageSrcHasBorder,
+            imageSrcCaptionText,
+            imageSrcHasCaption
           })
         }
       }
@@ -1353,7 +1585,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 1순위: 선택된 사각형이 존재할 때 네 꼭지점 리사이즈 핸들 클릭 여부를 우선 판정!
       if (selectedItemId) {
         const selectedItem = items.find(item => item.id === selectedItemId)
-        if (selectedItem && selectedItem.type === 'box') {
+        if (selectedItem && (selectedItem.type === 'box' || selectedItem.type === 'image')) {
           const tl = { x: selectedItem.x, y: selectedItem.y }
           const tr = { x: selectedItem.x + (selectedItem.width || 0), y: selectedItem.y }
           const bl = { x: selectedItem.x, y: selectedItem.y + (selectedItem.height || 0) }
@@ -1442,7 +1674,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             break
           }
         } 
-        else if (item.type === 'box') {
+        else if (item.type === 'box' || item.type === 'image') {
           const x2 = item.x + (item.width || 0)
           const y2 = item.y + (item.height || 0)
           const minX = Math.min(item.x, x2)
@@ -1577,7 +1809,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     // 포인터 모드 리사이징 처리
     if (activeTool === 'pointer' && selectedItemId && resizeHandle) {
       const updated = items.map((item) => {
-        if (item.id === selectedItemId && item.type === 'box') {
+        if (item.id === selectedItemId && (item.type === 'box' || item.type === 'image')) {
           const originalX = item.x
           const originalY = item.y
           const originalW = item.width || 0
@@ -1837,7 +2069,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           if (item.type === 'circle-number') {
             const r = (item.style.fontSize || 13) * 1.05
             return item.x >= -r && item.x <= cW + r && item.y >= -r && item.y <= cH + r
-          } else if (item.type === 'box') {
+          } else if (item.type === 'box' || item.type === 'image') {
             return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
           } else if (item.type === 'text') {
             return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
@@ -1894,6 +2126,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       if (!isOpen) return
       // 인풋을 작성 중일 땐 차단
       if (textInput.visible) return
+
+      // 포커스가 HTML 입력 필드(INPUT, TEXTAREA 등)에 있을 때는 단축키 동작 방지
+      const activeEl = document.activeElement
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return
+      }
 
       if (e.key === 'Escape') {
         setSelectedItemId(null)
@@ -2024,7 +2267,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         textTextColor,
         textFontSize,
         symbolEmoji,
-        symbolScale
+        symbolScale,
+        imageSrcBorderColor,
+        imageSrcBorderWidth,
+        imageSrcBorderStyle,
+        imageSrcHasBorder,
+        imageSrcCaptionText,
+        imageSrcHasCaption
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -2066,7 +2315,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         textTextColor,
         textFontSize,
         symbolEmoji,
-        symbolScale
+        symbolScale,
+        imageSrcBorderColor,
+        imageSrcBorderWidth,
+        imageSrcBorderStyle,
+        imageSrcHasBorder,
+        imageSrcCaptionText,
+        imageSrcHasCaption
       })
       setEditorTitle(finalTitle)
 
@@ -2145,7 +2400,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               textTextColor,
               textFontSize,
               symbolEmoji,
-              symbolScale
+              symbolScale,
+              imageSrcBorderColor,
+              imageSrcBorderWidth,
+              imageSrcBorderStyle,
+              imageSrcHasBorder,
+              imageSrcCaptionText,
+              imageSrcHasCaption
             }
             
             await apiClient.post('/admin/image-work', {
@@ -2183,7 +2444,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               textTextColor,
               textFontSize,
               symbolEmoji,
-              symbolScale
+              symbolScale,
+              imageSrcBorderColor,
+              imageSrcBorderWidth,
+              imageSrcBorderStyle,
+              imageSrcHasBorder,
+              imageSrcCaptionText,
+              imageSrcHasCaption
             })
             
             fetchHistory()
@@ -2296,6 +2563,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         const loadedSymbolEmoji = data.symbolEmoji ?? data.selectedEmoji ?? '💡'
         const loadedSymbolScale = data.symbolScale ?? 3
+
+        const loadedImageSrcBorderColor = data.imageSrcBorderColor ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor
+        const loadedImageSrcBorderWidth = data.imageSrcBorderWidth ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth
+        const loadedImageSrcBorderStyle = data.imageSrcBorderStyle ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle
+        const loadedImageSrcHasBorder = data.imageSrcHasBorder ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder
+        const loadedImageSrcCaptionText = data.imageSrcCaptionText ?? SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText
+        const loadedImageSrcHasCaption = data.imageSrcHasCaption ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption
         
         setHasBorder(loadedHasBorder)
         setBorderColor(loadedBorderColor)
@@ -2304,6 +2578,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setHasCaption(loadedHasCaption)
         setCaptionText(loadedCaptionText)
         setCaptionAlign(loadedCaptionAlign)
+
+        setImageSrcBorderColor(loadedImageSrcBorderColor)
+        setImageSrcBorderWidth(loadedImageSrcBorderWidth)
+        setImageSrcBorderStyle(loadedImageSrcBorderStyle)
+        setImageSrcHasBorder(loadedImageSrcHasBorder)
+        setImageSrcCaptionText(loadedImageSrcCaptionText)
+        setImageSrcHasCaption(loadedImageSrcHasCaption)
 
         setCircleNumberBgColor(loadedCircleNumberBgColor)
         setCircleNumberTextColor(loadedCircleNumberTextColor)
@@ -2376,7 +2657,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           textTextColor: loadedTextTextColor,
           textFontSize: loadedTextFontSize,
           symbolEmoji: loadedSymbolEmoji,
-          symbolScale: loadedSymbolScale
+          symbolScale: loadedSymbolScale,
+          imageSrcBorderColor: loadedImageSrcBorderColor,
+          imageSrcBorderWidth: loadedImageSrcBorderWidth,
+          imageSrcBorderStyle: loadedImageSrcBorderStyle,
+          imageSrcHasBorder: loadedImageSrcHasBorder,
+          imageSrcCaptionText: loadedImageSrcCaptionText,
+          imageSrcHasCaption: loadedImageSrcHasCaption
         })
       }
       img.src = data.originalImageUrl
@@ -2657,6 +2944,18 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}
+                imageSrcBorderColor={imageSrcBorderColor}
+                setImageSrcBorderColor={setImageSrcBorderColor}
+                imageSrcBorderWidth={imageSrcBorderWidth}
+                setImageSrcBorderWidth={setImageSrcBorderWidth}
+                imageSrcBorderStyle={imageSrcBorderStyle}
+                setImageSrcBorderStyle={setImageSrcBorderStyle}
+                imageSrcHasBorder={imageSrcHasBorder}
+                setImageSrcHasBorder={setImageSrcHasBorder}
+                imageSrcCaptionText={imageSrcCaptionText}
+                setImageSrcCaptionText={setImageSrcCaptionText}
+                imageSrcHasCaption={imageSrcHasCaption}
+                setImageSrcHasCaption={setImageSrcHasCaption}
                 onSaveDefaults={handleSaveUserSettings}
               />
             )}

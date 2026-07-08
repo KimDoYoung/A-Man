@@ -27,6 +27,14 @@ export const SYSTEM_ITEM_DEFAULTS = {
   symbolEmoji: '💡',
   symbolScale: 3,
 
-  // 6. 기타 공통 레이아웃 속성
+  // 6. 이미지 아이템 (image) 전용 속성
+  imageSrcBorderColor: '#cbd5e1',
+  imageSrcBorderWidth: 2,
+  imageSrcBorderStyle: 'solid' as 'solid' | 'dashed',
+  imageSrcHasBorder: false,
+  imageSrcCaptionText: '',
+  imageSrcHasCaption: false,
+
+  // 7. 기타 공통 레이아웃 속성
   captionAlign: 'center' as 'left' | 'center'
 } as const
