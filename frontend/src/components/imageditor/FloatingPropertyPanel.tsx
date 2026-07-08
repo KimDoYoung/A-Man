@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Minimize2, Maximize2, Settings, Layout, Type, Palette, Trash2, CircleDot, Square, Save } from 'lucide-react'
+import { Minimize2, Maximize2, Settings, Layout, Type, Palette, CircleDot, Square, Save } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ColorPicker from './ColorPicker'
 import RangeSlider from './RangeSlider'
@@ -33,7 +33,6 @@ interface FloatingPropertyPanelProps {
   setCircleBorderColor: (color: string) => void
 
   selectedItemId: string | null
-  setSelectedItemId: (id: string | null) => void
   circleCounter: number
   setCircleCounter: (val: number) => void
   textColor: string
@@ -82,7 +81,6 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   circleBorderColor,
   setCircleBorderColor,
   selectedItemId,
-  setSelectedItemId,
   circleCounter,
   setCircleCounter,
   textColor,

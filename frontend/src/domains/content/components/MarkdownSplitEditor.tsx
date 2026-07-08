@@ -13,7 +13,6 @@ interface MarkdownSplitEditorProps {
   previewOpen: boolean;
   setPreviewOpen: (open: boolean) => void;
   previewWidthPercent: number;
-  setPreviewWidthPercent: (pct: number) => void;
   resizingPreview: boolean;
   setResizingPreview: (resizing: boolean) => void;
   pageTitle: string;
@@ -40,7 +39,6 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
   previewOpen,
   setPreviewOpen,
   previewWidthPercent,
-  setPreviewWidthPercent,
   resizingPreview,
   setResizingPreview,
   pageTitle,

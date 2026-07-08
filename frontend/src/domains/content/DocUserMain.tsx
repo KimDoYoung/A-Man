@@ -637,7 +637,6 @@ const DocUserMain: React.FC = () => {
                   previewOpen={previewOpen}
                   setPreviewOpen={setPreviewOpen}
                   previewWidthPercent={previewWidthPercent}
-                  setPreviewWidthPercent={setPreviewWidthPercent}
                   resizingPreview={resizingPreview}
                   setResizingPreview={setResizingPreview}
                   pageTitle={page?.title || page?.folder?.name || 'document'}

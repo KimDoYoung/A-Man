@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Download, Copy, Trash2, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
-import { formatRelativeTime } from '@/lib/utils'
+
 
 // 선분과 점 사이의 거리를 계산하는 수학 헬퍼 함수
 function getDistanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
@@ -1978,7 +1978,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 captionAlign={captionAlign}
                 setCaptionAlign={setCaptionAlign}
                 selectedItemId={selectedItemId}
-                setSelectedItemId={setSelectedItemId}
                 circleCounter={circleCounter}
                 setCircleCounter={setCircleCounter}
                 textColor={textColor}
