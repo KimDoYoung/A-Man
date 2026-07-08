@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 
 
@@ -97,10 +97,120 @@ function drawArrow(
   // 5. 선택 상태일 때 양 끝 앵커 포인트 그려서 조작감 극대화
   if (isSelected) {
     ctx.beginPath()
-    ctx.arc(fromX, fromY, 4, 0, 2 * Math.PI)
-    ctx.arc(toX, toY, 4, 0, 2 * Math.PI)
+    ctx.arc(fromX, fromY, 6, 0, 2 * Math.PI)
+    ctx.moveTo(toX + 6, toY)
+    ctx.arc(toX, toY, 6, 0, 2 * Math.PI)
     ctx.fillStyle = '#3b82f6'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 1.5
     ctx.fill()
+    ctx.stroke()
+  }
+
+  ctx.restore()
+}
+
+// 직각으로 꺾이는 화살표 그리기 헬퍼 함수 (3세그먼트 H-V-H 모델)
+function drawOrthogonalArrow(
+  ctx: CanvasRenderingContext2D,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  midX: number,
+  color: string,
+  width: number,
+  lineStyle: 'solid' | 'dashed',
+  isSelected: boolean
+) {
+  ctx.save()
+
+  // 1. 선 스타일 설정
+  ctx.strokeStyle = color
+  ctx.lineWidth = width
+  if (lineStyle === 'dashed') {
+    ctx.setLineDash([4, 4])
+  } else {
+    ctx.setLineDash([])
+  }
+
+  // 2. 선택 상태일 때 하이라이트 배경선 그리기
+  if (isSelected) {
+    ctx.save()
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'
+    ctx.lineWidth = width + 6
+    ctx.setLineDash([])
+    
+    ctx.beginPath()
+    ctx.moveTo(fromX, fromY)
+    ctx.lineTo(midX, fromY)
+    ctx.lineTo(midX, toY)
+    ctx.lineTo(toX, toY)
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  // 3. 메인 선 그리기
+  ctx.beginPath()
+  ctx.moveTo(fromX, fromY)
+  ctx.lineTo(midX, fromY)
+  ctx.lineTo(midX, toY)
+  ctx.lineTo(toX, toY)
+  ctx.stroke()
+
+  // 4. 화살촉 그리기
+  // 화살촉의 방향 결정: 마지막 세그먼트의 방향에 맞게
+  let angle = 0
+  if (Math.abs(toX - midX) > 0.5) {
+    angle = Math.atan2(0, toX - midX)
+  } else {
+    angle = Math.atan2(toY - fromY, 0)
+  }
+
+  const headLength = Math.max(12, width * 3)
+  const arrowAngle = Math.PI / 6
+  const leftX = toX - headLength * Math.cos(angle - arrowAngle)
+  const leftY = toY - headLength * Math.sin(angle - arrowAngle)
+  const rightX = toX - headLength * Math.cos(angle + arrowAngle)
+  const rightY = toY - headLength * Math.sin(angle + arrowAngle)
+
+  ctx.beginPath()
+  ctx.moveTo(toX, toY)
+  ctx.lineTo(leftX, leftY)
+  ctx.lineTo(rightX, rightY)
+  ctx.closePath()
+  ctx.fillStyle = color
+  ctx.fill()
+
+  // 5. 선택 상태일 때 조작 핸들 그리기
+  if (isSelected) {
+    // 시작 핸들 (블루)
+    ctx.beginPath()
+    ctx.arc(fromX, fromY, 6, 0, 2 * Math.PI)
+    ctx.fillStyle = '#3b82f6'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 1.5
+    ctx.fill()
+    ctx.stroke()
+
+    // 끝 핸들 (블루)
+    ctx.beginPath()
+    ctx.arc(toX, toY, 6, 0, 2 * Math.PI)
+    ctx.fillStyle = '#3b82f6'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 1.5
+    ctx.fill()
+    ctx.stroke()
+
+    // 중간 꺾임 조절 핸들 (수직 부 수직 중앙 - 그린)
+    const midY = (fromY + toY) / 2
+    ctx.beginPath()
+    ctx.arc(midX, midY, 6, 0, 2 * Math.PI)
+    ctx.fillStyle = '#10b981'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 1.5
+    ctx.fill()
+    ctx.stroke()
   }
 
   ctx.restore()
@@ -150,9 +260,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const textInputRef = useRef<HTMLTextAreaElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'symbol'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
+  const [zoom, setZoom] = useState<number>(1.0)
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [circleCounter, setCircleCounter] = useState<number>(1)
@@ -191,7 +302,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textInput, setTextInput] = useState<{ x: number; y: number; visible: boolean; id?: string }>({ x: 0, y: 0, visible: false })
   const [textInputValue, setTextInputValue] = useState('')
   const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
-  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null)
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | null>(null)
   
   // 마지막 저장 시점 상태 (isDirty 체크용)
   const [lastSavedState, setLastSavedState] = useState<{
@@ -664,6 +775,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           isSelected
         )
       }
+      else if (item.type === 'orthogonal-arrow') {
+        const toX = item.x + (item.width || 0)
+        const toY = item.y + (item.height || 0)
+        const defaultMidX = toX
+        const midX = item.style.midX !== undefined ? item.style.midX : defaultMidX
+        drawOrthogonalArrow(
+          ctx,
+          item.x,
+          item.y,
+          toX,
+          toY,
+          midX,
+          item.style.borderColor || arrowColor,
+          item.style.borderWidth || arrowLineWidth,
+          item.style.lineStyle || arrowLineStyle,
+          isSelected
+        )
+      }
       else if (item.type === 'symbol') {
         // 이모지 심볼 그리기 (중앙 정렬)
         const emojiSize = item.style.fontSize || 48
@@ -756,6 +885,19 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           dragStart.y,
           dragCurrent.x,
           dragCurrent.y,
+          arrowColor,
+          arrowLineWidth,
+          arrowLineStyle,
+          false
+        )
+      } else if (activeTool === 'orthogonal-arrow') {
+        drawOrthogonalArrow(
+          ctx,
+          dragStart.x,
+          dragStart.y,
+          dragCurrent.x,
+          dragCurrent.y,
+          dragCurrent.x,
           arrowColor,
           arrowLineWidth,
           arrowLineStyle,
@@ -986,6 +1128,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setItems([])
     setBgImage(null)
     setBgImageSrc('')
+    setZoom(1.0)
     setSelectedItemId(null)
     setCircleCounter(1)
     setEditorTitle('새 이미지 작업')
@@ -1101,6 +1244,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           resizedImg.onload = () => {
             setBgImage(resizedImg)
             setBgImageSrc(finalSrc)
+            setZoom(1.0)
             setItems([])
             setCircleCounter(1)
             setUndoStack([])
@@ -1143,6 +1287,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           // 크기가 한계치 이하여서 축소가 불필요한 경우 그대로 보관
           setBgImage(img)
           setBgImageSrc(finalSrc)
+          setZoom(1.0)
           setItems([])
           setCircleCounter(1)
           setUndoStack([])
@@ -1236,6 +1381,49 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setDragStart({ x, y })
             return
           }
+        } else if (selectedItem && selectedItem.type === 'arrow') {
+          const fromX = selectedItem.x
+          const fromY = selectedItem.y
+          const toX = selectedItem.x + (selectedItem.width || 0)
+          const toY = selectedItem.y + (selectedItem.height || 0)
+          const clickRadius = 8
+
+          if (Math.hypot(fromX - x, fromY - y) <= clickRadius) {
+            setResizeHandle('arrow-start')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(toX - x, toY - y) <= clickRadius) {
+            setResizeHandle('arrow-end')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
+        } else if (selectedItem && selectedItem.type === 'orthogonal-arrow') {
+          const fromX = selectedItem.x
+          const fromY = selectedItem.y
+          const toX = selectedItem.x + (selectedItem.width || 0)
+          const toY = selectedItem.y + (selectedItem.height || 0)
+          const midX = selectedItem.style.midX !== undefined ? selectedItem.style.midX : toX
+          const midY = (fromY + toY) / 2
+          const clickRadius = 8
+
+          if (Math.hypot(fromX - x, fromY - y) <= clickRadius) {
+            setResizeHandle('arrow-start')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(toX - x, toY - y) <= clickRadius) {
+            setResizeHandle('arrow-end')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          } else if (Math.hypot(midX - x, midY - y) <= clickRadius) {
+            setResizeHandle('orthogonal-mid')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
         }
       }
 
@@ -1273,6 +1461,21 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           const y2 = item.y + (item.height || 0)
           const dist = getDistanceToSegment(x, y, item.x, item.y, x2, y2)
           if (dist <= 8) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+        else if (item.type === 'orthogonal-arrow') {
+          const x2 = item.x + (item.width || 0)
+          const y2 = item.y + (item.height || 0)
+          const midX = item.style.midX !== undefined ? item.style.midX : x2
+          const dist1 = getDistanceToSegment(x, y, item.x, item.y, midX, item.y)
+          const dist2 = getDistanceToSegment(x, y, midX, item.y, midX, y2)
+          const dist3 = getDistanceToSegment(x, y, midX, y2, x2, y2)
+          const minDist = Math.min(dist1, dist2, dist3)
+          if (minDist <= 8) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
             found = true
@@ -1342,7 +1545,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       pushToUndo([...items, newItem])
       setSelectedItemId(newItem.id)
     }
-    else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow') {
+    else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow') {
       setIsDrawing(true)
       setDragStart({ x, y })
       setDragCurrent({ x, y })
@@ -1413,6 +1616,48 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           }
 
           return { ...item, x: newX, y: newY, width: newW, height: newH }
+        } else if (item.id === selectedItemId && item.type === 'arrow') {
+          if (resizeHandle === 'arrow-start') {
+            const originalEndX = item.x + (item.width || 0)
+            const originalEndY = item.y + (item.height || 0)
+            const newX = x
+            const newY = y
+            const newW = originalEndX - newX
+            const newH = originalEndY - newY
+            return { ...item, x: newX, y: newY, width: newW, height: newH }
+          } else if (resizeHandle === 'arrow-end') {
+            const newW = x - item.x
+            const newH = y - item.y
+            return { ...item, width: newW, height: newH }
+          }
+        } else if (item.id === selectedItemId && item.type === 'orthogonal-arrow') {
+          if (resizeHandle === 'arrow-start') {
+            const originalEndX = item.x + (item.width || 0)
+            const originalEndY = item.y + (item.height || 0)
+            const newX = x
+            const newY = y
+            const newW = originalEndX - newX
+            const newH = originalEndY - newY
+            return {
+              ...item,
+              x: newX,
+              y: newY,
+              width: newW,
+              height: newH
+            }
+          } else if (resizeHandle === 'arrow-end') {
+            const newW = x - item.x
+            const newH = y - item.y
+            return { ...item, width: newW, height: newH }
+          } else if (resizeHandle === 'orthogonal-mid') {
+            return {
+              ...item,
+              style: {
+                ...item.style,
+                midX: x
+              }
+            }
+          }
         }
         return item
       })
@@ -1425,6 +1670,19 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (item.id === selectedItemId) {
           const newX = x - draggedItemOffset.x
           const newY = y - draggedItemOffset.y
+          const deltaX = newX - item.x
+          
+          if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+            return {
+              ...item,
+              x: newX,
+              y: newY,
+              style: {
+                ...item.style,
+                midX: item.style.midX + deltaX
+              }
+            }
+          }
           return { ...item, x: newX, y: newY }
         }
         return item
@@ -1486,6 +1744,26 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           setSelectedItemId(newItem.id)
         }
       }
+      else if (activeTool === 'orthogonal-arrow') {
+        if (Math.hypot(w, h) > 8) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'orthogonal-arrow',
+            x: dragStart.x,
+            y: dragStart.y,
+            width: w,
+            height: h,
+            style: {
+              borderColor: arrowColor,
+              borderWidth: arrowLineWidth,
+              lineStyle: arrowLineStyle,
+              midX: x
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
       else if (activeTool === 'crop') {
         const cX = Math.min(dragStart.x, x)
         const cY = Math.min(dragStart.y, y)
@@ -1493,7 +1771,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const cH = Math.abs(h)
 
         if (cW > 10 && cH > 10) {
-          cropImage(cX, cY, cW, cH)
+          const runCrop = async () => {
+            if (isDirty) {
+              try {
+                await handleSaveToHistory()
+              } catch (err) {
+                console.error('크롭 전 자동 저장 실패:', err)
+              }
+            }
+            cropImage(cX, cY, cW, cH)
+          }
+          runCrop()
         }
       }
       // 리사이즈 드래그 끝마침 처리
@@ -1531,14 +1819,18 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 크롭 영역 바깥의 아이템 필터링 및 오프셋 조정
       const updatedItems = items
         .map((item) => {
-          if (item.type === 'circle-number') {
-            return { ...item, x: item.x - cX, y: item.y - cY }
-          } else if (item.type === 'box') {
-            return { ...item, x: item.x - cX, y: item.y - cY }
-          } else if (item.type === 'text') {
-            return { ...item, x: item.x - cX, y: item.y - cY }
+          if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+            return {
+              ...item,
+              x: item.x - cX,
+              y: item.y - cY,
+              style: {
+                ...item.style,
+                midX: item.style.midX - cX
+              }
+            }
           }
-          return item
+          return { ...item, x: item.x - cX, y: item.y - cY }
         })
         .filter((item) => {
           // 크롭 캔버스 범위 내부에 들어오는 것만 유지
@@ -1549,6 +1841,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
           } else if (item.type === 'text') {
             return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
+          } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
+            const x2 = item.x + (item.width || 0)
+            const y2 = item.y + (item.height || 0)
+            const startIn = item.x >= 0 && item.x <= cW && item.y >= 0 && item.y <= cH
+            const endIn = x2 >= 0 && x2 <= cW && y2 >= 0 && y2 <= cH
+            return startIn || endIn
+          } else if (item.type === 'symbol') {
+            const radius = (item.style.fontSize || 48) / 2
+            return item.x >= -radius && item.x <= cW + radius && item.y >= -radius && item.y <= cH + radius
           }
           return true
         })
@@ -1945,7 +2246,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 임시 보관 작업 복원하기
-  function handleLoadWork(work: ImageWork) {
+  async function handleLoadWork(work: ImageWork) {
+    if (isDirty) {
+      try {
+        await handleSaveToHistory()
+      } catch (err) {
+        console.error('자동 저장 중 오류 발생:', err)
+      }
+    }
     try {
       const data = JSON.parse(work.jsonData)
       
@@ -2022,6 +2330,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
+        setZoom(1.0)
         setItems(data.items || [])
         setCircleCounter(data.circleCounter || 1)
         setEditorTitle(work.title)
@@ -2122,6 +2431,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             )}
           </div>
 
+          {/* 보기 배율 컨트롤 (헤더 우측 배치) */}
+          {bgImage && (
+            <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs mr-2">
+              <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">보기 배율:</span>
+              {[1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
+                <button
+                  key={z}
+                  onClick={() => setZoom(z)}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                    zoom === z
+                      ? 'bg-indigo-650 text-white shadow-xs'
+                      : 'bg-transparent text-gray-600 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {Math.round(z * 100)}%
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 바디 영역 */}
@@ -2134,6 +2462,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'circle-number', label: '원숫자 마크 스탬프', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'arrow', label: '가리키는 화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
+              { id: 'orthogonal-arrow', label: '직각 꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
               { id: 'symbol', label: '아이콘 이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
               { id: 'crop', label: '러버밴드 점선 자르기', icon: <Crop className="w-4 h-4" /> }
@@ -2178,7 +2507,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
           {/* 2. 중앙 이미지 캔버스 편집 영역 */}
           <main className="flex-1 bg-gray-100 dark:bg-slate-950 p-6 flex flex-col items-center justify-center overflow-auto relative">
-            
+
             {/* 파일 로드 컨트롤 (업로드 유도) */}
             {!bgImage && (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-slate-900">
@@ -2214,6 +2543,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 className={`block ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
+                style={{
+                  width: bgImage ? `${bgImage.width * zoom}px` : 'auto',
+                  height: bgImage ? `${(bgImage.height + (hasCaption ? captionHeight : 0)) * zoom}px` : 'auto',
+                }}
                 width={bgImage ? bgImage.width : 800}
                 height={bgImage ? bgImage.height + (hasCaption ? captionHeight : 0) : 500}
               />
@@ -2222,7 +2555,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               {textInput.visible && (
                 <div
                   className="absolute z-40 bg-white dark:bg-slate-900 border border-indigo-500 shadow-xl rounded p-2 flex flex-col space-y-1.5"
-                  style={{ top: textInput.y, left: textInput.x }}
+                  style={{
+                    top: textInput.y * zoom,
+                    left: textInput.x * zoom,
+                    transform: `scale(${zoom})`,
+                    transformOrigin: 'top left'
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <textarea

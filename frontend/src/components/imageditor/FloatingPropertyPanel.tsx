@@ -72,7 +72,7 @@ interface FloatingPropertyPanelProps {
   circleCounter: number
   setCircleCounter: (val: number) => void
   onSaveDefaults: () => Promise<void> | void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'symbol'
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 }
@@ -247,7 +247,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
               
               {/* box 또는 arrow 타입 인스펙터 */}
-              {(selectedItem.type === 'box' || selectedItem.type === 'arrow') && (
+              {(selectedItem.type === 'box' || selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow') && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   {/* 강조선 색상 */}
                   <ColorPicker
@@ -691,7 +691,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       </>
                     )}
 
-                    {(activeTool === 'box' || activeTool === 'arrow') && (
+                    {(activeTool === 'box' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow') && (
                       <>
                         <ColorPicker
                           label="강조선 색상"

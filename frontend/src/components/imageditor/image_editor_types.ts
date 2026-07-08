@@ -1,6 +1,6 @@
 export interface CanvasItem {
   id: string
-  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'symbol'
+  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'symbol'
   x: number
   y: number
   width?: number
@@ -15,6 +15,7 @@ export interface CanvasItem {
     lineStyle?: 'solid' | 'dashed'
     opacity?: number
     borderRadius?: number
+    midX?: number
   }
 }
 
