@@ -35,10 +35,10 @@ public class ManualController {
         "            width: 44px;\n" +
         "            height: 44px;\n" +
         "            border-radius: 50%;\n" +
-        "            background-color: rgba(99, 102, 241, 0.15);\n" +
-        "            color: rgba(99, 102, 241, 0.5);\n" +
-        "            border: 1px solid rgba(99, 102, 241, 0.2);\n" +
-        "            box-shadow: none;\n" +
+        "            background-color: rgba(99, 102, 241, 0.35);\n" +
+        "            color: rgba(99, 102, 241, 0.75);\n" +
+        "            border: 1px solid rgba(99, 102, 241, 0.35);\n" +
+        "            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);\n" +
         "            cursor: pointer;\n" +
         "            display: flex;\n" +
         "            align-items: center;\n" +
@@ -54,9 +54,9 @@ public class ManualController {
         "            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);\n" +
         "        }\n" +
         "        .dark-mode .floating-toc-trigger {\n" +
-        "            background-color: rgba(99, 102, 241, 0.1);\n" +
-        "            color: rgba(129, 140, 248, 0.4);\n" +
-        "            border-color: rgba(99, 102, 241, 0.15);\n" +
+        "            background-color: rgba(99, 102, 241, 0.25);\n" +
+        "            color: rgba(129, 140, 248, 0.65);\n" +
+        "            border-color: rgba(99, 102, 241, 0.35);\n" +
         "        }\n" +
         "        .dark-mode .floating-toc-trigger:hover {\n" +
         "            background-color: rgba(99, 102, 241, 0.9);\n" +
@@ -71,10 +71,10 @@ public class ManualController {
         "            width: 44px;\n" +
         "            height: 44px;\n" +
         "            border-radius: 50%;\n" +
-        "            background-color: rgba(226, 232, 240, 0.3);\n" +
-        "            color: rgba(71, 85, 105, 0.4);\n" +
-        "            border: 1px solid rgba(203, 213, 225, 0.3);\n" +
-        "            box-shadow: none;\n" +
+        "            background-color: rgba(203, 213, 225, 0.7);\n" +
+        "            color: rgba(71, 85, 105, 0.7);\n" +
+        "            border: 1px solid rgba(203, 213, 225, 0.6);\n" +
+        "            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n" +
         "            cursor: pointer;\n" +
         "            display: flex;\n" +
         "            align-items: center;\n" +
@@ -96,9 +96,9 @@ public class ManualController {
         "            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);\n" +
         "        }\n" +
         "        .dark-mode .floating-scroll-top {\n" +
-        "            background-color: rgba(51, 65, 85, 0.25);\n" +
-        "            color: rgba(148, 163, 184, 0.4);\n" +
-        "            border-color: rgba(51, 65, 85, 0.3);\n" +
+        "            background-color: rgba(51, 65, 85, 0.5);\n" +
+        "            color: rgba(148, 163, 184, 0.65);\n" +
+        "            border-color: rgba(51, 65, 85, 0.5);\n" +
         "        }\n" +
         "        .dark-mode .floating-scroll-top:hover {\n" +
         "            background-color: rgba(51, 65, 85, 0.9);\n" +

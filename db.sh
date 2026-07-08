@@ -232,7 +232,7 @@ init_db() {
 }
 
 fetch_server_db() {
-    local remote_host="aview.k-fs.co.kr"
+    local remote_host="jskn"
     local remote_db="/data/docker/apps/aman/db/aman.db"
     local local_tmp="/tmp/aman.db"
 
@@ -253,13 +253,31 @@ EOF
     if [ $? -eq 0 ] && [ -f "$local_tmp" ]; then
         echo "DB 가져오기 성공: $local_tmp"
         ls -lh "$local_tmp"
+        
+        # 백업 후 로컬 DB 파일로 복사 적용
+        if [ -f "$DB_FILE" ]; then
+            backup_db
+        fi
+        
+        local db_dir
+        db_dir=$(dirname "$DB_FILE")
+        mkdir -p "$db_dir"
+        
+        cp "$local_tmp" "$DB_FILE"
+        if [ $? -eq 0 ] && [ -f "$DB_FILE" ]; then
+            echo "로컬 DB 파일이 서버 데이터로 업데이트되었습니다: $DB_FILE"
+            ls -lh "$DB_FILE"
+            rm -f "$local_tmp"
+        else
+            echo "오류: 로컬 DB 파일로 복사하는 도중 오류가 발생했습니다."
+        fi
     else
         echo "오류: DB 가져오기에 실패했습니다."
     fi
 }
 
 fetch_server_logs() {
-    local remote_host="aview.k-fs.co.kr"
+    local remote_host="jskn"
     local remote_log_dir="/data/docker/apps/aman/logs"
     local local_tmp_dir="/tmp/aman_logs"
 
