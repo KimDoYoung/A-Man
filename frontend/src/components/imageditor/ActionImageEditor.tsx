@@ -126,13 +126,33 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [circleCounter, setCircleCounter] = useState<number>(1)
-  const [textColor, setTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textColor)
+  // 1. 원숫자 (circle-number) 관련 속성
+  const [circleNumberBgColor, setCircleNumberBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
+  const [circleNumberTextColor, setCircleNumberTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
+  const [circleNumberBorderColor, setCircleNumberBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
+  const [circleNumberBorderWidth, setCircleNumberBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
+  const [circleNumberFontSize, setCircleNumberFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+
+  // 2. 강조 상자 (box) 관련 속성
+  const [boxBorderColor, setBoxBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
+  const [boxLineWidth, setBoxLineWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
+  const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
   const [boxBgColor, setBoxBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBgColor)
   const [boxOpacity, setBoxOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxOpacity)
-  const [boxLineStyle, setBoxLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
-  const [selectedEmoji, setSelectedEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.selectedEmoji)
-  const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
   const [boxBorderRadius, setBoxBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+
+  // 3. 화살표 (arrow) 관련 속성
+  const [arrowColor, setArrowColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.arrowColor)
+  const [arrowLineWidth, setArrowLineWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
+  const [arrowLineStyle, setArrowLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
+
+  // 4. 일반 텍스트 (text) 관련 속성
+  const [textTextColor, setTextTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textTextColor)
+  const [textFontSize, setTextFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.textFontSize)
+
+  // 5. 이모지 심볼 (symbol) 관련 속성
+  const [symbolEmoji, setSymbolEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
+  const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -142,13 +162,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textInputValue, setTextInputValue] = useState('')
   const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null)
-  
-  // 기본 스타일 상태
-  const [primaryColor, setPrimaryColor] = useState(SYSTEM_ITEM_DEFAULTS.primaryColor) // 강조 사각형 기본 Red
-  const [indigoColor, setIndigoColor] = useState(SYSTEM_ITEM_DEFAULTS.indigoColor) // 원숫자 기본 Indigo
-  const [fontSize, setFontSize] = useState(SYSTEM_ITEM_DEFAULTS.fontSize)
-  const [lineWidth, setLineWidth] = useState(SYSTEM_ITEM_DEFAULTS.lineWidth)
-  const [circleBorderColor, setCircleBorderColor] = useState(SYSTEM_ITEM_DEFAULTS.circleBorderColor) // 원숫자 테두리 기본 색상
   
   // 마지막 저장 시점 상태 (isDirty 체크용)
   const [lastSavedState, setLastSavedState] = useState<{
@@ -162,14 +175,26 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     hasCaption: boolean
     captionText: string
     captionAlign: 'left' | 'center'
-    textColor: string
+    
+    // 신규 분리 속성들
+    circleNumberBgColor: string
+    circleNumberTextColor: string
+    circleNumberBorderColor: string
+    circleNumberBorderWidth: number
+    circleNumberFontSize: number
+    boxBorderColor: string
+    boxLineWidth: number
+    boxLineStyle: 'solid' | 'dashed'
     boxBgColor: string
     boxOpacity: number
-    boxLineStyle: 'solid' | 'dashed'
-    selectedEmoji: string
-    symbolScale: number
     boxBorderRadius: number
-    circleBorderColor: string
+    arrowColor: string
+    arrowLineWidth: number
+    arrowLineStyle: 'solid' | 'dashed'
+    textTextColor: string
+    textFontSize: number
+    symbolEmoji: string
+    symbolScale: number
   }>({
     title: '',
     bgImageSrc: '',
@@ -181,14 +206,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     hasCaption: false,
     captionText: '',
     captionAlign: 'center',
-    textColor: '#ffffff',
-    boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
-    boxOpacity: 30,
+
+    circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
+    circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
+    circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
+    circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
+    circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
+    boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
     boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
-    selectedEmoji: '💡',
-    symbolScale: 3,
+    boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
+    boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
     boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
-    circleBorderColor: SYSTEM_ITEM_DEFAULTS.circleBorderColor
+    arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
+    arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
+    arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+    textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
+    textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
+    symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
+    symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -280,13 +316,35 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     hasCaption !== lastSavedState.hasCaption ||
     captionText !== lastSavedState.captionText ||
     captionAlign !== lastSavedState.captionAlign ||
-    circleBorderColor !== lastSavedState.circleBorderColor
+    circleNumberBgColor !== lastSavedState.circleNumberBgColor ||
+    circleNumberTextColor !== lastSavedState.circleNumberTextColor ||
+    circleNumberBorderColor !== lastSavedState.circleNumberBorderColor ||
+    circleNumberBorderWidth !== lastSavedState.circleNumberBorderWidth ||
+    circleNumberFontSize !== lastSavedState.circleNumberFontSize ||
+    boxBorderColor !== lastSavedState.boxBorderColor ||
+    boxLineWidth !== lastSavedState.boxLineWidth ||
+    boxLineStyle !== lastSavedState.boxLineStyle ||
+    boxBgColor !== lastSavedState.boxBgColor ||
+    boxOpacity !== lastSavedState.boxOpacity ||
+    boxBorderRadius !== lastSavedState.boxBorderRadius ||
+    arrowColor !== lastSavedState.arrowColor ||
+    arrowLineWidth !== lastSavedState.arrowLineWidth ||
+    arrowLineStyle !== lastSavedState.arrowLineStyle ||
+    textTextColor !== lastSavedState.textTextColor ||
+    textFontSize !== lastSavedState.textFontSize ||
+    symbolEmoji !== lastSavedState.symbolEmoji ||
+    symbolScale !== lastSavedState.symbolScale
   )
 
   // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
   useEffect(() => {
     setGeneratedImageUrl('')
-  }, [items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, circleBorderColor])
+  }, [
+    items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
+    circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale
+  ])
 
   // 3초간 헤더에 메시지 표시 헬퍼
   const showSaveMessage = (text: string, type: 'success' | 'error') => {
@@ -442,11 +500,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ctx.save()
 
       if (item.type === 'circle-number') {
-        const radius = (item.style.fontSize || 13) * 1.05
+        const radius = (item.style.fontSize || circleNumberFontSize) * 1.05
         // 테두리 및 그림자
         ctx.beginPath()
         ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
-        ctx.fillStyle = item.style.backgroundColor || indigoColor
+        ctx.fillStyle = item.style.backgroundColor || circleNumberBgColor
         ctx.shadowColor = 'rgba(0,0,0,0.15)'
         ctx.shadowBlur = 4
         ctx.shadowOffsetY = 2
@@ -454,14 +512,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         
         ctx.beginPath()
         ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
-        ctx.lineWidth = item.style.borderWidth || 2
-        ctx.strokeStyle = item.style.borderColor || '#ffffff'
+        ctx.lineWidth = item.style.borderWidth || circleNumberBorderWidth
+        ctx.strokeStyle = item.style.borderColor || circleNumberBorderColor
         ctx.shadowColor = 'transparent' // 테두리엔 그림자 제외
         ctx.stroke()
 
         // 텍스트 그리기
-        ctx.fillStyle = item.style.textColor || '#ffffff'
-        ctx.font = `bold ${item.style.fontSize || 13}px sans-serif`
+        ctx.fillStyle = item.style.textColor || circleNumberTextColor
+        ctx.font = `bold ${item.style.fontSize || circleNumberFontSize}px sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(item.text || '1', item.x, item.y)
@@ -506,8 +564,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         }
 
         // 2순위: 테두리선 그리기
-        ctx.strokeStyle = item.style.borderColor || primaryColor
-        ctx.lineWidth = item.style.borderWidth || lineWidth
+        ctx.strokeStyle = item.style.borderColor || boxBorderColor
+        ctx.lineWidth = item.style.borderWidth || boxLineWidth
         if (item.style.lineStyle === 'dashed') {
           ctx.setLineDash([4, 4])
         } else {
@@ -568,9 +626,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           item.y,
           toX,
           toY,
-          item.style.borderColor || primaryColor,
-          item.style.borderWidth || lineWidth,
-          item.style.lineStyle || 'solid',
+          item.style.borderColor || arrowColor,
+          item.style.borderWidth || arrowLineWidth,
+          item.style.lineStyle || arrowLineStyle,
           isSelected
         )
       }
@@ -600,8 +658,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
       else if (item.type === 'text') {
         // 텍스트 박스
-        ctx.fillStyle = item.style.textColor || '#0f172a'
-        ctx.font = `bold ${item.style.fontSize || fontSize}px sans-serif`
+        ctx.fillStyle = item.style.textColor || textTextColor
+        ctx.font = `bold ${item.style.fontSize || textFontSize}px sans-serif`
         ctx.textBaseline = 'top'
         ctx.textAlign = 'left'
 
@@ -609,7 +667,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (item.style.backgroundColor) {
           const metrics = ctx.measureText(item.text || '')
           const bgW = metrics.width + 12
-          const bgH = (item.style.fontSize || fontSize) + 10
+          const bgH = (item.style.fontSize || textFontSize) + 10
           ctx.fillStyle = item.style.backgroundColor
           ctx.fillRect(item.x - 6, item.y - 4, bgW, bgH)
           ctx.strokeStyle = item.style.borderColor || '#cbd5e1'
@@ -617,7 +675,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           ctx.strokeRect(item.x - 6, item.y - 4, bgW, bgH)
         }
 
-        ctx.fillStyle = item.style.textColor || '#0f172a'
+        ctx.fillStyle = item.style.textColor || textTextColor
         ctx.fillText(item.text || '', item.x, item.y)
 
         // 선택 영역 하이라이트
@@ -626,7 +684,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           ctx.strokeStyle = '#3b82f6'
           ctx.lineWidth = 1.5
           ctx.setLineDash([4, 4])
-          ctx.strokeRect(item.x - 8, item.y - 6, metrics.width + 16, (item.style.fontSize || fontSize) + 12)
+          ctx.strokeRect(item.x - 8, item.y - 6, metrics.width + 16, (item.style.fontSize || textFontSize) + 12)
         }
       }
 
@@ -637,8 +695,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (isDrawing && dragStart && dragCurrent) {
       ctx.save()
       if (activeTool === 'box') {
-        ctx.strokeStyle = primaryColor
-        ctx.lineWidth = lineWidth
+        ctx.strokeStyle = boxBorderColor
+        ctx.lineWidth = boxLineWidth
         ctx.setLineDash([4, 4])
         const w = dragCurrent.x - dragStart.x
         const h = dragCurrent.y - dragStart.y
@@ -666,9 +724,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           dragStart.y,
           dragCurrent.x,
           dragCurrent.y,
-          primaryColor,
-          lineWidth,
-          boxLineStyle,
+          arrowColor,
+          arrowLineWidth,
+          arrowLineStyle,
           false
         )
       } else if (activeTool === 'crop') {
@@ -717,7 +775,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 데이터 및 배경 변경 시 리렌더링 (열고 닫힐 때 재그리기 보장)
   useEffect(() => {
     draw()
-  }, [bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, circleBorderColor])
+  }, [
+    bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
+    circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale
+  ])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
   const fetchUserSettings = async () => {
@@ -732,20 +795,58 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       if (res && res.value) {
         const config = JSON.parse(res.value)
         
-        // 각각의 상태 변수 갱신
-        if (config.primaryColor) setPrimaryColor(config.primaryColor)
-        if (config.indigoColor) setIndigoColor(config.indigoColor)
+        // 1. 원숫자
+        if (config.circleNumberBgColor) setCircleNumberBgColor(config.circleNumberBgColor)
+        else if (config.indigoColor) setCircleNumberBgColor(config.indigoColor)
+
+        if (config.circleNumberTextColor) setCircleNumberTextColor(config.circleNumberTextColor)
+        else if (config.textColor) setCircleNumberTextColor(config.textColor)
+
+        if (config.circleNumberBorderColor) setCircleNumberBorderColor(config.circleNumberBorderColor)
+        else if (config.circleBorderColor) setCircleNumberBorderColor(config.circleBorderColor)
+
+        if (config.circleNumberBorderWidth !== undefined) setCircleNumberBorderWidth(config.circleNumberBorderWidth)
+        else if (config.lineWidth !== undefined) setCircleNumberBorderWidth(config.lineWidth)
+
+        if (config.circleNumberFontSize !== undefined) setCircleNumberFontSize(config.circleNumberFontSize)
+        else if (config.fontSize !== undefined) setCircleNumberFontSize(config.fontSize)
+
+        // 2. 강조 상자
+        if (config.boxBorderColor) setBoxBorderColor(config.boxBorderColor)
+        else if (config.primaryColor) setBoxBorderColor(config.primaryColor)
+
+        if (config.boxLineWidth !== undefined) setBoxLineWidth(config.boxLineWidth)
+        else if (config.lineWidth !== undefined) setBoxLineWidth(config.lineWidth)
+
+        if (config.boxLineStyle) setBoxLineStyle(config.boxLineStyle)
         if (config.boxBgColor) setBoxBgColor(config.boxBgColor)
         if (config.boxOpacity !== undefined) setBoxOpacity(config.boxOpacity)
-        if (config.boxLineStyle) setBoxLineStyle(config.boxLineStyle)
         if (config.boxBorderRadius !== undefined) setBoxBorderRadius(config.boxBorderRadius)
-        if (config.selectedEmoji) setSelectedEmoji(config.selectedEmoji)
+
+        // 3. 화살표
+        if (config.arrowColor) setArrowColor(config.arrowColor)
+        else if (config.primaryColor) setArrowColor(config.primaryColor)
+
+        if (config.arrowLineWidth !== undefined) setArrowLineWidth(config.arrowLineWidth)
+        else if (config.lineWidth !== undefined) setArrowLineWidth(config.lineWidth)
+
+        if (config.arrowLineStyle) setArrowLineStyle(config.arrowLineStyle)
+        else if (config.boxLineStyle) setArrowLineStyle(config.boxLineStyle)
+
+        // 4. 일반 텍스트
+        if (config.textTextColor) setTextTextColor(config.textTextColor)
+        else if (config.textColor) setTextTextColor(config.textColor)
+
+        if (config.textFontSize !== undefined) setTextFontSize(config.textFontSize)
+        else if (config.fontSize !== undefined) setTextFontSize(config.fontSize)
+
+        // 5. 이모지 심볼
+        if (config.symbolEmoji) setSymbolEmoji(config.symbolEmoji)
+        else if (config.selectedEmoji) setSymbolEmoji(config.selectedEmoji)
+
         if (config.symbolScale !== undefined) setSymbolScale(config.symbolScale)
-        if (config.textColor) setTextColor(config.textColor)
-        if (config.fontSize !== undefined) setFontSize(config.fontSize)
-        if (config.lineWidth !== undefined) setLineWidth(config.lineWidth)
+
         if (config.captionAlign) setCaptionAlign(config.captionAlign)
-        if (config.circleBorderColor) setCircleBorderColor(config.circleBorderColor)
       }
     } catch (e) {
       // 404 등 존재하지 않는 경우는 첫 사용이므로 에러 로그만 남기고 시스템 기본값을 유지합니다.
@@ -766,19 +867,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
       const key = `image_editor_defaults_user_${userId}`
       const config = {
-        primaryColor,
-        indigoColor,
+        circleNumberBgColor,
+        circleNumberTextColor,
+        circleNumberBorderColor,
+        circleNumberBorderWidth,
+        circleNumberFontSize,
+        boxBorderColor,
+        boxLineWidth,
+        boxLineStyle,
         boxBgColor,
         boxOpacity,
-        boxLineStyle,
         boxBorderRadius,
-        selectedEmoji,
+        arrowColor,
+        arrowLineWidth,
+        arrowLineStyle,
+        textTextColor,
+        textFontSize,
+        symbolEmoji,
         symbolScale,
-        textColor,
-        fontSize,
-        lineWidth,
-        captionAlign,
-        circleBorderColor
+        captionAlign
       }
 
       await apiClient.post('/admin/user-settings', {
@@ -859,7 +966,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setHasCaption(false)
       setCaptionText('')
       setCaptionAlign('center')
-      setCircleBorderColor(SYSTEM_ITEM_DEFAULTS.circleBorderColor)
+      
+      setCircleNumberBgColor(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
+      setCircleNumberTextColor(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
+      setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
+      setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
+      setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+      setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
+      setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
+      setBoxLineStyle(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
+      setBoxBgColor(SYSTEM_ITEM_DEFAULTS.boxBgColor)
+      setBoxOpacity(SYSTEM_ITEM_DEFAULTS.boxOpacity)
+      setBoxBorderRadius(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+      setArrowColor(SYSTEM_ITEM_DEFAULTS.arrowColor)
+      setArrowLineWidth(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
+      setArrowLineStyle(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
+      setTextTextColor(SYSTEM_ITEM_DEFAULTS.textTextColor)
+      setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
+      setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
+      setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
       
       setLastSavedState({
         title: '새 이미지 작업',
@@ -872,14 +997,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         hasCaption: false,
         captionText: '',
         captionAlign: 'center',
-        textColor: '#ffffff',
-        boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
-        boxOpacity: 30,
+        circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
+        circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
+        circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
+        circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
+        circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+        boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
+        boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
         boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
-        selectedEmoji: '💡',
-        symbolScale: 3,
+        boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
+        boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
         boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
-        circleBorderColor: SYSTEM_ITEM_DEFAULTS.circleBorderColor
+        arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
+        arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
+        arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+        textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
+        textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
+        symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
+        symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale
       })
       showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
     }
@@ -937,7 +1072,36 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setRedoStack([])
             setGeneratedImageUrl('')
             setActiveHistoryId(null)
-            setLastSavedState({ title: '새 이미지 작업', bgImageSrc: finalSrc, items: [] })
+            setLastSavedState({
+              title: '새 이미지 작업',
+              bgImageSrc: finalSrc,
+              items: [],
+              hasBorder: false,
+              borderColor: '#cbd5e1',
+              borderWidth: 2,
+              borderStyle: 'basic',
+              hasCaption: false,
+              captionText: '',
+              captionAlign: 'center',
+              circleNumberBgColor,
+              circleNumberTextColor,
+              circleNumberBorderColor,
+              circleNumberBorderWidth,
+              circleNumberFontSize,
+              boxBorderColor,
+              boxLineWidth,
+              boxLineStyle,
+              boxBgColor,
+              boxOpacity,
+              boxBorderRadius,
+              arrowColor,
+              arrowLineWidth,
+              arrowLineStyle,
+              textTextColor,
+              textFontSize,
+              symbolEmoji,
+              symbolScale
+            })
           }
           resizedImg.src = finalSrc
         } else {
@@ -950,7 +1114,36 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           setRedoStack([])
           setGeneratedImageUrl('')
           setActiveHistoryId(null)
-          setLastSavedState({ title: '새 이미지 작업', bgImageSrc: finalSrc, items: [] })
+          setLastSavedState({
+            title: '새 이미지 작업',
+            bgImageSrc: finalSrc,
+            items: [],
+            hasBorder: false,
+            borderColor: '#cbd5e1',
+            borderWidth: 2,
+            borderStyle: 'basic',
+            hasCaption: false,
+            captionText: '',
+            captionAlign: 'center',
+            circleNumberBgColor,
+            circleNumberTextColor,
+            circleNumberBorderColor,
+            circleNumberBorderWidth,
+            circleNumberFontSize,
+            boxBorderColor,
+            boxLineWidth,
+            boxLineStyle,
+            boxBgColor,
+            boxOpacity,
+            boxBorderRadius,
+            arrowColor,
+            arrowLineWidth,
+            arrowLineStyle,
+            textTextColor,
+            textFontSize,
+            symbolEmoji,
+            symbolScale
+          })
         }
       }
       img.src = event.target?.result as string || ''
@@ -1064,8 +1257,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         else if (item.type === 'text') {
           // 텍스트 대략적인 선택 감지 바운딩 박스
           const textLength = item.text?.length || 1
-          const boundsWidth = textLength * (item.style.fontSize || fontSize) * 0.65
-          const boundsHeight = (item.style.fontSize || fontSize) + 6
+          const boundsWidth = textLength * (item.style.fontSize || textFontSize) * 0.65
+          const boundsHeight = (item.style.fontSize || textFontSize) + 6
           if (x >= item.x - 4 && x <= item.x + boundsWidth && y >= item.y - 4 && y <= item.y + boundsHeight) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
@@ -1087,11 +1280,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         y,
         text: String(circleCounter),
         style: {
-          backgroundColor: indigoColor,
-          borderColor: circleBorderColor,
-          borderWidth: lineWidth,
-          textColor: textColor,
-          fontSize: fontSize
+          backgroundColor: circleNumberBgColor,
+          borderColor: circleNumberBorderColor,
+          borderWidth: circleNumberBorderWidth,
+          textColor: circleNumberTextColor,
+          fontSize: circleNumberFontSize
         }
       }
       pushToUndo([...items, newItem])
@@ -1106,7 +1299,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         type: 'symbol',
         x,
         y,
-        text: selectedEmoji,
+        text: symbolEmoji,
         style: {
           fontSize: actualSize
         }
@@ -1226,8 +1419,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             width: Math.abs(w),
             height: Math.abs(h),
             style: {
-              borderColor: primaryColor,
-              borderWidth: lineWidth,
+              borderColor: boxBorderColor,
+              borderWidth: boxLineWidth,
               lineStyle: boxLineStyle,
               backgroundColor: boxBgColor,
               opacity: boxBgColor === 'transparent' ? 1.0 : boxOpacity / 100,
@@ -1249,9 +1442,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             width: w,
             height: h,
             style: {
-              borderColor: primaryColor,
-              borderWidth: lineWidth,
-              lineStyle: boxLineStyle
+              borderColor: arrowColor,
+              borderWidth: arrowLineWidth,
+              lineStyle: arrowLineStyle
             }
           }
           pushToUndo([...items, newItem])
@@ -1348,8 +1541,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       y: dragStart.y,
       text: textInputValue,
       style: {
-        textColor: primaryColor,
-        fontSize: fontSize
+        textColor: textTextColor,
+        fontSize: textFontSize
       }
     }
     pushToUndo([...items, newItem])
@@ -1478,14 +1671,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         hasCaption: hasCaption,
         captionText: captionText,
         captionAlign: captionAlign,
-        textColor: textColor,
-        boxBgColor: boxBgColor,
-        boxOpacity: boxOpacity,
-        boxLineStyle: boxLineStyle,
-        selectedEmoji: selectedEmoji,
-        symbolScale: symbolScale,
-        boxBorderRadius: boxBorderRadius,
-        circleBorderColor: circleBorderColor
+        circleNumberBgColor,
+        circleNumberTextColor,
+        circleNumberBorderColor,
+        circleNumberBorderWidth,
+        circleNumberFontSize,
+        boxBorderColor,
+        boxLineWidth,
+        boxLineStyle,
+        boxBgColor,
+        boxOpacity,
+        boxBorderRadius,
+        arrowColor,
+        arrowLineWidth,
+        arrowLineStyle,
+        textTextColor,
+        textFontSize,
+        symbolEmoji,
+        symbolScale
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
@@ -1510,14 +1713,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         hasCaption: hasCaption,
         captionText: captionText,
         captionAlign: captionAlign,
-        textColor: textColor,
-        boxBgColor: boxBgColor,
-        boxOpacity: boxOpacity,
-        boxLineStyle: boxLineStyle,
-        selectedEmoji: selectedEmoji,
-        symbolScale: symbolScale,
-        boxBorderRadius: boxBorderRadius,
-        circleBorderColor: circleBorderColor
+        circleNumberBgColor,
+        circleNumberTextColor,
+        circleNumberBorderColor,
+        circleNumberBorderWidth,
+        circleNumberFontSize,
+        boxBorderColor,
+        boxLineWidth,
+        boxLineStyle,
+        boxBgColor,
+        boxOpacity,
+        boxBorderRadius,
+        arrowColor,
+        arrowLineWidth,
+        arrowLineStyle,
+        textTextColor,
+        textFontSize,
+        symbolEmoji,
+        symbolScale
       })
       setEditorTitle(finalTitle)
 
@@ -1579,14 +1792,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               hasCaption: hasCaption,
               captionText: captionText,
               captionAlign: captionAlign,
-              textColor: textColor,
-              boxBgColor: boxBgColor,
-              boxOpacity: boxOpacity,
-              boxLineStyle: boxLineStyle,
-              selectedEmoji: selectedEmoji,
-              symbolScale: symbolScale,
-              boxBorderRadius: boxBorderRadius,
-              circleBorderColor: circleBorderColor
+              circleNumberBgColor,
+              circleNumberTextColor,
+              circleNumberBorderColor,
+              circleNumberBorderWidth,
+              circleNumberFontSize,
+              boxBorderColor,
+              boxLineWidth,
+              boxLineStyle,
+              boxBgColor,
+              boxOpacity,
+              boxBorderRadius,
+              arrowColor,
+              arrowLineWidth,
+              arrowLineStyle,
+              textTextColor,
+              textFontSize,
+              symbolEmoji,
+              symbolScale
             }
             
             await apiClient.post('/admin/image-work', {
@@ -1607,14 +1830,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               hasCaption: hasCaption,
               captionText: captionText,
               captionAlign: captionAlign,
-              textColor: textColor,
-              boxBgColor: boxBgColor,
-              boxOpacity: boxOpacity,
-              boxLineStyle: boxLineStyle,
-              selectedEmoji: selectedEmoji,
-              symbolScale: symbolScale,
-              boxBorderRadius: boxBorderRadius,
-              circleBorderColor: circleBorderColor
+              circleNumberBgColor,
+              circleNumberTextColor,
+              circleNumberBorderColor,
+              circleNumberBorderWidth,
+              circleNumberFontSize,
+              boxBorderColor,
+              boxLineWidth,
+              boxLineStyle,
+              boxBgColor,
+              boxOpacity,
+              boxBorderRadius,
+              arrowColor,
+              arrowLineWidth,
+              arrowLineStyle,
+              textTextColor,
+              textFontSize,
+              symbolEmoji,
+              symbolScale
             })
             
             fetchHistory()
@@ -1689,7 +1922,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           canvas.height = img.height
         }
         
-        // 새로운 설정 값들 로드 및 적용
+        // 새로운 설정 값들 로드 및 적용 (하위 호환성 Fallback 적용)
         const loadedHasBorder = data.hasBorder ?? false
         const loadedBorderColor = data.borderColor ?? '#cbd5e1'
         const loadedBorderWidth = data.borderWidth ?? 2
@@ -1697,14 +1930,29 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const loadedHasCaption = data.hasCaption ?? false
         const loadedCaptionText = data.captionText ?? ''
         const loadedCaptionAlign = data.captionAlign ?? 'center'
-        const loadedTextColor = data.textColor ?? '#ffffff'
-        const loadedBoxBgColor = data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor
-        const loadedBoxOpacity = data.boxOpacity ?? 30
+
+        const loadedCircleNumberBgColor = data.circleNumberBgColor ?? data.indigoColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBgColor
+        const loadedCircleNumberTextColor = data.circleNumberTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberTextColor
+        const loadedCircleNumberBorderColor = data.circleNumberBorderColor ?? data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor
+        const loadedCircleNumberBorderWidth = data.circleNumberBorderWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth
+        const loadedCircleNumberFontSize = data.circleNumberFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.circleNumberFontSize
+
+        const loadedBoxBorderColor = data.boxBorderColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.boxBorderColor
+        const loadedBoxLineWidth = data.boxLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.boxLineWidth
         const loadedBoxLineStyle = data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.boxLineStyle
-        const loadedSelectedEmoji = data.selectedEmoji ?? '💡'
-        const loadedSymbolScale = data.symbolScale ?? 3
+        const loadedBoxBgColor = data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor
+        const loadedBoxOpacity = data.boxOpacity ?? SYSTEM_ITEM_DEFAULTS.boxOpacity
         const loadedBoxBorderRadius = data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius
-        const loadedCircleBorderColor = data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleBorderColor
+
+        const loadedArrowColor = data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor
+        const loadedArrowLineWidth = data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth
+        const loadedArrowLineStyle = data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle
+
+        const loadedTextTextColor = data.textTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.textTextColor
+        const loadedTextFontSize = data.textFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.textFontSize
+
+        const loadedSymbolEmoji = data.symbolEmoji ?? data.selectedEmoji ?? '💡'
+        const loadedSymbolScale = data.symbolScale ?? 3
         
         setHasBorder(loadedHasBorder)
         setBorderColor(loadedBorderColor)
@@ -1713,14 +1961,29 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setHasCaption(loadedHasCaption)
         setCaptionText(loadedCaptionText)
         setCaptionAlign(loadedCaptionAlign)
-        setTextColor(loadedTextColor)
+
+        setCircleNumberBgColor(loadedCircleNumberBgColor)
+        setCircleNumberTextColor(loadedCircleNumberTextColor)
+        setCircleNumberBorderColor(loadedCircleNumberBorderColor)
+        setCircleNumberBorderWidth(loadedCircleNumberBorderWidth)
+        setCircleNumberFontSize(loadedCircleNumberFontSize)
+
+        setBoxBorderColor(loadedBoxBorderColor)
+        setBoxLineWidth(loadedBoxLineWidth)
+        setBoxLineStyle(loadedBoxLineStyle)
         setBoxBgColor(loadedBoxBgColor)
         setBoxOpacity(loadedBoxOpacity)
-        setBoxLineStyle(loadedBoxLineStyle)
-        setSelectedEmoji(loadedSelectedEmoji)
-        setSymbolScale(loadedSymbolScale)
         setBoxBorderRadius(loadedBoxBorderRadius)
-        setCircleBorderColor(loadedCircleBorderColor)
+
+        setArrowColor(loadedArrowColor)
+        setArrowLineWidth(loadedArrowLineWidth)
+        setArrowLineStyle(loadedArrowLineStyle)
+
+        setTextTextColor(loadedTextTextColor)
+        setTextFontSize(loadedTextFontSize)
+
+        setSymbolEmoji(loadedSymbolEmoji)
+        setSymbolScale(loadedSymbolScale)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -1752,14 +2015,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           hasCaption: loadedHasCaption,
           captionText: loadedCaptionText,
           captionAlign: loadedCaptionAlign,
-          textColor: loadedTextColor,
+          circleNumberBgColor: loadedCircleNumberBgColor,
+          circleNumberTextColor: loadedCircleNumberTextColor,
+          circleNumberBorderColor: loadedCircleNumberBorderColor,
+          circleNumberBorderWidth: loadedCircleNumberBorderWidth,
+          circleNumberFontSize: loadedCircleNumberFontSize,
+          boxBorderColor: loadedBoxBorderColor,
+          boxLineWidth: loadedBoxLineWidth,
+          boxLineStyle: loadedBoxLineStyle,
           boxBgColor: loadedBoxBgColor,
           boxOpacity: loadedBoxOpacity,
-          boxLineStyle: loadedBoxLineStyle,
-          selectedEmoji: loadedSelectedEmoji,
-          symbolScale: loadedSymbolScale,
           boxBorderRadius: loadedBoxBorderRadius,
-          circleBorderColor: loadedCircleBorderColor
+          arrowColor: loadedArrowColor,
+          arrowLineWidth: loadedArrowLineWidth,
+          arrowLineStyle: loadedArrowLineStyle,
+          textTextColor: loadedTextTextColor,
+          textFontSize: loadedTextFontSize,
+          symbolEmoji: loadedSymbolEmoji,
+          symbolScale: loadedSymbolScale
         })
       }
       img.src = data.originalImageUrl
@@ -1955,14 +2228,42 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             {/* 플로팅 속성 조절기 판넬 (드래그 가능 및 탭 구조) */}
             {bgImage && (
               <FloatingPropertyPanel
-                primaryColor={primaryColor}
-                setPrimaryColor={setPrimaryColor}
-                indigoColor={indigoColor}
-                setIndigoColor={setIndigoColor}
-                lineWidth={lineWidth}
-                setLineWidth={setLineWidth}
-                fontSize={fontSize}
-                setFontSize={setFontSize}
+                circleNumberBgColor={circleNumberBgColor}
+                setCircleNumberBgColor={setCircleNumberBgColor}
+                circleNumberTextColor={circleNumberTextColor}
+                setCircleNumberTextColor={setCircleNumberTextColor}
+                circleNumberBorderColor={circleNumberBorderColor}
+                setCircleNumberBorderColor={setCircleNumberBorderColor}
+                circleNumberBorderWidth={circleNumberBorderWidth}
+                setCircleNumberBorderWidth={setCircleNumberBorderWidth}
+                circleNumberFontSize={circleNumberFontSize}
+                setCircleNumberFontSize={setCircleNumberFontSize}
+                boxBorderColor={boxBorderColor}
+                setBoxBorderColor={setBoxBorderColor}
+                boxLineWidth={boxLineWidth}
+                setBoxLineWidth={setBoxLineWidth}
+                boxLineStyle={boxLineStyle}
+                setBoxLineStyle={setBoxLineStyle}
+                boxBgColor={boxBgColor}
+                setBoxBgColor={setBoxBgColor}
+                boxOpacity={boxOpacity}
+                setBoxOpacity={setBoxOpacity}
+                boxBorderRadius={boxBorderRadius}
+                setBoxBorderRadius={setBoxBorderRadius}
+                arrowColor={arrowColor}
+                setArrowColor={setArrowColor}
+                arrowLineWidth={arrowLineWidth}
+                setArrowLineWidth={setArrowLineWidth}
+                arrowLineStyle={arrowLineStyle}
+                setArrowLineStyle={setArrowLineStyle}
+                textTextColor={textTextColor}
+                setTextTextColor={setTextTextColor}
+                textFontSize={textFontSize}
+                setTextFontSize={setTextFontSize}
+                symbolEmoji={symbolEmoji}
+                setSymbolEmoji={setSymbolEmoji}
+                symbolScale={symbolScale}
+                setSymbolScale={setSymbolScale}
                 hasBorder={hasBorder}
                 setHasBorder={setHasBorder}
                 borderColor={borderColor}
@@ -1980,22 +2281,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 selectedItemId={selectedItemId}
                 circleCounter={circleCounter}
                 setCircleCounter={setCircleCounter}
-                textColor={textColor}
-                setTextColor={setTextColor}
-                boxBgColor={boxBgColor}
-                setBoxBgColor={setBoxBgColor}
-                boxOpacity={boxOpacity}
-                setBoxOpacity={setBoxOpacity}
-                boxLineStyle={boxLineStyle}
-                setBoxLineStyle={setBoxLineStyle}
-                selectedEmoji={selectedEmoji}
-                setSelectedEmoji={setSelectedEmoji}
-                symbolScale={symbolScale}
-                setSymbolScale={setSymbolScale}
-                boxBorderRadius={boxBorderRadius}
-                setBoxBorderRadius={setBoxBorderRadius}
-                circleBorderColor={circleBorderColor}
-                setCircleBorderColor={setCircleBorderColor}
                 activeTool={activeTool}
                 items={items}
                 pushToUndo={pushToUndo}

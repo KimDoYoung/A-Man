@@ -1,19 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Minimize2, Maximize2, Settings, Layout, Type, Palette, CircleDot, Square, Save } from 'lucide-react'
+import React, { useState } from 'react'
+import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square, Save } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ColorPicker from './ColorPicker'
 import RangeSlider from './RangeSlider'
 
 interface FloatingPropertyPanelProps {
-  primaryColor: string
-  setPrimaryColor: (color: string) => void
-  indigoColor: string
-  setIndigoColor: (color: string) => void
-  lineWidth: number
-  setLineWidth: (width: number) => void
-  fontSize: number
-  setFontSize: (size: number) => void
-  
+  // 1. 원숫자 (circle-number) 관련 속성
+  circleNumberBgColor: string
+  setCircleNumberBgColor: (color: string) => void
+  circleNumberTextColor: string
+  setCircleNumberTextColor: (color: string) => void
+  circleNumberBorderColor: string
+  setCircleNumberBorderColor: (color: string) => void
+  circleNumberBorderWidth: number
+  setCircleNumberBorderWidth: (width: number) => void
+  circleNumberFontSize: number
+  setCircleNumberFontSize: (size: number) => void
+
+  // 2. 강조 상자 (box) 관련 속성
+  boxBorderColor: string
+  setBoxBorderColor: (color: string) => void
+  boxLineWidth: number
+  setBoxLineWidth: (width: number) => void
+  boxLineStyle: 'solid' | 'dashed'
+  setBoxLineStyle: (style: 'solid' | 'dashed') => void
+  boxBgColor: string
+  setBoxBgColor: (color: string) => void
+  boxOpacity: number
+  setBoxOpacity: (val: number) => void
+  boxBorderRadius: number
+  setBoxBorderRadius: (val: number) => void
+
+  // 3. 화살표 (arrow) 관련 속성
+  arrowColor: string
+  setArrowColor: (color: string) => void
+  arrowLineWidth: number
+  setArrowLineWidth: (width: number) => void
+  arrowLineStyle: 'solid' | 'dashed'
+  setArrowLineStyle: (style: 'solid' | 'dashed') => void
+
+  // 4. 일반 텍스트 (text) 관련 속성
+  textTextColor: string
+  setTextTextColor: (color: string) => void
+  textFontSize: number
+  setTextFontSize: (size: number) => void
+
+  // 5. 이모지 심볼 (symbol) 관련 속성
+  symbolEmoji: string
+  setSymbolEmoji: (emoji: string) => void
+  symbolScale: number
+  setSymbolScale: (scale: number) => void
+
+  // 6. 기타 공통 레이아웃 관련 속성
   hasBorder: boolean
   setHasBorder: (val: boolean) => void
   borderColor: string
@@ -29,26 +67,10 @@ interface FloatingPropertyPanelProps {
   setCaptionText: (text: string) => void
   captionAlign: 'left' | 'center'
   setCaptionAlign: (align: 'left' | 'center') => void
-  circleBorderColor: string
-  setCircleBorderColor: (color: string) => void
 
   selectedItemId: string | null
   circleCounter: number
   setCircleCounter: (val: number) => void
-  textColor: string
-  setTextColor: (color: string) => void
-  boxBgColor: string
-  setBoxBgColor: (color: string) => void
-  boxOpacity: number
-  setBoxOpacity: (val: number) => void
-  boxLineStyle: 'solid' | 'dashed'
-  setBoxLineStyle: (style: 'solid' | 'dashed') => void
-  selectedEmoji: string
-  setSelectedEmoji: (emoji: string) => void
-  symbolScale: number
-  setSymbolScale: (scale: number) => void
-  boxBorderRadius: number
-  setBoxBorderRadius: (val: number) => void
   onSaveDefaults: () => Promise<void> | void
   activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'symbol'
   items: CanvasItem[]
@@ -56,14 +78,42 @@ interface FloatingPropertyPanelProps {
 }
 
 const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
-  primaryColor,
-  setPrimaryColor,
-  indigoColor,
-  setIndigoColor,
-  lineWidth,
-  setLineWidth,
-  fontSize,
-  setFontSize,
+  circleNumberBgColor,
+  setCircleNumberBgColor,
+  circleNumberTextColor,
+  setCircleNumberTextColor,
+  circleNumberBorderColor,
+  setCircleNumberBorderColor,
+  circleNumberBorderWidth,
+  setCircleNumberBorderWidth,
+  circleNumberFontSize,
+  setCircleNumberFontSize,
+  boxBorderColor,
+  setBoxBorderColor,
+  boxLineWidth,
+  setBoxLineWidth,
+  boxLineStyle,
+  setBoxLineStyle,
+  boxBgColor,
+  setBoxBgColor,
+  boxOpacity,
+  setBoxOpacity,
+  boxBorderRadius,
+  setBoxBorderRadius,
+  arrowColor,
+  setArrowColor,
+  arrowLineWidth,
+  setArrowLineWidth,
+  arrowLineStyle,
+  setArrowLineStyle,
+  textTextColor,
+  setTextTextColor,
+  textFontSize,
+  setTextFontSize,
+  symbolEmoji,
+  setSymbolEmoji,
+  symbolScale,
+  setSymbolScale,
   hasBorder,
   setHasBorder,
   borderColor,
@@ -78,25 +128,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setCaptionText,
   captionAlign,
   setCaptionAlign,
-  circleBorderColor,
-  setCircleBorderColor,
   selectedItemId,
   circleCounter,
   setCircleCounter,
-  textColor,
-  setTextColor,
-  boxBgColor,
-  setBoxBgColor,
-  boxOpacity,
-  setBoxOpacity,
-  boxLineStyle,
-  setBoxLineStyle,
-  selectedEmoji,
-  setSelectedEmoji,
-  symbolScale,
-  setSymbolScale,
-  boxBorderRadius,
-  setBoxBorderRadius,
   onSaveDefaults,
   activeTool,
   items,
@@ -125,7 +159,6 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   }
 
   const getSelectedIcon = () => {
-    // 1순위: 선택된 아이템이 있을 때
     if (selectedItemId && selectedItem) {
       switch (selectedItem.type) {
         case 'circle-number':
@@ -136,126 +169,77 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
           return <Type className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
       }
     }
-    // 2순위: 선택된 아이템은 없지만 현재 활성화된 도구가 있을 때
-    switch (activeTool) {
-      case 'circle-number':
-        return <CircleDot className="w-3.5 h-3.5 text-indigo-500" />
-      case 'box':
-        return <Square className="w-3.5 h-3.5 text-red-500" />
-      case 'text':
-        return <Type className="w-3.5 h-3.5 text-blue-500" />
-      default:
-        return <Settings className="w-3.5 h-3.5 text-indigo-650" />
-    }
+    return null
   }
 
-  const getSelectedLabel = () => {
-    if (selectedItemId && selectedItem) {
-      switch (selectedItem.type) {
-        case 'circle-number':
-          return `속성 조절기 (${selectedItem.text}번 원숫자)`
-        case 'box':
-          return '속성 조절기 (강조 박스)'
-        case 'text':
-          return '속성 조절기 (설명 텍스트)'
-      }
-    }
-    switch (activeTool) {
-      case 'circle-number':
-        return '속성 조절기 (원숫자 도구)'
-      case 'box':
-        return '속성 조절기 (강조 박스 도구)'
-      case 'text':
-        return '속성 조절기 (설명 텍스트 도구)'
-      case 'crop':
-        return '속성 조절기 (이미지 자르기)'
-      default:
-        return '속성 조절기 판넬'
-    }
-  }
-  
-  const panelRef = useRef<HTMLDivElement>(null)
-  const dragStartRef = useRef<{ mouseX: number; mouseY: number; panelX: number; panelY: number } | null>(null)
+  // 드래그 위치 제어
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // 내부 폼 요소(인풋, 셀렉트, 버튼 등) 클릭 시에는 드래그 차단
+    // 인풋 엘리먼트 클릭 시엔 드래그 방지
     const target = e.target as HTMLElement
-    if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('textarea')) {
+    if (target.closest('input') || target.closest('select') || target.closest('textarea') || target.closest('button')) {
       return
     }
-
-    e.preventDefault()
-    dragStartRef.current = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      panelX: position.x,
-      panelY: position.y
-    }
-
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-  }
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragStartRef.current) return
-    const deltaX = e.clientX - dragStartRef.current.mouseX
-    const deltaY = e.clientY - dragStartRef.current.mouseY
     
-    let newX = dragStartRef.current.panelX + deltaX
-    let newY = dragStartRef.current.panelY + deltaY
-
-    // 화면 경계를 이탈하지 않도록 윈도우 너비/높이 한계 산출 및 클램핑
-    const panelW = panelRef.current?.offsetWidth || 340
-    const panelH = panelRef.current?.offsetHeight || 260
-    const maxX = window.innerWidth - panelW - 30
-    const maxY = window.innerHeight - panelH - 80
-
-    newX = Math.max(20, Math.min(newX, maxX))
-    newY = Math.max(80, Math.min(newY, maxY)) // 헤더를 가리지 않게 최소 y를 80px로 잡음
-
-    setPosition({ x: newX, y: newY })
+    setIsDragging(true)
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    })
   }
 
-  const handleMouseUp = () => {
-    dragStartRef.current = null
-    document.removeEventListener('mousemove', handleMouseMove)
-    document.removeEventListener('mouseup', handleMouseUp)
+  const handleMouseMoveGlobal = (e: MouseEvent) => {
+    if (!isDragging) return
+    setPosition({
+      x: e.clientX - dragOffset.x,
+      y: e.clientY - dragOffset.y
+    })
   }
 
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
+  const handleMouseUpGlobal = () => {
+    setIsDragging(false)
+  }
+
+  React.useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMoveGlobal)
+      window.addEventListener('mouseup', handleMouseUpGlobal)
     }
-  }, [])
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveGlobal)
+      window.removeEventListener('mouseup', handleMouseUpGlobal)
+    }
+  }, [isDragging, dragOffset])
 
   return (
     <div
-      ref={panelRef}
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
-      className="absolute z-50 w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200/60 dark:border-slate-800/65 shadow-2xl rounded-xl overflow-hidden flex flex-col text-xs text-gray-500 transition-all select-none animate-in fade-in zoom-in-95 duration-200"
+      className="absolute w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200 dark:border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 select-none animate-in fade-in zoom-in-95 duration-200"
     >
-      {/* 1. 드래그 가능 헤더 영역 */}
+      {/* 헤더 바 */}
       <div
         onMouseDown={handleMouseDown}
-        onDoubleClick={() => setIsCollapsed(!isCollapsed)}
-        className="h-10 px-4 bg-gray-50 dark:bg-slate-950 border-b border-gray-150 dark:border-slate-850 flex items-center justify-between cursor-grab active:cursor-grabbing shrink-0"
+        className="px-4 py-3 bg-gray-50/50 dark:bg-slate-900/50 border-b border-gray-200/60 dark:border-slate-800/80 flex items-center justify-between cursor-move"
       >
-        <div className="flex items-center space-x-1.5 font-bold text-gray-700 dark:text-slate-200">
+        <div className="flex items-center space-x-2">
           {getSelectedIcon()}
-          <span>{getSelectedLabel()}</span>
+          <span className="font-bold text-xs tracking-wide">
+            {selectedItemId && selectedItem
+              ? `요소 편집 (${selectedItem.type})`
+              : '그리기 도구 속성'}
+          </span>
         </div>
-        
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1 hover:bg-gray-200 dark:hover:bg-slate-800 rounded transition-colors text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 cursor-pointer"
-          title={isCollapsed ? '펼치기' : '접기'}
+          className="p-1 hover:bg-gray-200/50 dark:hover:bg-slate-800/50 rounded-md cursor-pointer transition-colors"
         >
           {isCollapsed ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
         </button>
       </div>
 
-      {/* 2. 바디 영역 (접혀 있지 않을 때만 노출) */}
+      {/* 접기 상태가 아닐 때만 속성 노출 */}
       {!isCollapsed && (
         <div className="flex flex-col flex-1 min-h-[220px]">
           {selectedItemId && selectedItem ? (
@@ -268,9 +252,13 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 강조선 색상 */}
                   <ColorPicker
                     label="강조선 색상"
-                    selectedColor={selectedItem.style.borderColor || primaryColor}
+                    selectedColor={selectedItem.style.borderColor || (selectedItem.type === 'box' ? boxBorderColor : arrowColor)}
                     onChangeColor={(col) => {
-                      setPrimaryColor(col)
+                      if (selectedItem.type === 'box') {
+                        setBoxBorderColor(col)
+                      } else {
+                        setArrowColor(col)
+                      }
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, borderColor: col } }
@@ -353,10 +341,14 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         <button
                           key={t.id}
                           onClick={() => {
-                            setBoxLineStyle(t.id as any)
+                            if (selectedItem.type === 'box') {
+                              setBoxLineStyle(t.id as any)
+                            } else {
+                              setArrowLineStyle(t.id as any)
+                            }
                             const updated = items.map(item => {
                               if (item.id === selectedItemId) {
-                                return { ...item, style: { ...item.style, lineStyle: t.id as any } }
+                                  return { ...item, style: { ...item.style, lineStyle: t.id as any } }
                               }
                               return item
                             })
@@ -377,11 +369,15 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 선 두께 */}
                   <RangeSlider
                     label="선 두께"
-                    value={selectedItem.style.borderWidth || lineWidth}
+                    value={selectedItem.style.borderWidth || (selectedItem.type === 'box' ? boxLineWidth : arrowLineWidth)}
                     min={1}
                     max={8}
                     onChangeValue={(val) => {
-                      setLineWidth(val)
+                      if (selectedItem.type === 'box') {
+                        setBoxLineWidth(val)
+                      } else {
+                        setArrowLineWidth(val)
+                      }
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, borderWidth: val } }
@@ -407,7 +403,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           <button
                             key={emoji}
                             onClick={() => {
-                              setSelectedEmoji(emoji)
+                              setSymbolEmoji(emoji)
                               const updated = items.map(item => {
                                 if (item.id === selectedItemId) {
                                   return { ...item, text: emoji }
@@ -436,7 +432,6 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       {[1, 2, 3, 4, 5].map((scale) => {
                         const scaleMapping = [20, 32, 48, 64, 80]
                         const currentSize = selectedItem.style.fontSize || 48
-                        // 픽셀 값에 가장 가까운 스케일 단계를 매칭하여 판별
                         const currentScale = scaleMapping.findIndex(s => s === currentSize) + 1 || 3
                         const isCurrent = currentScale === scale
 
@@ -475,9 +470,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 원배경 색상 */}
                   <ColorPicker
                     label="원배경 색상"
-                    selectedColor={selectedItem.style.backgroundColor || indigoColor}
+                    selectedColor={selectedItem.style.backgroundColor || circleNumberBgColor}
                     onChangeColor={(col) => {
-                      setIndigoColor(col)
+                      setCircleNumberBgColor(col)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, backgroundColor: col } }
@@ -492,9 +487,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 글자 색상 */}
                   <ColorPicker
                     label="글자 색상"
-                    selectedColor={selectedItem.style.textColor || textColor}
+                    selectedColor={selectedItem.style.textColor || circleNumberTextColor}
                     onChangeColor={(col) => {
-                      setTextColor(col)
+                      setCircleNumberTextColor(col)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, textColor: col } }
@@ -509,9 +504,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 테두리 색상 */}
                   <ColorPicker
                     label="테두리 색상"
-                    selectedColor={selectedItem.style.borderColor || circleBorderColor}
+                    selectedColor={selectedItem.style.borderColor || circleNumberBorderColor}
                     onChangeColor={(col) => {
-                      setCircleBorderColor(col)
+                      setCircleNumberBorderColor(col)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, borderColor: col } }
@@ -526,11 +521,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 테두리 두께 */}
                   <RangeSlider
                     label="테두리 두께"
-                    value={selectedItem.style.borderWidth || lineWidth}
+                    value={selectedItem.style.borderWidth || circleNumberBorderWidth}
                     min={1}
                     max={8}
                     onChangeValue={(val) => {
-                      setLineWidth(val)
+                      setCircleNumberBorderWidth(val)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, borderWidth: val } }
@@ -558,11 +553,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 글자 크기 */}
                   <RangeSlider
                     label="글자 크기"
-                    value={selectedItem.style.fontSize || fontSize}
+                    value={selectedItem.style.fontSize || circleNumberFontSize}
                     min={10}
                     max={28}
                     onChangeValue={(val) => {
-                      setFontSize(val)
+                      setCircleNumberFontSize(val)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, fontSize: val } }
@@ -581,9 +576,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 글자 색상 */}
                   <ColorPicker
                     label="글자 색상"
-                    selectedColor={selectedItem.style.textColor || textColor}
+                    selectedColor={selectedItem.style.textColor || textTextColor}
                     onChangeColor={(col) => {
-                      setTextColor(col)
+                      setTextTextColor(col)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, textColor: col } }
@@ -598,11 +593,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 글자 크기 */}
                   <RangeSlider
                     label="글자 크기"
-                    value={selectedItem.style.fontSize || fontSize}
+                    value={selectedItem.style.fontSize || textFontSize}
                     min={10}
                     max={28}
                     onChangeValue={(val) => {
-                      setFontSize(val)
+                      setTextFontSize(val)
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, fontSize: val } }
@@ -631,8 +626,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`flex-1 py-2 px-3 border-b-2 font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer text-[11px] ${
                       activeTab === tab.id
-                        ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-900'
-                        : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-slate-300'
+                        ? 'border-indigo-600 text-indigo-650 dark:text-indigo-400 bg-white dark:bg-slate-900'
+                        : 'border-transparent text-gray-400 hover:text-gray-605 dark:hover:text-slate-300'
                     }`}
                   >
                     {tab.icon}
@@ -652,36 +647,36 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       <>
                         <ColorPicker
                           label="원배경 색상"
-                          selectedColor={indigoColor}
-                          onChangeColor={setIndigoColor}
+                          selectedColor={circleNumberBgColor}
+                          onChangeColor={setCircleNumberBgColor}
                           colors={['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444']}
                         />
                         <ColorPicker
                           label="글자 색상"
-                          selectedColor={textColor}
-                          onChangeColor={setTextColor}
+                          selectedColor={circleNumberTextColor}
+                          onChangeColor={setCircleNumberTextColor}
                           colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']}
                         />
                         <ColorPicker
                           label="테두리 색상"
-                          selectedColor={circleBorderColor}
-                          onChangeColor={setCircleBorderColor}
+                          selectedColor={circleNumberBorderColor}
+                          onChangeColor={setCircleNumberBorderColor}
                           colors={['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']}
                         />
                         <RangeSlider
                           label="테두리 두께"
-                          value={lineWidth}
+                          value={circleNumberBorderWidth}
                           min={1}
                           max={5}
-                          onChangeValue={setLineWidth}
+                          onChangeValue={setCircleNumberBorderWidth}
                         />
 
                         <RangeSlider
                           label="글자 크기"
-                          value={fontSize}
+                          value={circleNumberFontSize}
                           min={10}
                           max={28}
-                          onChangeValue={setFontSize}
+                          onChangeValue={setCircleNumberFontSize}
                         />
                         <div className="space-y-2">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">다음번호</span>
@@ -700,8 +695,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       <>
                         <ColorPicker
                           label="강조선 색상"
-                          selectedColor={primaryColor}
-                          onChangeColor={setPrimaryColor}
+                          selectedColor={activeTool === 'box' ? boxBorderColor : arrowColor}
+                          onChangeColor={activeTool === 'box' ? setBoxBorderColor : setArrowColor}
                           colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
                         />
                         {activeTool === 'box' && (
@@ -740,9 +735,15 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                             ].map((t) => (
                               <button
                                 key={t.id}
-                                onClick={() => setBoxLineStyle(t.id as any)}
+                                onClick={() => {
+                                  if (activeTool === 'box') {
+                                    setBoxLineStyle(t.id as any)
+                                  } else {
+                                    setArrowLineStyle(t.id as any)
+                                  }
+                                }}
                                 className={`px-3 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
-                                  boxLineStyle === t.id
+                                  (activeTool === 'box' ? boxLineStyle : arrowLineStyle) === t.id
                                     ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
                                     : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
                                 }`}
@@ -755,10 +756,10 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                         <RangeSlider
                           label="선 두께"
-                          value={lineWidth}
+                          value={activeTool === 'box' ? boxLineWidth : arrowLineWidth}
                           min={1}
                           max={8}
-                          onChangeValue={setLineWidth}
+                          onChangeValue={activeTool === 'box' ? setBoxLineWidth : setArrowLineWidth}
                         />
                       </>
                     )}
@@ -770,11 +771,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
                           <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
                             {['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬'].map((emoji) => {
-                              const isCurrent = selectedEmoji === emoji
+                              const isCurrent = symbolEmoji === emoji
                               return (
                                 <button
                                   key={emoji}
-                                  onClick={() => setSelectedEmoji(emoji)}
+                                  onClick={() => setSymbolEmoji(emoji)}
                                   className={`py-1.5 text-center text-lg rounded-md transition-all cursor-pointer ${
                                     isCurrent
                                       ? 'bg-indigo-600 shadow-sm transform scale-110'
@@ -817,16 +818,16 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       <>
                         <ColorPicker
                           label="글자 색상"
-                          selectedColor={textColor}
-                          onChangeColor={setTextColor}
+                          selectedColor={textTextColor}
+                          onChangeColor={setTextTextColor}
                           colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']}
                         />
                         <RangeSlider
                           label="글자 크기"
-                          value={fontSize}
+                          value={textFontSize}
                           min={10}
                           max={28}
-                          onChangeValue={setFontSize}
+                          onChangeValue={setTextFontSize}
                         />
                       </>
                     )}
@@ -920,7 +921,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                                 className={`flex-1 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
                                   captionAlign === a.id
                                     ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
-                                    : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                                    : 'bg-white dark:bg-slate-900 text-gray-505 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
                                 }`}
                               >
                                 {a.label}

@@ -1,40 +1,32 @@
 export const SYSTEM_ITEM_DEFAULTS = {
-  // 강조 사각형 및 주요 요소의 테두리 기본 색상 (기본: #ef4444)
-  primaryColor: '#ef4444',
-  
-  // 원숫자의 기본 테두리 색상 (기본: #0f1729)
-  circleBorderColor: '#0f1729',
-  
-  // 원숫자의 기본 배경 색상 (기본: Red #ef4444)
-  indigoColor: '#ef4444',
-  
-  // 강조 상자의 기본 배경 색상 (기본: #f59e0b)
-  boxBgColor: '#f59e0b',
-  
-  // 강조 상자의 기본 배경 불투명도 (%)
-  boxOpacity: 30,
-  
-  // 강조 상자의 기본 선 스타일 (실선/점선) (기본: dashed)
+  // 1. 원숫자 (circle-number) 전용 속성
+  circleNumberBgColor: '#ef4444',
+  circleNumberTextColor: '#ffffff',
+  circleNumberBorderColor: '#0f172a',
+  circleNumberBorderWidth: 3,
+  circleNumberFontSize: 13,
+
+  // 2. 강조 상자 (box) 전용 속성
+  boxBorderColor: '#ef4444',
+  boxLineWidth: 3,
   boxLineStyle: 'dashed' as 'solid' | 'dashed',
-  
-  // 강조 상자의 기본 모서리 둥글기 반경 (px) (기본: 7)
+  boxBgColor: '#f59e0b',
+  boxOpacity: 30,
   boxBorderRadius: 7,
-  
-  // 기본 선택된 이모지 심볼
-  selectedEmoji: '💡',
-  
-  // 이모지 심볼의 기본 크기 배율 (1-5단계 중 3단계)
+
+  // 3. 화살표 (arrow) 전용 속성
+  arrowColor: '#ef4444',
+  arrowLineWidth: 3,
+  arrowLineStyle: 'solid' as 'solid' | 'dashed',
+
+  // 4. 일반 텍스트 (text) 전용 속성
+  textTextColor: '#0f172a',
+  textFontSize: 16,
+
+  // 5. 이모지 심볼 (symbol) 전용 속성
+  symbolEmoji: '💡',
   symbolScale: 3,
-  
-  // 기본 텍스트 색상
-  textColor: '#ffffff',
-  
-  // 기본 글자 크기
-  fontSize: 16,
-  
-  // 기본 선 두께
-  lineWidth: 3,
-  
-  // 기본 설명 캡션 정렬 방식 (left / center)
+
+  // 6. 기타 공통 레이아웃 속성
   captionAlign: 'center' as 'left' | 'center'
 } as const
