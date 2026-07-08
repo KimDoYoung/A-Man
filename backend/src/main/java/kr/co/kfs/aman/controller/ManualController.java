@@ -26,6 +26,344 @@ import java.util.Optional;
 @RequestMapping("/manual")
 public class ManualController {
 
+    private static final String TOC_CSS = 
+        "        /* --- Floating TOC & ScrollToTop outside Container Bounds --- */\n" +
+        "        .floating-toc-trigger {\n" +
+        "            position: fixed;\n" +
+        "            bottom: 30px;\n" +
+        "            left: calc(50% + 450px + 50px);\n" +
+        "            width: 44px;\n" +
+        "            height: 44px;\n" +
+        "            border-radius: 50%;\n" +
+        "            background-color: rgba(99, 102, 241, 0.15);\n" +
+        "            color: rgba(99, 102, 241, 0.5);\n" +
+        "            border: 1px solid rgba(99, 102, 241, 0.2);\n" +
+        "            box-shadow: none;\n" +
+        "            cursor: pointer;\n" +
+        "            display: flex;\n" +
+        "            align-items: center;\n" +
+        "            justify-content: center;\n" +
+        "            transition: all 0.2s ease;\n" +
+        "            z-index: 999;\n" +
+        "        }\n" +
+        "        .floating-toc-trigger:hover {\n" +
+        "            transform: scale(1.05);\n" +
+        "            background-color: rgba(99, 102, 241, 0.95);\n" +
+        "            color: #ffffff;\n" +
+        "            border-color: #6366f1;\n" +
+        "            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);\n" +
+        "        }\n" +
+        "        .dark-mode .floating-toc-trigger {\n" +
+        "            background-color: rgba(99, 102, 241, 0.1);\n" +
+        "            color: rgba(129, 140, 248, 0.4);\n" +
+        "            border-color: rgba(99, 102, 241, 0.15);\n" +
+        "        }\n" +
+        "        .dark-mode .floating-toc-trigger:hover {\n" +
+        "            background-color: rgba(99, 102, 241, 0.9);\n" +
+        "            color: #ffffff;\n" +
+        "            border-color: #6366f1;\n" +
+        "            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);\n" +
+        "        }\n" +
+        "        .floating-scroll-top {\n" +
+        "            position: fixed;\n" +
+        "            bottom: 30px;\n" +
+        "            left: calc(50% - 450px - 50px - 44px);\n" +
+        "            width: 44px;\n" +
+        "            height: 44px;\n" +
+        "            border-radius: 50%;\n" +
+        "            background-color: rgba(226, 232, 240, 0.3);\n" +
+        "            color: rgba(71, 85, 105, 0.4);\n" +
+        "            border: 1px solid rgba(203, 213, 225, 0.3);\n" +
+        "            box-shadow: none;\n" +
+        "            cursor: pointer;\n" +
+        "            display: flex;\n" +
+        "            align-items: center;\n" +
+        "            justify-content: center;\n" +
+        "            transition: all 0.2s ease;\n" +
+        "            z-index: 999;\n" +
+        "            opacity: 0;\n" +
+        "            visibility: hidden;\n" +
+        "        }\n" +
+        "        .floating-scroll-top.show {\n" +
+        "            opacity: 1;\n" +
+        "            visibility: visible;\n" +
+        "        }\n" +
+        "        .floating-scroll-top:hover {\n" +
+        "            transform: scale(1.05);\n" +
+        "            background-color: rgba(226, 232, 240, 0.95);\n" +
+        "            color: rgba(15, 23, 42, 0.8);\n" +
+        "            border-color: rgba(203, 213, 225, 0.8);\n" +
+        "            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);\n" +
+        "        }\n" +
+        "        .dark-mode .floating-scroll-top {\n" +
+        "            background-color: rgba(51, 65, 85, 0.25);\n" +
+        "            color: rgba(148, 163, 184, 0.4);\n" +
+        "            border-color: rgba(51, 65, 85, 0.3);\n" +
+        "        }\n" +
+        "        .dark-mode .floating-scroll-top:hover {\n" +
+        "            background-color: rgba(51, 65, 85, 0.9);\n" +
+        "            color: #f1f5f9;\n" +
+        "            border-color: rgba(71, 85, 105, 0.8);\n" +
+        "            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);\n" +
+        "        }\n" +
+        "        .container.width-wide .floating-toc-trigger {\n" +
+        "            left: calc(50% + 640px + 50px);\n" +
+        "        }\n" +
+        "        .container.width-wide .floating-scroll-top {\n" +
+        "            left: calc(50% - 640px - 50px - 44px);\n" +
+        "        }\n" +
+        "        .container.width-full .floating-toc-trigger {\n" +
+        "            left: auto;\n" +
+        "            right: 15px;\n" +
+        "        }\n" +
+        "        .container.width-full .floating-scroll-top {\n" +
+        "            left: 15px;\n" +
+        "        }\n" +
+        "        @media (max-width: 1120px) {\n" +
+        "            .floating-toc-trigger {\n" +
+        "                left: auto;\n" +
+        "                right: 15px;\n" +
+        "            }\n" +
+        "            .floating-scroll-top {\n" +
+        "                left: 15px;\n" +
+        "            }\n" +
+        "            .container.width-wide .floating-toc-trigger,\n" +
+        "            .container.width-wide .floating-scroll-top {\n" +
+        "                left: auto;\n" +
+        "                right: 15px;\n" +
+        "            }\n" +
+        "        }\n" +
+        "        .toc-drawer-overlay {\n" +
+        "            position: fixed;\n" +
+        "            top: 0;\n" +
+        "            left: 0;\n" +
+        "            width: 100vw;\n" +
+        "            height: 100vh;\n" +
+        "            background-color: rgba(15, 23, 42, 0.4);\n" +
+        "            z-index: 998;\n" +
+        "            display: none;\n" +
+        "            opacity: 0;\n" +
+        "            transition: opacity 0.3s ease;\n" +
+        "        }\n" +
+        "        .toc-drawer-overlay.open {\n" +
+        "            display: block;\n" +
+        "            opacity: 1;\n" +
+        "        }\n" +
+        "        .toc-drawer {\n" +
+        "            position: fixed;\n" +
+        "            top: 0;\n" +
+        "            right: -320px;\n" +
+        "            width: 300px;\n" +
+        "            height: 100vh;\n" +
+        "            background-color: #ffffff;\n" +
+        "            border-left: 1px solid #e2e8f0;\n" +
+        "            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.08);\n" +
+        "            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);\n" +
+        "            z-index: 1000;\n" +
+        "            display: flex;\n" +
+        "            flex-direction: column;\n" +
+        "            padding: 24px;\n" +
+        "            box-sizing: border-box;\n" +
+        "        }\n" +
+        "        .dark-mode .toc-drawer {\n" +
+        "            background-color: #1e293b;\n" +
+        "            border-left-color: #334155;\n" +
+        "            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);\n" +
+        "        }\n" +
+        "        .toc-drawer.open {\n" +
+        "            right: 0;\n" +
+        "        }\n" +
+        "        .toc-drawer-header {\n" +
+        "            display: flex;\n" +
+        "            justify-content: space-between;\n" +
+        "            align-items: center;\n" +
+        "            border-bottom: 1px solid #e2e8f0;\n" +
+        "            padding-bottom: 12px;\n" +
+        "            margin-bottom: 20px;\n" +
+        "        }\n" +
+        "        .dark-mode .toc-drawer-header {\n" +
+        "            border-bottom-color: #334155;\n" +
+        "        }\n" +
+        "        .toc-drawer-title {\n" +
+        "            font-size: 14px;\n" +
+        "            font-weight: 700;\n" +
+        "            color: #1e293b;\n" +
+        "            display: flex;\n" +
+        "            align-items: center;\n" +
+        "            gap: 6px;\n" +
+        "        }\n" +
+        "        .dark-mode .toc-drawer-title {\n" +
+        "            color: #f1f5f9;\n" +
+        "        }\n" +
+        "        .toc-drawer-close {\n" +
+        "            background: none;\n" +
+        "            border: none;\n" +
+        "            font-size: 18px;\n" +
+        "            color: #94a3b8;\n" +
+        "            cursor: pointer;\n" +
+        "            transition: color 0.2s;\n" +
+        "            display: flex;\n" +
+        "            align-items: center;\n" +
+        "            justify-content: center;\n" +
+        "            width: 24px;\n" +
+        "            height: 24px;\n" +
+        "            border-radius: 4px;\n" +
+        "        }\n" +
+        "        .toc-drawer-close:hover {\n" +
+        "            color: #475569;\n" +
+        "            background-color: #f1f5f9;\n" +
+        "        }\n" +
+        "        .dark-mode .toc-drawer-close:hover {\n" +
+        "            color: #cbd5e1;\n" +
+        "            background-color: #334155;\n" +
+        "        }\n" +
+        "        .toc-drawer-list {\n" +
+        "            list-style: decimal;\n" +
+        "            padding-left: 20px;\n" +
+        "            margin: 0;\n" +
+        "            overflow-y: auto;\n" +
+        "            flex: 1;\n" +
+        "            font-size: 13px;\n" +
+        "        }\n" +
+        "        .toc-drawer-item {\n" +
+        "            margin-bottom: 12px;\n" +
+        "        }\n" +
+        "        .toc-drawer-link {\n" +
+        "            color: #475569;\n" +
+        "            text-decoration: none;\n" +
+        "            font-weight: 500;\n" +
+        "            transition: color 0.2s;\n" +
+        "            display: block;\n" +
+        "            line-height: 1.4;\n" +
+        "        }\n" +
+        "        .dark-mode .toc-drawer-link {\n" +
+        "            color: #cbd5e1;\n" +
+        "        }\n" +
+        "        .toc-drawer-link:hover {\n" +
+        "            color: #4f46e5;\n" +
+        "        }\n" +
+        "        .dark-mode .toc-drawer-link:hover {\n" +
+        "            color: #818cf8;\n" +
+        "        }\n";
+
+    private static final String TOC_SCRIPT =
+        "    <script>\n" +
+        "        document.addEventListener('DOMContentLoaded', function() {\n" +
+        "            const contentContainer = document.querySelector('.container');\n" +
+        "            if (!contentContainer) return;\n" +
+        "            \n" +
+        "            const headings = Array.from(contentContainer.querySelectorAll('h2')).filter(h => !h.textContent.includes('목차'));\n" +
+        "            if (headings.length === 0) return;\n" +
+        "            \n" +
+        "            const overlay = document.createElement('div');\n" +
+        "            overlay.className = 'toc-drawer-overlay';\n" +
+        "            document.body.appendChild(overlay);\n" +
+        "            \n" +
+        "            const drawer = document.createElement('div');\n" +
+        "            drawer.className = 'toc-drawer';\n" +
+        "            \n" +
+        "            const header = document.createElement('div');\n" +
+        "            header.className = 'toc-drawer-header';\n" +
+        "            \n" +
+        "            const title = document.createElement('span');\n" +
+        "            title.className = 'toc-drawer-title';\n" +
+        "            title.textContent = '📌 본문 목차';\n" +
+        "            header.appendChild(title);\n" +
+        "            \n" +
+        "            const closeBtn = document.createElement('button');\n" +
+        "            closeBtn.className = 'toc-drawer-close';\n" +
+        "            closeBtn.innerHTML = '✕';\n" +
+        "            header.appendChild(closeBtn);\n" +
+        "            drawer.appendChild(header);\n" +
+        "            \n" +
+        "            const ol = document.createElement('ol');\n" +
+        "            ol.className = 'toc-drawer-list';\n" +
+        "            \n" +
+        "            headings.forEach((heading, idx) => {\n" +
+        "                const id = 'heading-' + idx;\n" +
+        "                heading.id = id;\n" +
+        "                heading.style.scrollMarginTop = '30px';\n" +
+        "                \n" +
+        "                const li = document.createElement('li');\n" +
+        "                li.className = 'toc-drawer-item';\n" +
+        "                \n" +
+        "                const a = document.createElement('a');\n" +
+        "                a.className = 'toc-drawer-link';\n" +
+        "                a.href = '#' + id;\n" +
+        "                a.textContent = heading.textContent;\n" +
+        "                \n" +
+        "                a.addEventListener('click', function(e) {\n" +
+        "                    e.preventDefault();\n" +
+        "                    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });\n" +
+        "                    history.pushState(null, '', '#' + id);\n" +
+        "                    closeDrawer();\n" +
+        "                });\n" +
+        "                \n" +
+        "                li.appendChild(a);\n" +
+        "                ol.appendChild(li);\n" +
+        "            });\n" +
+        "            drawer.appendChild(ol);\n" +
+        "            document.body.appendChild(drawer);\n" +
+        "            \n" +
+        "            const trigger = document.createElement('button');\n" +
+        "            trigger.className = 'floating-toc-trigger';\n" +
+        "            trigger.setAttribute('title', '목차 보기');\n" +
+        "            trigger.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"4\" y1=\"6\" x2=\"20\" y2=\"6\"/><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"4\" y1=\"18\" x2=\"20\" y2=\"18\"/></svg>';\n" +
+        "            contentContainer.appendChild(trigger);\n" +
+        "            \n" +
+        "            const scrollTopBtn = document.createElement('button');\n" +
+        "            scrollTopBtn.className = 'floating-scroll-top';\n" +
+        "            scrollTopBtn.setAttribute('title', '맨 위로 스크롤');\n" +
+        "            scrollTopBtn.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"18 15 12 9 6 15\"/></svg>';\n" +
+        "            contentContainer.appendChild(scrollTopBtn);\n" +
+        "            \n" +
+        "            function openDrawer() {\n" +
+        "                drawer.classList.add('open');\n" +
+        "                overlay.classList.add('open');\n" +
+        "            }\n" +
+        "            \n" +
+        "            function closeDrawer() {\n" +
+        "                drawer.classList.remove('open');\n" +
+        "                overlay.classList.remove('open');\n" +
+        "            }\n" +
+        "            \n" +
+        "            function toggleDrawer() {\n" +
+        "                if (drawer.classList.contains('open')) {\n" +
+        "                    closeDrawer();\n" +
+        "                } else {\n" +
+        "                    openDrawer();\n" +
+        "                }\n" +
+        "            }\n" +
+        "            \n" +
+        "            trigger.addEventListener('click', toggleDrawer);\n" +
+        "            closeBtn.addEventListener('click', closeDrawer);\n" +
+        "            overlay.addEventListener('click', closeDrawer);\n" +
+        "            \n" +
+        "            window.addEventListener('scroll', function() {\n" +
+        "                if (window.scrollY > 200) {\n" +
+        "                    scrollTopBtn.classList.add('show');\n" +
+        "                } else {\n" +
+        "                    scrollTopBtn.classList.remove('show');\n" +
+        "                }\n" +
+        "            });\n" +
+        "            \n" +
+        "            scrollTopBtn.addEventListener('click', function() {\n" +
+        "                window.scrollTo({ top: 0, behavior: 'smooth' });\n" +
+        "            });\n" +
+        "            \n" +
+        "            window.addEventListener('keydown', function(e) {\n" +
+        "                const activeEl = document.activeElement;\n" +
+        "                if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {\n" +
+        "                    return;\n" +
+        "                }\n" +
+        "                if (e.key === 'Insert' || e.key === 'Delete' || e.key === 'Escape' || e.key === 'Esc') {\n" +
+        "                    e.preventDefault();\n" +
+        "                    toggleDrawer();\n" +
+        "                }\n" +
+        "            });\n" +
+        "        });\n" +
+        "    </script>\n";
+
     @Value("${spring.application.version:1.0.0}")
     private String appVersion;
 
@@ -886,9 +1224,11 @@ public class ManualController {
             "            margin-right: 6px;\n" +
             "            vertical-align: middle;\n" +
             "        }\n" +
+            TOC_CSS +
             "    </style>\n" +
             targetBlankScript +
             settingsScript +
+            TOC_SCRIPT +
             "</head>\n" +
             "<body>\n" +
             "    <div class=\"container\">\n" +
@@ -1111,8 +1451,10 @@ public class ManualController {
                 "        a:hover {\n" +
                 "            text-decoration: underline;\n" +
                 "        }\n" +
+                TOC_CSS +
                 "    </style>\n" +
                 targetBlankScript +
+                TOC_SCRIPT +
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class=\"container\">\n" +

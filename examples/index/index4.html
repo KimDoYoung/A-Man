@@ -1,0 +1,1187 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>1420 매뉴얼 작업대상 선정</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 30px;
+            margin: 0;
+            color: #334155;
+            background-color: #f8fafc;
+            line-height: 1.6;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            margin: 20px auto;
+            position: relative;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        code {
+            background-color: #f1f5f9;
+            color: #db2777;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85em;
+            border: 1px solid #e2e8f0;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        pre {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+            border: 1px solid #cbd5e1;
+            position: relative;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s, background-color 0.2s, color 0.2s, border-color 0.2s;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #f8fafc;
+        }
+        .copy-btn.copied {
+            background-color: #10b981;
+            color: #ffffff;
+            border-color: #10b981;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            font-size: 13px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        th, td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+        }
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: left;
+        }
+        td {
+            color: #475569;
+        }
+        blockquote {
+            border-left: 4px solid #cbd5e1;
+            padding: 6px 16px;
+            margin: 16px 0;
+            background-color: #f9fafb;
+            color: #4b5563;
+            font-style: italic;
+            border-radius: 0 6px 6px 0;
+            font-size: 13px;
+            transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+        }
+        blockquote p:first-child {
+            margin-top: 0;
+        }
+        blockquote p:last-child {
+            margin-bottom: 0;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 16px auto;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        a {
+            color: #4f46e5;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Task List Styles */
+        .task-list-item {
+            list-style-type: none !important;
+        }
+        .task-list-item-checkbox {
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .breadcrumbs {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .breadcrumbs a {
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .breadcrumbs a:hover {
+            text-decoration: underline;
+        }
+        .breadcrumbs .separator {
+            color: #cbd5e1;
+            user-select: none;
+        }
+        .breadcrumbs .folder-name {
+            color: #475569;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .navigation-footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            transition: border-color 0.2s;
+        }
+        .nav-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #475569;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            max-width: 45%;
+        }
+        .nav-button:hover {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #1e293b;
+        }
+        .nav-button .arrow {
+            font-weight: bold;
+            color: #6366f1;
+            font-size: 1.1em;
+            transition: color 0.2s;
+        }
+        .nav-button .nav-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .nav-placeholder {
+            width: 100px;
+        }
+        
+        /* 화면 조절 위젯 CSS 정의 */
+        .user-settings-wrapper {
+            position: absolute;
+            top: 25px;
+            right: 40px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            z-index: 100;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .settings-toggle-btn {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px;
+            cursor: pointer;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            height: 32px;
+            width: 32px;
+            box-sizing: border-box;
+        }
+        .settings-toggle-btn:hover {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+        .settings-toggle-btn.active {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+            border-color: #c7d2fe;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .settings-panel {
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        .settings-panel.open {
+            display: flex;
+        }
+        .setting-group {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: #f8fafc;
+            height: 32px;
+            padding: 0 6px;
+            gap: 4px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .font-btn {
+            background: none;
+            border: none;
+            padding: 2px 6px;
+            cursor: pointer;
+            color: #64748b;
+            font-weight: 800;
+            font-size: 14px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .font-btn:hover {
+            background-color: #e2e8f0;
+            color: #1e293b;
+        }
+        .font-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .font-indicator {
+            font-size: 10px;
+            font-weight: 600;
+            color: #94a3b8;
+            font-family: monospace;
+            min-width: 24px;
+            text-align: center;
+            text-transform: uppercase;
+            transition: color 0.2s;
+        }
+        .width-toggle-btn {
+            display: flex;
+            align-items: center;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: #f8fafc;
+            padding: 0 10px;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+            box-sizing: border-box;
+        }
+        .width-toggle-btn:hover {
+            background-color: #f1f5f9;
+        }
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            height: 32px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background-color: #f8fafc;
+            padding: 0 8px;
+            gap: 6px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .theme-switch-slider-container {
+            display: inline-flex;
+            align-items: center;
+            width: 32px;
+            height: 18px;
+            background-color: #cbd5e1;
+            border-radius: 9px;
+            position: relative;
+            border: 1px solid #cbd5e1;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            padding: 0;
+            outline: none;
+        }
+        .theme-switch-slider-knob {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+        }
+        
+        /* Dynamic settings selectors */
+        .container.font-sm { font-size: 14px; }
+        .container.font-sm h1 { font-size: 20px; }
+        .container.font-sm h2 { font-size: 18px; }
+        .container.font-sm h3 { font-size: 16px; }
+        .container.font-sm p, .container.font-sm li, .container.font-sm td, .container.font-sm th { font-size: 12px; }
+        .container.font-sm blockquote { font-size: 12px; }
+        .container.font-sm pre code { font-size: 11px; }
+        
+        .container.font-base { font-size: 16px; }
+        .container.font-base h1 { font-size: 24px; }
+        .container.font-base h2 { font-size: 20px; }
+        .container.font-base h3 { font-size: 18px; }
+        .container.font-base p, .container.font-base li, .container.font-base td, .container.font-base th { font-size: 14px; }
+        .container.font-base blockquote { font-size: 13px; }
+        .container.font-base pre code { font-size: 13px; }
+        
+        .container.font-lg { font-size: 18px; }
+        .container.font-lg h1 { font-size: 28px; }
+        .container.font-lg h2 { font-size: 24px; }
+        .container.font-lg h3 { font-size: 20px; }
+        .container.font-lg p, .container.font-lg li, .container.font-lg td, .container.font-lg th { font-size: 16px; }
+        .container.font-lg blockquote { font-size: 15px; }
+        .container.font-lg pre code { font-size: 14px; }
+        
+        .container.font-xl { font-size: 20px; }
+        .container.font-xl h1 { font-size: 32px; }
+        .container.font-xl h2 { font-size: 28px; }
+        .container.font-xl h3 { font-size: 24px; }
+        .container.font-xl p, .container.font-xl li, .container.font-xl td, .container.font-xl th { font-size: 18px; }
+        .container.font-xl blockquote { font-size: 17px; }
+        .container.font-xl pre code { font-size: 15px; }
+        
+        .container.width-normal { max-width: 900px; }
+        .container.width-wide { max-width: 1280px; }
+        .container.width-full { max-width: 95%; }
+        
+        /* Dark Mode Styles */
+        .dark-mode body {
+            background-color: #0f172a;
+            color: #cbd5e1;
+        }
+        .dark-mode .container {
+            background-color: #1e293b;
+            border-color: #334155;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+        }
+        .dark-mode h1, .dark-mode h2, .dark-mode h3 {
+            color: #f1f5f9;
+        }
+        .dark-mode h1 {
+            border-bottom-color: #334155;
+        }
+        .dark-mode p, .dark-mode li {
+            color: #94a3b8;
+        }
+        .dark-mode a {
+            color: #818cf8;
+        }
+        .dark-mode a:hover {
+            color: #a5b4fc;
+        }
+        .dark-mode code {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #f43f5e;
+        }
+        .dark-mode pre {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+        .dark-mode .copy-btn {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        .dark-mode .copy-btn:hover {
+            background-color: #334155;
+            color: #cbd5e1;
+        }
+        .dark-mode blockquote {
+            background-color: rgba(30, 41, 59, 0.4);
+            border-left-color: #475569;
+            color: #cbd5e1;
+        }
+        .dark-mode table {
+            border-color: #334155;
+        }
+        .dark-mode th {
+            background-color: #0f172a;
+            color: #f1f5f9;
+            border-bottom-color: #334155;
+        }
+        .dark-mode td {
+            color: #cbd5e1;
+            border-bottom-color: #334155;
+        }
+        .dark-mode .breadcrumbs {
+            border-bottom-color: #334155;
+            color: #94a3b8;
+        }
+        .dark-mode .breadcrumbs a {
+            color: #818cf8;
+        }
+        .dark-mode .breadcrumbs .folder-name {
+            color: #cbd5e1;
+        }
+        .dark-mode .navigation-footer {
+            border-top-color: #334155;
+        }
+        .dark-mode .nav-button {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #94a3b8;
+        }
+        .dark-mode .nav-button:hover {
+            background-color: #1e293b;
+            border-color: #475569;
+            color: #cbd5e1;
+        }
+        .dark-mode .nav-button .arrow {
+            color: #818cf8;
+        }
+        .dark-mode .user-settings-wrapper .settings-toggle-btn {
+            background: #1e293b;
+            border-color: #334155;
+            color: #64748b;
+        }
+        .dark-mode .user-settings-wrapper .settings-toggle-btn:hover {
+            background-color: #334155;
+            color: #cbd5e1;
+        }
+        .dark-mode .user-settings-wrapper .settings-toggle-btn.active {
+            background-color: #312e81;
+            border-color: #4338ca;
+            color: #818cf8;
+        }
+        .dark-mode .user-settings-wrapper .setting-group,
+        .dark-mode .user-settings-wrapper .width-toggle-btn,
+        .dark-mode .user-settings-wrapper .theme-switch-wrapper {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: #cbd5e1;
+        }
+        .dark-mode .user-settings-wrapper .font-btn {
+            color: #94a3b8;
+        }
+        .dark-mode .user-settings-wrapper .font-btn:hover {
+            background-color: #1e293b;
+            color: #f1f5f9;
+        }
+        .dark-mode .user-settings-wrapper .width-toggle-btn {
+            color: #cbd5e1;
+        }
+        .dark-mode .user-settings-wrapper .width-toggle-btn:hover {
+            background-color: #1e293b;
+        }
+        .dark-mode .theme-switch-slider-knob {
+            background-color: #cbd5e1;
+        }
+        
+        /* Task List Styles */
+        .task-list-item {
+            list-style-type: none !important;
+        }
+        .task-list-item-checkbox {
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+    
+        /* --- Option 4: Floating TOC (Right) & ScrollToTop (Left) outside Container Bounds --- */
+        .floating-toc-trigger {
+            position: fixed;
+            bottom: 30px;
+            /* 기본 (width-normal: 900px): 컨테이너 바깥쪽 50px 지점에 배치 */
+            left: calc(50% + 450px + 50px);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: rgba(99, 102, 241, 0.15); /* 15% 투명도 */
+            color: rgba(99, 102, 241, 0.5);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 999;
+        }
+        .floating-toc-trigger:hover {
+            transform: scale(1.05);
+            background-color: rgba(99, 102, 241, 0.95);
+            color: #ffffff;
+            border-color: #6366f1;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        .dark-mode .floating-toc-trigger {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: rgba(129, 140, 248, 0.4);
+            border-color: rgba(99, 102, 241, 0.15);
+        }
+        .dark-mode .floating-toc-trigger:hover {
+            background-color: rgba(99, 102, 241, 0.9);
+            color: #ffffff;
+            border-color: #6366f1;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.4);
+        }
+
+        .floating-scroll-top {
+            position: fixed;
+            bottom: 30px;
+            /* 기본 (width-normal: 900px): 컨테이너 바깥쪽 50px 지점에 배치 */
+            left: calc(50% - 450px - 50px - 44px);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: rgba(226, 232, 240, 0.3); /* 30% 투명도 (docs와 유사) */
+            color: rgba(71, 85, 105, 0.4);
+            border: 1px solid rgba(203, 213, 225, 0.3);
+            box-shadow: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .floating-scroll-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .floating-scroll-top:hover {
+            transform: scale(1.05);
+            background-color: rgba(226, 232, 240, 0.95);
+            color: rgba(15, 23, 42, 0.8);
+            border-color: rgba(203, 213, 225, 0.8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .dark-mode .floating-scroll-top {
+            background-color: rgba(51, 65, 85, 0.25);
+            color: rgba(148, 163, 184, 0.4);
+            border-color: rgba(51, 65, 85, 0.3);
+        }
+        .dark-mode .floating-scroll-top:hover {
+            background-color: rgba(51, 65, 85, 0.9);
+            color: #f1f5f9;
+            border-color: rgba(71, 85, 105, 0.8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* W=1280px (wide) 컨테이너일 때 포지션 (컨테이너 바깥쪽 50px) */
+        .container.width-wide .floating-toc-trigger {
+            left: calc(50% + 640px + 50px);
+        }
+        .container.width-wide .floating-scroll-top {
+            left: calc(50% - 640px - 50px - 44px);
+        }
+
+        /* W=95% (full) 컨테이너일 때 포지션 (안쪽 패딩 영역에 깔끔하게 배치하여 가림 방지) */
+        .container.width-full .floating-toc-trigger {
+            left: auto;
+            right: 15px;
+        }
+        .container.width-full .floating-scroll-top {
+            left: 15px;
+        }
+
+        /* 모바일 및 좁은 화면 대응 (화면 내로 안전하게 진입) */
+        @media (max-width: 1120px) {
+            .floating-toc-trigger {
+                left: auto;
+                right: 15px;
+            }
+            .floating-scroll-top {
+                left: 15px;
+            }
+            .container.width-wide .floating-toc-trigger,
+            .container.width-wide .floating-scroll-top {
+                left: auto;
+                right: 15px;
+            }
+        }
+
+        /* 드로어 및 오버레이 */
+        .toc-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.4);
+            z-index: 998;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .toc-drawer-overlay.open {
+            display: block;
+            opacity: 1;
+        }
+        .toc-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            height: 100vh;
+            background-color: #ffffff;
+            border-left: 1px solid #e2e8f0;
+            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.08);
+            transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .dark-mode .toc-drawer {
+            background-color: #1e293b;
+            border-left-color: #334155;
+            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
+        }
+        .toc-drawer.open {
+            right: 0;
+        }
+        .toc-drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .dark-mode .toc-drawer-header {
+            border-bottom-color: #334155;
+        }
+        .toc-drawer-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dark-mode .toc-drawer-title {
+            color: #f1f5f9;
+        }
+        .toc-drawer-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+        .toc-drawer-close:hover {
+            color: #475569;
+            background-color: #f1f5f9;
+        }
+        .dark-mode .toc-drawer-close:hover {
+            color: #cbd5e1;
+            background-color: #334155;
+        }
+        .toc-drawer-list {
+            list-style: decimal;
+            padding-left: 20px;
+            margin: 0;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 13px;
+        }
+        .toc-drawer-item {
+            margin-bottom: 12px;
+        }
+        .toc-drawer-link {
+            color: #475569;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            display: block;
+            line-height: 1.4;
+        }
+        .dark-mode .toc-drawer-link {
+            color: #cbd5e1;
+        }
+        .toc-drawer-link:hover {
+            color: #4f46e5;
+        }
+        .dark-mode .toc-drawer-link:hover {
+            color: #818cf8;
+        }
+    
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var links = document.querySelectorAll('.container a, .navigation-footer a');
+            for (var i = 0; i < links.length; i++) {
+                if (links[i].closest('.breadcrumbs') || links[i].closest('.navigation-footer')) {
+                    continue;
+                }
+                links[i].setAttribute('target', '_blank');
+                links[i].setAttribute('rel', 'noopener noreferrer');
+            }
+            var pres = document.querySelectorAll('pre');
+            pres.forEach(function(pre) {
+                var codeEl = pre.querySelector('code');
+                if (!codeEl) return;
+                var button = document.createElement('button');
+                button.className = 'copy-btn';
+                button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg> <span>Copy</span>';
+                button.addEventListener('click', function() {
+                    var text = codeEl.innerText;
+                    navigator.clipboard.writeText(text).then(function() {
+                        button.classList.add('copied');
+                        button.querySelector('span').innerText = 'Copied!';
+                        setTimeout(function() {
+                            button.classList.remove('copied');
+                            button.querySelector('span').innerText = 'Copy';
+                        }, 2000);
+                    }).catch(function(err) {
+                        console.error('Failed to copy: ', err);
+                    });
+                });
+                pre.appendChild(button);
+            });
+        });
+    </script>
+    <script>
+        (function() {
+            var fontSizes = ['sm', 'base', 'lg', 'xl'];
+            var contentWidths = ['normal', 'wide', 'full'];
+            var currentSettings = { fontSize: 'base', contentWidth: 'normal', theme: 'light' };
+            function loadSettings() {
+                try {
+                    var saved = localStorage.getItem('manual-user-setting');
+                    if (saved) {
+                        var parsed = JSON.parse(saved);
+                        if (parsed.fontSize) currentSettings.fontSize = parsed.fontSize;
+                        if (parsed.contentWidth) currentSettings.contentWidth = parsed.contentWidth;
+                        if (parsed.theme) currentSettings.theme = parsed.theme;
+                    }
+                } catch(e) {}
+            }
+            function saveSettings() {
+                try {
+                    localStorage.setItem('manual-user-setting', JSON.stringify(currentSettings));
+                } catch(e) {}
+            }
+            function applySettings() {
+                var container = document.querySelector('.container');
+                if (!container) return;
+                container.classList.remove('font-sm', 'font-base', 'font-lg', 'font-xl');
+                container.classList.add('font-' + currentSettings.fontSize);
+                container.classList.remove('width-normal', 'width-wide', 'width-full');
+                container.classList.add('width-' + currentSettings.contentWidth);
+                var fontIndicator = document.getElementById('fontIndicator');
+                if (fontIndicator) {
+                    fontIndicator.innerText = currentSettings.fontSize.toUpperCase();
+                }
+                var widthText = document.getElementById('widthText');
+                if (widthText) {
+                    var widthLabel = '보통';
+                    if (currentSettings.contentWidth === 'wide') widthLabel = '넓게';
+                    else if (currentSettings.contentWidth === 'full') widthLabel = '꽉차게';
+                    widthText.innerText = '폭: ' + widthLabel;
+                }
+                var fontDecBtn = document.getElementById('fontDecBtn');
+                if (fontDecBtn) fontDecBtn.disabled = (currentSettings.fontSize === 'sm');
+                var fontIncBtn = document.getElementById('fontIncBtn');
+                if (fontIncBtn) fontIncBtn.disabled = (currentSettings.fontSize === 'xl');
+                
+                if (currentSettings.theme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+                var knob = document.getElementById('themeSwitchKnob');
+                var switchBg = document.getElementById('themeSwitchContainer');
+                var sunIcon = document.getElementById('sunIcon');
+                var moonIcon = document.getElementById('moonIcon');
+                if (knob && switchBg) {
+                    knob.style.transform = currentSettings.theme === 'dark' ? 'translateX(14px)' : 'translateX(0)';
+                    switchBg.style.backgroundColor = currentSettings.theme === 'dark' ? '#4f46e5' : 'rgba(226, 232, 240, 0.5)';
+                    switchBg.style.borderColor = currentSettings.theme === 'dark' ? '#4f46e5' : '#cbd5e1';
+                }
+                if (sunIcon) {
+                    sunIcon.style.stroke = currentSettings.theme === 'light' ? '#f59e0b' : '#64748b';
+                }
+                if (moonIcon) {
+                    moonIcon.style.stroke = currentSettings.theme === 'dark' ? '#818cf8' : '#94a3b8';
+                }
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                loadSettings();
+                applySettings();
+                var settingsToggleBtn = document.getElementById('settingsToggleBtn');
+                var settingsPanel = document.getElementById('settingsPanel');
+                if (settingsToggleBtn && settingsPanel) {
+                    settingsToggleBtn.addEventListener('click', function() {
+                        var isOpen = settingsPanel.classList.toggle('open');
+                        settingsToggleBtn.classList.toggle('active', isOpen);
+                    });
+                }
+                var fontDecBtn = document.getElementById('fontDecBtn');
+                if (fontDecBtn) {
+                    fontDecBtn.addEventListener('click', function() {
+                        var idx = fontSizes.indexOf(currentSettings.fontSize);
+                        if (idx > 0) {
+                            currentSettings.fontSize = fontSizes[idx - 1];
+                            saveSettings();
+                            applySettings();
+                        }
+                    });
+                }
+                var fontIncBtn = document.getElementById('fontIncBtn');
+                if (fontIncBtn) {
+                    fontIncBtn.addEventListener('click', function() {
+                        var idx = fontSizes.indexOf(currentSettings.fontSize);
+                        if (idx < fontSizes.length - 1) {
+                            currentSettings.fontSize = fontSizes[idx + 1];
+                            saveSettings();
+                            applySettings();
+                        }
+                    });
+                }
+                var widthToggleBtn = document.getElementById('widthToggleBtn');
+                if (widthToggleBtn) {
+                    widthToggleBtn.addEventListener('click', function() {
+                        var idx = contentWidths.indexOf(currentSettings.contentWidth);
+                        var nextIdx = (idx + 1) % contentWidths.length;
+                        currentSettings.contentWidth = contentWidths[nextIdx];
+                        saveSettings();
+                        applySettings();
+                    });
+                }
+                var themeToggleBtn = document.getElementById('themeSwitchContainer');
+                if (themeToggleBtn) {
+                    themeToggleBtn.addEventListener('click', function() {
+                        currentSettings.theme = currentSettings.theme === 'light' ? 'dark' : 'light';
+                        saveSettings();
+                        applySettings();
+                    });
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const contentContainer = document.querySelector('.container');
+            if (!contentContainer) return;
+            
+            const headings = Array.from(contentContainer.querySelectorAll('h2')).filter(h => !h.textContent.includes('목차'));
+            if (headings.length === 0) return;
+            
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'toc-drawer-overlay';
+            document.body.appendChild(overlay);
+            
+            // Create drawer
+            const drawer = document.createElement('div');
+            drawer.className = 'toc-drawer';
+            
+            const header = document.createElement('div');
+            header.className = 'toc-drawer-header';
+            
+            const title = document.createElement('span');
+            title.className = 'toc-drawer-title';
+            title.textContent = '📌 본문 목차';
+            header.appendChild(title);
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'toc-drawer-close';
+            closeBtn.innerHTML = '✕';
+            header.appendChild(closeBtn);
+            drawer.appendChild(header);
+            
+            const ol = document.createElement('ol');
+            ol.className = 'toc-drawer-list';
+            
+            headings.forEach((heading, idx) => {
+                const id = 'heading-' + idx;
+                heading.id = id;
+                heading.style.scrollMarginTop = '30px';
+                
+                const li = document.createElement('li');
+                li.className = 'toc-drawer-item';
+                
+                const a = document.createElement('a');
+                a.className = 'toc-drawer-link';
+                a.href = '#' + id;
+                a.textContent = heading.textContent;
+                
+                a.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    history.pushState(null, '', '#' + id);
+                    closeDrawer();
+                });
+                
+                li.appendChild(a);
+                ol.appendChild(li);
+            });
+            drawer.appendChild(ol);
+            document.body.appendChild(drawer);
+            
+            // Create floating trigger button (TOC button)
+            const trigger = document.createElement('button');
+            trigger.className = 'floating-toc-trigger';
+            trigger.setAttribute('title', '목차 보기');
+            trigger.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>`;
+            contentContainer.appendChild(trigger);
+            
+            // Create scroll-to-top button
+            const scrollTopBtn = document.createElement('button');
+            scrollTopBtn.className = 'floating-scroll-top';
+            scrollTopBtn.setAttribute('title', '맨 위로 스크롤');
+            scrollTopBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`;
+            contentContainer.appendChild(scrollTopBtn);
+            
+            function openDrawer() {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            }
+            
+            function closeDrawer() {
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+            }
+            
+            trigger.addEventListener('click', openDrawer);
+            closeBtn.addEventListener('click', closeDrawer);
+            overlay.addEventListener('click', closeDrawer);
+            
+            // Scroll handling for show/hide ScrollTop button
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 200) {
+                    scrollTopBtn.classList.add('show');
+                } else {
+                    scrollTopBtn.classList.remove('show');
+                }
+            });
+            
+            scrollTopBtn.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+    
+</head>
+<body>
+    <div class="container">
+        <div class="user-settings-wrapper">
+            <button class="settings-toggle-btn" id="settingsToggleBtn" title="화면 설정 조절">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v4"/><path d="m15.2 4.9-.9-.4"/><path d="m15.2 7.1-.9.4"/><path d="m16.9 3.2-.4-.9"/><path d="m16.9 8.8-.4.9"/><path d="m19.5 2.3-.4.9"/><path d="m19.5 9.7-.4-.9"/><path d="m21.7 4.5-.9.4"/><path d="m21.7 7.5-.9-.4"/><path d="M22 13v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><path d="M8 21h8"/><circle cx="18" cy="6" r="3"/></svg>
+            </button>
+            <div class="settings-panel" id="settingsPanel">
+                <div class="setting-group">
+                    <button class="font-btn" id="fontDecBtn" title="글자 크기 축소">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13h6"/><path d="m2 16 4.5-9 4.5 9"/><path d="M18 7v9"/><path d="m15 13 3 3 3-3"/></svg>
+                    </button>
+                    <span class="font-indicator" id="fontIndicator">BASE</span>
+                    <button class="font-btn" id="fontIncBtn" title="글자 크기 확대">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13h6"/><path d="m2 16 4.5-9 4.5 9"/><path d="M18 16V7"/><path d="m15 10 3-3 3 3"/></svg>
+                    </button>
+                </div>
+                <button class="width-toggle-btn" id="widthToggleBtn" title="본문 가로 너비 전환">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    <span id="widthText">폭: 보통</span>
+                </button>
+                <div class="theme-switch-wrapper">
+                    <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                    <button type="button" class="theme-switch-slider-container" id="themeSwitchContainer" title="테마 토글 스위치">
+                        <span class="theme-switch-slider-knob" id="themeSwitchKnob"></span>
+                    </button>
+                    <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                </div>
+            </div>
+        </div>
+        <div class="breadcrumbs">
+    <a href="/aman/docs">Home</a>    <span class="separator">&gt;</span>
+    <span class="folder-name">책무</span>
+    <span class="separator">&gt;</span>
+    <span class="folder-name">03. 부서책무매뉴얼</span>
+    <span class="separator">&gt;</span>
+    <a href="/aman/manual/page-480b89eae429">1420 매뉴얼 작업대상 선정</a>
+</div>
+
+        <blockquote>
+<ul>
+<li>해당 화면은 <strong>회사책무관리자, 회사책무담당자 전용</strong>입니다.</li>
+<li>책무유형, 책무, 책무세부 항목을 등록 및 수정, 삭제합니다</li>
+<li>책무별 법규·내규를 연결합니다</li>
+</ul>
+</blockquote>
+<p><img src="http://localhost:8686/aman/images/2026/07/08/a9e52071647c45ea9a0a3f8593eb53a4.png" alt="image" /></p>
+<hr />
+<h2>🏷️ 목차</h2>
+<ul>
+<li><a href="http://jskn.iptime.org/aman/manual/1455#이행점검_진행시작_문자보내기">책무 등록하기</a></li>
+<li><a href="#">책무 세부내용 등록하기</a></li>
+<li><a href="#">책무에 법규/내규 연결하기</a></li>
+<li><a href="#">책무유형 등록하기</a></li>
+</ul>
+<hr />
+<h2>책무 등록하기</h2>
+<ul>
+<li><strong>신규 책무 등록하기</strong>
+<ol>
+<li>
+<p><code>등록</code> 버튼을 클릭하여, 책무 등록 팝업을 엽니다.<br />
+<img src="http://localhost:8686/aman/images/2026/07/08/9f44c32467664633b59965eefc68c2ac.png" alt="image" /></p>
+</li>
+<li>
+<p>책무구분, 책무유형을 차례대로 선택합니다.</p>
+</li>
+<li>
+<p>책무를 입력합니다.</p>
+</li>
+<li>
+<p>사용시작일을 선택합니다.</p>
+</li>
+<li>
+<p><code>저장</code> 버튼을 클릭하여 저장합니다.</p>
+</li>
+</ol>
+</li>
+</ul>
+<br>
+<ul>
+<li><strong>책무 수정하기</strong>
+<ol>
+<li>변경하고자 하는 책무의 수정 버튼을 클릭합니다.<br />
+<img src="http://localhost:8686/aman/images/2026/07/08/607d40b1c60b46f896598514cb387ac0.png" alt="image" /></li>
+</ol>
+</li>
+</ul>
+<br>
+<ol start="2">
+<li>내용을 변경한 후 <code>저장</code> 버튼을 클릭하여 저장합니다.</li>
+</ol>
+<p>📌 <strong><font color="red">내용 변경 또는 삭제 시에는 사유를 반드시 입력해야 합니다.</font></strong></p>
+<br>
+<hr />
+<h2>책무 세부내용 등록하기</h2>
+<ol>
+<li>등록하고자 하는 책무의 세부내용 등록 버튼을 클릭합니다.<br />
+<img src="http://localhost:8686/aman/images/2026/07/08/a480dfa2e5fe4325a41573c97758a722.png" alt="image" /></li>
+<li></li>
+</ol>
+<hr />
+<h2>책무유형 등록하기</h2>
+<ul>
+<li>
+<p><strong>신규 책무유형 등록하기</strong></p>
+<ol>
+<li><code>책무유형 관리</code> 버튼을 클릭합니다.<br />
+<img src="http://localhost:8686/aman/images/2026/07/08/9446c54b99b347a4aa12184041f165d2.png" alt="image" /></li>
+</ol>
+</li>
+</ul>
+<br>
+<ol start="2">
+<li>
+<p>책무유형 팝업이 열리면, <code>등록</code> 버튼을 클릭하여 신규 행을 생성합니다.<br />
+<img src="http://localhost:8686/aman/images/2026/07/08/e7a87024c51441d0b8d1d629a03ac9ee.png" alt="image" /></p>
+</li>
+<li>
+<p>신규 행에 <strong>책무구분을 선택</strong>하고, <strong>책무유형코드와 책무유형명 내용을 입력</strong>한 후 저장합니다.</p>
+</li>
+</ol>
+<br>
+<ul>
+<li>
+<p><strong>책무유형 삭제하기</strong></p>
+<ol>
+<li>삭제할 책무유형을 선택한 후 <code>삭제</code> 버튼을 클릭합니다.<br />
+<font color="red">※ 사용하고 있는 책무유형은 삭제할 수 없습니다. (이 경우 '사용' 체크를 해제한 후 저장하세요)</font><br />
+<img src="http://localhost:8686/aman/images/2026/07/08/232e4ad4d8fb45179b707a53ca3204cf.png" alt="image" /></li>
+</ol>
+</li>
+</ul>
+<br>
+<ul>
+<li><strong>책무유형 수정하기</strong>
+<ol>
+<li>수정하고자 하는 책무유형의 내용을 변경한 후 저장하세요<br />
+<font color="red">※ <strong>책무유형코드</strong>는 중복으로 등록될 수 없습니다.</font></li>
+</ol>
+</li>
+</ul>
+<br>
+<ul>
+<li><strong>책무유형 작업이 완료되면 <code>닫기</code> 버튼을 클릭하여 팝업을 닫습니다.</strong></li>
+</ul>
+
+        <div class="navigation-footer">
+    <a href="/aman/manual/page-d7d50c8e6222" class="nav-button prev">
+        <span class="arrow">&lt;</span>
+        <span class="nav-title">1412 책무 등록</span>
+    </a>
+    <div class="nav-placeholder"></div>
+</div>
+
+    </div>
+</body>
+</html>
