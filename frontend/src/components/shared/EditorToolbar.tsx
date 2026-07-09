@@ -275,7 +275,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   }, [])
 
   return (
-    <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5 flex items-center justify-between text-gray-500 shrink-0 select-none">
+    <div
+      onMouseDown={(e) => {
+        const target = e.target as HTMLElement
+        if (target.tagName !== 'INPUT' && target.tagName !== 'SELECT' && !target.closest('input')) {
+          e.preventDefault()
+        }
+      }}
+      className="bg-gray-50 border-b border-gray-200 px-4 py-1.5 flex items-center justify-between text-gray-500 shrink-0 select-none"
+    >
       <div className="flex items-center space-x-1">
         {/* 제목 헤더(H) 드롭다운 */}
         <div className="relative" ref={headingPanelRef}>
@@ -640,7 +648,10 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       {/* 단축키 및 에디터 도움말 모달 */}
       {helpOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] transition-all duration-300">
+        <div
+          onMouseDown={(e) => e.stopPropagation()}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] transition-all duration-300"
+        >
           <div className="bg-white rounded-lg p-6 max-w-lg w-full shadow-2xl border border-slate-100 transform transition-all animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
               <h3 className="text-sm font-bold text-slate-950 flex items-center space-x-1.5">

@@ -139,6 +139,8 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         cursorOffsetStart = 2,
         cursorOffsetEnd = 2
     ) => {
+        const scrollTop = textarea.scrollTop;
+
         // 1. 포커스 및 치환 범위 지정
         textarea.focus();
         textarea.setSelectionRange(start, end);
@@ -162,6 +164,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start + cursorOffsetStart, start + newText.length - cursorOffsetEnd);
+            textarea.scrollTop = scrollTop;
         }, 0);
     };
 
@@ -725,6 +728,14 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         }
 
         if (e.ctrlKey) {
+            if (e.key === ' ' || e.code === 'Space') {
+                e.preventDefault();
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                updateContent(textarea, start, end, '&nbsp;', 6, 0);
+                return;
+            }
             const key = e.key.toLowerCase();
             if (e.shiftKey && ['r', 'b', 'o', 'g'].includes(key)) {
                 e.preventDefault();

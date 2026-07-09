@@ -301,6 +301,7 @@ const DocUserMain: React.FC = () => {
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
     const text = textarea.value
+    const scrollTop = textarea.scrollTop
     
     const before = text.substring(0, start)
     const selection = text.substring(start, end)
@@ -313,6 +314,7 @@ const DocUserMain: React.FC = () => {
     setTimeout(() => {
       textarea.focus()
       textarea.setSelectionRange(start + prefix.length, start + prefix.length + selection.length)
+      textarea.scrollTop = scrollTop
     }, 0)
   }
 
@@ -330,6 +332,7 @@ const DocUserMain: React.FC = () => {
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
     const text = textarea.value
+    const scrollTop = textarea.scrollTop
     
     const before = text.substring(0, start)
     const selection = text.substring(start, end)
@@ -341,6 +344,7 @@ const DocUserMain: React.FC = () => {
     setTimeout(() => {
       textarea.focus()
       textarea.setSelectionRange(start + 2, start + bulletList.length)
+      textarea.scrollTop = scrollTop
     }, 0)
   }
 
@@ -350,6 +354,7 @@ const DocUserMain: React.FC = () => {
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
     const text = textarea.value
+    const scrollTop = textarea.scrollTop
     
     const before = text.substring(0, start)
     const selection = text.substring(start, end)
@@ -361,6 +366,7 @@ const DocUserMain: React.FC = () => {
     setTimeout(() => {
       textarea.focus()
       textarea.setSelectionRange(start + 3, start + numList.length)
+      textarea.scrollTop = scrollTop
     }, 0)
   }
 
