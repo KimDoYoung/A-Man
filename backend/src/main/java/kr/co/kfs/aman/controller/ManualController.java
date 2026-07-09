@@ -720,6 +720,21 @@ public class ManualController {
             "            border: 1px solid #e2e8f0;\n" +
             "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
             "        }\n" +
+            "        kbd {\n" +
+            "            display: inline-block;\n" +
+            "            padding: 2px 6px;\n" +
+            "            font-size: 0.8em;\n" +
+            "            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n" +
+            "            color: #24292e;\n" +
+            "            background: #f6f8fa;\n" +
+            "            border: 1px solid #d1d5da;\n" +
+            "            border-radius: 4px;\n" +
+            "            box-shadow: inset 0 -2px 0 #d1d5da;\n" +
+            "            line-height: 1.4;\n" +
+            "            white-space: nowrap;\n" +
+            "            margin: 0 1px;\n" +
+            "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
+            "        }\n" +
             "        pre {\n" +
             "            background-color: #f1f5f9;\n" +
             "            color: #1e293b;\n" +
@@ -1121,6 +1136,12 @@ public class ManualController {
             "            border-color: #334155;\n" +
             "            color: #f43f5e;\n" +
             "        }\n" +
+            "            \"        .dark-mode kbd {\\n\" +\n" +
+            "            \"            color: #e2e8f0;\\n\" +\n" +
+            "            \"            background: #1e293b;\\n\" +\n" +
+            "            \"            border-color: #334155;\\n\" +\n" +
+            "            \"            box-shadow: inset 0 -2px 0 #334155;\\n\" +\n" +
+            "            \"        }\\n\" +\n" +
             "        .dark-mode pre {\n" +
             "            background-color: #0f172a;\n" +
             "            border-color: #334155;\n" +

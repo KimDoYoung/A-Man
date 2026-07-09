@@ -753,6 +753,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         { name: '글자색 순환 토글 (5색)', keys: ['Ctrl', '.'] },
                         { name: '배경색 순환 토글 (5색)', keys: ['Ctrl', '/'] },
                         { name: '모든 서식/태그 제거', keys: ['Ctrl', 'Shift', 'Delete'] },
+                        { name: '텍스트를 <kbd> 태그로 자동 감싸기', keys: ['Ctrl', 'Shift', 'K'] },
                       ].map((item) => (
                         <tr key={item.name} className="hover:bg-slate-50/50">
                           <td className="px-3 py-1.5 font-medium text-slate-700">{item.name}</td>
@@ -760,9 +761,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                             {item.keys.map((k, i) => (
                               <React.Fragment key={k}>
                                 {i > 0 && <span className="mx-1 text-slate-400 font-normal">+</span>}
-                                <kbd className="px-1.5 py-0.5 text-[9px] font-semibold text-slate-800 bg-slate-100 border border-slate-200 rounded-md shadow-xs font-mono">
-                                  {k}
-                                </kbd>
+                                <kbd>{k}</kbd>
                               </React.Fragment>
                             ))}
                           </td>
@@ -781,16 +780,16 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 <ul className="list-disc list-inside space-y-2 pl-1.5 text-slate-600 leading-relaxed text-[11px]">
                   <li>
                     <strong className="text-slate-800">들여쓰기 및 내어쓰기 (Tab / Shift + Tab)</strong>: 
-                    텍스트 블록을 전체 드래그한 상태에서 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Tab</kbd> 키를 누르면 줄 시작 부분에 들여쓰기가 추가되고, 
-                    <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Shift+Tab</kbd> 키를 누르면 들여쓰기가 한 단계 제거됩니다.
+                    텍스트 블록을 전체 드래그한 상태에서 <kbd>Tab</kbd> 키를 누르면 줄 시작 부분에 들여쓰기가 추가되고, 
+                    <kbd>Shift+Tab</kbd> 키를 누르면 들여쓰기가 한 단계 제거됩니다.
                   </li>
                   <li>
                     <strong className="text-slate-800">편집 행 화면 중앙 정렬 (Alt + Z)</strong>: 
-                    화면 최하단 부근에서 편집할 때 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Alt+Z</kbd> 키를 누르면 현재 작성 중인 행이 즉시 화면 중앙으로 스크롤 조정되어 편안하게 작성하실 수 있습니다.
+                    화면 최하단 부근에서 편집할 때 <kbd>Alt+Z</kbd> 키를 누르면 현재 작성 중인 행이 즉시 화면 중앙으로 스크롤 조정되어 편안하게 작성하실 수 있습니다.
                   </li>
                   <li>
                     <strong className="text-slate-800">강제 다음 줄 줄바꿈 (Shift + Enter)</strong>: 
-                    커서가 단어 중간 등 어디에 위치해 있든 상관없이 <kbd className="px-1 py-0.5 bg-slate-100 border rounded font-mono text-[9px]">Shift+Enter</kbd>를 누르면 즉시 다음 줄로 커서가 이동하여 편리합니다.
+                    커서가 단어 중간 등 어디에 위치해 있든 상관없이 <kbd>Shift+Enter</kbd>를 누르면 즉시 다음 줄로 커서가 이동하여 편리합니다.
                   </li>
                   <li>
                     <strong className="text-slate-800">목록 및 인용구 자동 줄바꿈 연속</strong>: 

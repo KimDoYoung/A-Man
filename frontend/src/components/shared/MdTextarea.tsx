@@ -894,6 +894,23 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 handleAction('clear-all-tags');
                 return;
             }
+            // Ctrl + Shift + K : 단축키 텍스트를 각각 <kbd> 태그로 감싸기
+            if (e.shiftKey && key === 'k') {
+                e.preventDefault();
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                
+                if (start !== end) {
+                    const selectedText = form.content.substring(start, end);
+                    const keys = selectedText.split('+').map(k => k.trim()).filter(k => k.length > 0);
+                    if (keys.length > 0) {
+                        const newText = keys.map(k => `<kbd>${k}</kbd>`).join(' + ');
+                        updateContent(textarea, start, end, newText, 0, 0);
+                    }
+                }
+                return;
+            }
             if (key === 's') {
                 e.preventDefault();
                 if (e.shiftKey) {
@@ -1250,7 +1267,16 @@ const ContextMenuItem = ({ label, shortcut, onClick }: { label: string; shortcut
         onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
         <span>{label}</span>
-        <span className="text-[10px] text-gray-400 font-mono">{shortcut}</span>
+        {shortcut && (
+            <span className="flex items-center gap-0.5 select-none">
+                {shortcut.split('+').map((key, i) => (
+                    <React.Fragment key={key}>
+                        {i > 0 && <span className="text-[8px] text-gray-300 font-normal mx-0.5">+</span>}
+                        <kbd>{key}</kbd>
+                    </React.Fragment>
+                ))}
+            </span>
+        )}
     </li>
 );
 
