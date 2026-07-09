@@ -410,7 +410,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={() => setColorOpen(!colorOpen)}
             className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${colorOpen ? 'bg-indigo-50 text-indigo-650 border border-indigo-100' : ''}`}
-            title="글자 색상 변경"
+            title="글자 색상 변경 (Ctrl + .)"
           >
             <Highlighter className="w-3.5 h-3.5" />
           </button>
@@ -419,16 +419,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <div className="text-[10px] text-gray-400 font-semibold px-1 mb-1.5 select-none">글자 색상 선택</div>
               <div className="grid grid-cols-3 gap-2">
                 {TEXT_COLORS.map((c) => {
-                  const colorShortcuts: Record<string, string> = {
-                    '#E03E3E': 'Ctrl+Shift+R',
-                    '#64473A': 'Ctrl+Shift+B',
-                    '#D9730D': 'Ctrl+Shift+O',
-                    '#0F7B6C': 'Ctrl+Shift+G',
-                    '#DFAB01': 'Ctrl+Shift+Y',
-                  }
-                  const shortcut = colorShortcuts[c.value]
-                  const titleText = shortcut ? `${c.name} 텍스트 (${shortcut})` : `${c.name} 텍스트`
-
                   return (
                     <button
                       key={c.value}
@@ -437,7 +427,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         setColorOpen(false)
                       }}
                       className="p-2 hover:bg-gray-100 rounded-md border border-gray-200 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer"
-                      title={titleText}
+                      title={`${c.name} 텍스트`}
                     >
                       <span 
                         className="text-base font-bold font-serif leading-none" 
@@ -458,7 +448,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <button
             onClick={() => setBgColorOpen(!bgColorOpen)}
             className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${bgColorOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
-            title="배경 색상 변경"
+            title="배경 색상 변경 (Ctrl + /)"
           >
             <Palette className="w-3.5 h-3.5" />
           </button>
@@ -467,16 +457,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               <div className="text-[10px] text-gray-400 font-semibold px-1 mb-1.5 select-none">배경 색상 선택</div>
               <div className="grid grid-cols-3 gap-2">
                 {BG_COLORS.map((c) => {
-                  const bgShortcuts: Record<string, string> = {
-                    '#FBF3DB': 'Ctrl+Alt+Shift+Y',
-                    '#E9E5E3': 'Ctrl+Alt+Shift+B',
-                    '#DDEDEA': 'Ctrl+Alt+Shift+G',
-                    '#FAEBDD': 'Ctrl+Alt+Shift+O',
-                    '#FBE4E4': 'Ctrl+Alt+Shift+R',
-                  }
-                  const shortcut = bgShortcuts[c.value]
-                  const titleText = shortcut ? `${c.name} 배경 (${shortcut})` : `${c.name} 배경`
-
                   return (
                     <button
                       key={c.value}
@@ -485,7 +465,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         setBgColorOpen(false)
                       }}
                       className="p-2 hover:bg-gray-100 rounded-md border border-gray-200 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer"
-                      title={titleText}
+                      title={`${c.name} 배경`}
                     >
                       <span 
                         className="w-5 h-5 rounded border border-gray-200/50 block shadow-xs" 
@@ -770,8 +750,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         { name: '번호 매기기 리스트 변환', keys: ['Ctrl', '9'] },
                         { name: '표 ↔ CSV 양방향 전환 / 표 삽입', keys: ['Ctrl', ','] },
                         { name: '마크다운 링크 ([텍스트](URL)) 삽입', keys: ['Ctrl', 'L'] },
-                        { name: '글자색 (R/B/O/G/Y) 텍스트 감싸기', keys: ['Ctrl', 'Shift', 'R/B/O/G/Y'] },
-                        { name: '배경색 (Y/B/G/O/R) 텍스트 감싸기', keys: ['Ctrl', 'Alt', 'Shift', 'Y/B/G/O/R'] },
+                        { name: '글자색 순환 토글 (5색)', keys: ['Ctrl', '.'] },
+                        { name: '배경색 순환 토글 (5색)', keys: ['Ctrl', '/'] },
+                        { name: '모든 서식/태그 제거', keys: ['Ctrl', 'Shift', 'Delete'] },
                       ].map((item) => (
                         <tr key={item.name} className="hover:bg-slate-50/50">
                           <td className="px-3 py-1.5 font-medium text-slate-700">{item.name}</td>

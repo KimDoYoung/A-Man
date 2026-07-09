@@ -168,6 +168,83 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         }, 0);
     };
 
+    const cycleTextColor = (textarea: HTMLTextAreaElement) => {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (start === end) return;
+
+        const selectedText = form.content.substring(start, end);
+        const textColors = ['#E03E3E', '#64473A', '#D9730D', '#0F7B6C', '#DFAB01'];
+        const fontRegex = /^<font color="[^"]+">([\s\S]*)<\/font>$/i;
+        const match = selectedText.match(fontRegex);
+
+        let newText = '';
+
+        if (match) {
+            const fontTagRegex = /^<font color="([^"]+)">/i;
+            const tagMatch = selectedText.match(fontTagRegex);
+            const currentColor = tagMatch ? tagMatch[1].toUpperCase() : '';
+            const insideText = match[1];
+            const currentIndex = textColors.findIndex(c => c.toUpperCase() === currentColor);
+
+            if (currentIndex === -1 || currentIndex === textColors.length - 1) {
+                newText = insideText;
+            } else {
+                const nextColor = textColors[currentIndex + 1];
+                newText = `<font color="${nextColor}">${insideText}</font>`;
+            }
+        } else {
+            const firstColor = textColors[0];
+            newText = `<font color="${firstColor}">${selectedText}</font>`;
+        }
+
+        updateContent(textarea, start, end, newText, 0, 0);
+    };
+
+    const cycleBgColor = (textarea: HTMLTextAreaElement) => {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        if (start === end) return;
+
+        const selectedText = form.content.substring(start, end);
+        const bgColors = ['#FBF3DB', '#E9E5E3', '#DDEDEA', '#FAEBDD', '#FBE4E4'];
+        const bgRegex = /^<span style="background-color:\s*([^";\s]+)">([\s\S]*)<\/span>$/i;
+        const match = selectedText.match(bgRegex);
+
+        let newText = '';
+
+        if (match) {
+            const currentColor = match[1].toUpperCase();
+            const insideText = match[2];
+            const currentIndex = bgColors.findIndex(c => c.toUpperCase() === currentColor);
+
+            if (currentIndex === -1 || currentIndex === bgColors.length - 1) {
+                newText = insideText;
+            } else {
+                const nextColor = bgColors[currentIndex + 1];
+                newText = `<span style="background-color: ${nextColor}">${insideText}</span>`;
+            }
+        } else {
+            const firstColor = bgColors[0];
+            newText = `<span style="background-color: ${firstColor}">${selectedText}</span>`;
+        }
+
+        updateContent(textarea, start, end, newText, 0, 0);
+    };
+
+    const removeAllTags = (text: string): string => {
+        let cleaned = text;
+        cleaned = cleaned.replace(/<[^>]*>/g, '');
+        cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, '$2');
+        cleaned = cleaned.replace(/(\*|_)(.*?)\1/g, '$2');
+        cleaned = cleaned.replace(/~~(.*?)~~/g, '$1');
+        cleaned = cleaned.replace(/`(.*?)`/g, '$1');
+        cleaned = cleaned.split('\n').map(line => {
+            return line.replace(/^\s*>\s*/, '');
+        }).join('\n');
+        return cleaned;
+    };
+
     const handleAction = (action: string) => {
         const textarea = textareaRef.current;
         if (!textarea) return;
@@ -176,9 +253,69 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         const end = textarea.selectionEnd;
         const selectedText = form.content.substring(start, end);
 
+        if (action === 'clear-all-tags') {
+            if (window.confirm('선택한 영역의 모든 서식 및 HTML 태그를 제거하시겠습니까?')) {
+                const cleaned = removeAllTags(selectedText);
+                updateContent(textarea, start, end, cleaned, 0, 0);
+            }
+            return;
+        }
+
         if (action.startsWith('insert-')) {
             const value = action.substring(7);
             updateContent(textarea, start, end, value, value.length, 0);
+            return;
+        }
+
+        if (action.startsWith('color-hex-')) {
+            const hex = action.substring(10);
+            const fontRegex = /^<font color="[^"]+">([\s\S]*)<\/font>$/i;
+            const match = selectedText.match(fontRegex);
+            if (match) {
+                const insideText = match[1];
+                const prefix = `<font color="${hex}">`;
+                const suffix = `</font>`;
+                updateContent(textarea, start, end, `${prefix}${insideText}${suffix}`, 0, 0);
+            } else {
+                const prefix = `<font color="${hex}">`;
+                const suffix = `</font>`;
+                updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, 0, 0);
+            }
+            return;
+        }
+
+        if (action.startsWith('bgcolor-hex-')) {
+            const hex = action.substring(12);
+            const bgRegex = /^<span style="background-color:\s*([^";\s]+)">([\s\S]*)<\/span>$/i;
+            const match = selectedText.match(bgRegex);
+            if (match) {
+                const insideText = match[2];
+                const prefix = `<span style="background-color: ${hex}">`;
+                const suffix = `</span>`;
+                updateContent(textarea, start, end, `${prefix}${insideText}${suffix}`, 0, 0);
+            } else {
+                const prefix = `<span style="background-color: ${hex}">`;
+                const suffix = `</span>`;
+                updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, 0, 0);
+            }
+            return;
+        }
+
+        if (action === 'color-clear') {
+            const fontRegex = /^<font color="[^"]+">([\s\S]*)<\/font>$/i;
+            const match = selectedText.match(fontRegex);
+            if (match) {
+                updateContent(textarea, start, end, match[1], 0, 0);
+            }
+            return;
+        }
+
+        if (action === 'bgcolor-clear') {
+            const bgRegex = /^<span style="background-color:\s*([^";\s]+)">([\s\S]*)<\/span>$/i;
+            const match = selectedText.match(bgRegex);
+            if (match) {
+                updateContent(textarea, start, end, match[2], 0, 0);
+            }
             return;
         }
 
@@ -737,48 +874,24 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 updateContent(textarea, start, end, '&nbsp;', 6, 0);
                 return;
             }
-            if (e.altKey && e.shiftKey && ['y', 'b', 'g', 'o', 'r'].includes(key)) {
+            // Ctrl + . : 글자색 순환
+            if (e.key === '.' || e.code === 'Period') {
                 e.preventDefault();
                 const textarea = e.currentTarget;
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-
-                if (start !== end) {
-                    const bgColorMap: Record<string, string> = {
-                        y: '#FBF3DB',
-                        b: '#E9E5E3',
-                        g: '#DDEDEA',
-                        o: '#FAEBDD',
-                        r: '#FBE4E4'
-                    };
-                    const hexColor = bgColorMap[key];
-                    const selectedText = form.content.substring(start, end);
-                    const prefix = `<span style="background-color: ${hexColor}">`;
-                    const suffix = `</span>`;
-                    updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, prefix.length, suffix.length);
-                }
+                cycleTextColor(textarea);
                 return;
             }
-            if (!e.altKey && e.shiftKey && ['r', 'b', 'o', 'g', 'y'].includes(key)) {
+            // Ctrl + / : 배경색 순환
+            if (e.key === '/' || e.code === 'Slash') {
                 e.preventDefault();
                 const textarea = e.currentTarget;
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-
-                if (start !== end) {
-                    const colorMap: Record<string, string> = {
-                        r: '#E03E3E',
-                        b: '#64473A',
-                        o: '#D9730D',
-                        g: '#0F7B6C',
-                        y: '#DFAB01'
-                    };
-                    const hexColor = colorMap[key];
-                    const selectedText = form.content.substring(start, end);
-                    const prefix = `<font color="${hexColor}">`;
-                    const suffix = `</font>`;
-                    updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, prefix.length, suffix.length);
-                }
+                cycleBgColor(textarea);
+                return;
+            }
+            // Ctrl + Shift + Delete : 모든 서식/태그 제거
+            if (e.shiftKey && (e.key === 'Delete' || e.code === 'Delete')) {
+                e.preventDefault();
+                handleAction('clear-all-tags');
                 return;
             }
             if (key === 's') {
@@ -928,6 +1041,86 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                     <ContextMenuItem label="글머리 기호" shortcut="Ctrl+0" onClick={() => handleAction('bullet')} />
                     <ContextMenuItem label="번호 매기기" shortcut="Ctrl+9" onClick={() => handleAction('number')} />
                     <ContextMenuItem label="표 (Table)" shortcut="Ctrl+," onClick={() => handleAction('table')} />
+                    <hr className="my-1 border-gray-100" />
+                    <ContextMenuItem label="모든 서식/태그 제거" shortcut="" onClick={() => handleAction('clear-all-tags')} />
+                    <hr className="my-1 border-gray-100" />
+                    <li 
+                        onMouseDown={(e) => e.preventDefault()}
+                        className="px-3 py-1 flex flex-col gap-1 select-none"
+                    >
+                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">글자 색상 (Ctrl+.)</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            {[
+                                { name: '빨강', value: '#E03E3E' },
+                                { name: '갈색', value: '#64473A' },
+                                { name: '주황', value: '#D9730D' },
+                                { name: '초록', value: '#0F7B6C' },
+                                { name: '노랑', value: '#DFAB01' },
+                            ].map((c) => (
+                                <button
+                                    key={c.value}
+                                    type="button"
+                                    onClick={() => {
+                                        handleAction(`color-hex-${c.value}`);
+                                        setMenuPos((prev) => ({ ...prev, visible: false }));
+                                    }}
+                                    className="w-4 h-4 rounded border border-gray-150 flex items-center justify-center cursor-pointer hover:scale-110 hover:bg-gray-50 hover:shadow-xs transition-all bg-white"
+                                    title={c.name}
+                                >
+                                    <span className="text-[10px] font-extrabold font-serif leading-none" style={{ color: c.value }}>A</span>
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleAction('color-clear');
+                                    setMenuPos((prev) => ({ ...prev, visible: false }));
+                                }}
+                                className="w-4 h-4 rounded border border-gray-200 flex items-center justify-center cursor-pointer hover:scale-110 hover:bg-gray-100 hover:shadow-xs transition-all bg-gray-50 text-gray-500 font-bold text-[8px]"
+                                title="색상 제거"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </li>
+                    <li 
+                        onMouseDown={(e) => e.preventDefault()}
+                        className="px-3 py-1 flex flex-col gap-1 select-none"
+                    >
+                        <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">배경 색상 (Ctrl+/)</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            {[
+                                { name: '노랑', value: '#FBF3DB' },
+                                { name: '갈색', value: '#E9E5E3' },
+                                { name: '초록', value: '#DDEDEA' },
+                                { name: '주황', value: '#FAEBDD' },
+                                { name: '빨강', value: '#FBE4E4' },
+                            ].map((c) => (
+                                <button
+                                    key={c.value}
+                                    type="button"
+                                    onClick={() => {
+                                        handleAction(`bgcolor-hex-${c.value}`);
+                                        setMenuPos((prev) => ({ ...prev, visible: false }));
+                                    }}
+                                    className="w-4 h-4 rounded border border-gray-200/60 cursor-pointer hover:scale-110 hover:shadow-xs transition-all block"
+                                    style={{ backgroundColor: c.value }}
+                                    title={c.name}
+                                />
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleAction('bgcolor-clear');
+                                    setMenuPos((prev) => ({ ...prev, visible: false }));
+                                }}
+                                className="w-4 h-4 rounded border border-gray-200 flex items-center justify-center cursor-pointer hover:scale-110 hover:bg-gray-100 hover:shadow-xs transition-all bg-gray-50 text-gray-500 font-bold text-[8px]"
+                                title="배경색 제거"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </li>
                 </ul>
             )}
 
@@ -1052,6 +1245,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
 
 const ContextMenuItem = ({ label, shortcut, onClick }: { label: string; shortcut: string; onClick: () => void }) => (
     <li
+        onMouseDown={(e) => e.preventDefault()}
         className="px-3 py-1.5 hover:bg-indigo-50 hover:text-indigo-650 cursor-pointer flex justify-between items-center text-gray-700 transition-colors"
         onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
