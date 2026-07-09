@@ -26,7 +26,8 @@ function drawArrow(
   color: string,
   width: number,
   lineStyle: 'solid' | 'dashed',
-  isSelected: boolean
+  isSelected: boolean,
+  headSizeLevel: number = 1
 ) {
   ctx.save()
 
@@ -39,6 +40,14 @@ function drawArrow(
     ctx.setLineDash([])
   }
 
+  const angle = Math.atan2(toY - fromY, toX - fromX)
+  const scale = headSizeLevel === 2 ? 1.5 : headSizeLevel === 3 ? 2.0 : 1.0
+  const headLength = Math.max(12, width * 3) * scale
+  const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2)
+  const offset = Math.min(distance * 0.8, headLength * 0.8)
+  const lineToX = toX - offset * Math.cos(angle)
+  const lineToY = toY - offset * Math.sin(angle)
+
   // 2. 선택 상태일 때 외곽 파란색 하이라이트선 먼저 그리기
   if (isSelected) {
     ctx.save()
@@ -49,12 +58,10 @@ function drawArrow(
     // 메인 선분 그리기
     ctx.beginPath()
     ctx.moveTo(fromX, fromY)
-    ctx.lineTo(toX, toY)
+    ctx.lineTo(lineToX, lineToY)
     ctx.stroke()
 
     // 화살촉 그리기
-    const angle = Math.atan2(toY - fromY, toX - fromX)
-    const headLength = Math.max(12, width * 3)
     const arrowAngle = Math.PI / 6
     const leftX = toX - headLength * Math.cos(angle - arrowAngle)
     const leftY = toY - headLength * Math.sin(angle - arrowAngle)
@@ -74,12 +81,10 @@ function drawArrow(
   // 3. 메인 화살표 선 그리기
   ctx.beginPath()
   ctx.moveTo(fromX, fromY)
-  ctx.lineTo(toX, toY)
+  ctx.lineTo(lineToX, lineToY)
   ctx.stroke()
 
   // 4. 화살촉 채우기
-  const angle = Math.atan2(toY - fromY, toX - fromX)
-  const headLength = Math.max(12, width * 3)
   const arrowAngle = Math.PI / 6
   const leftX = toX - headLength * Math.cos(angle - arrowAngle)
   const leftY = toY - headLength * Math.sin(angle - arrowAngle)
@@ -121,7 +126,8 @@ function drawOrthogonalArrow(
   color: string,
   width: number,
   lineStyle: 'solid' | 'dashed',
-  isSelected: boolean
+  isSelected: boolean,
+  headSizeLevel: number = 1
 ) {
   ctx.save()
 
@@ -134,6 +140,21 @@ function drawOrthogonalArrow(
     ctx.setLineDash([])
   }
 
+  // 화살촉의 방향 결정: 마지막 세그먼트의 방향에 맞게
+  let angle = 0
+  if (Math.abs(toX - midX) > 0.5) {
+    angle = Math.atan2(0, toX - midX)
+  } else {
+    angle = Math.atan2(toY - fromY, 0)
+  }
+
+  const scale = headSizeLevel === 2 ? 1.5 : headSizeLevel === 3 ? 2.0 : 1.0
+  const headLength = Math.max(12, width * 3) * scale
+  const lastSegLen = Math.abs(toX - midX) > 0.5 ? Math.abs(toX - midX) : Math.abs(toY - fromY)
+  const offset = Math.min(lastSegLen * 0.8, headLength * 0.8)
+  const lineToX = toX - offset * Math.cos(angle)
+  const lineToY = toY - offset * Math.sin(angle)
+
   // 2. 선택 상태일 때 하이라이트 배경선 그리기
   if (isSelected) {
     ctx.save()
@@ -144,8 +165,10 @@ function drawOrthogonalArrow(
     ctx.beginPath()
     ctx.moveTo(fromX, fromY)
     ctx.lineTo(midX, fromY)
-    ctx.lineTo(midX, toY)
-    ctx.lineTo(toX, toY)
+    if (Math.abs(toX - midX) > 0.5) {
+      ctx.lineTo(midX, toY)
+    }
+    ctx.lineTo(lineToX, lineToY)
     ctx.stroke()
     ctx.restore()
   }
@@ -154,20 +177,13 @@ function drawOrthogonalArrow(
   ctx.beginPath()
   ctx.moveTo(fromX, fromY)
   ctx.lineTo(midX, fromY)
-  ctx.lineTo(midX, toY)
-  ctx.lineTo(toX, toY)
+  if (Math.abs(toX - midX) > 0.5) {
+    ctx.lineTo(midX, toY)
+  }
+  ctx.lineTo(lineToX, lineToY)
   ctx.stroke()
 
   // 4. 화살촉 그리기
-  // 화살촉의 방향 결정: 마지막 세그먼트의 방향에 맞게
-  let angle = 0
-  if (Math.abs(toX - midX) > 0.5) {
-    angle = Math.atan2(0, toX - midX)
-  } else {
-    angle = Math.atan2(toY - fromY, 0)
-  }
-
-  const headLength = Math.max(12, width * 3)
   const arrowAngle = Math.PI / 6
   const leftX = toX - headLength * Math.cos(angle - arrowAngle)
   const leftY = toY - headLength * Math.sin(angle - arrowAngle)
@@ -298,6 +314,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [symbolEmoji, setSymbolEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
   const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
 
+  // 5-1. 화살머리 크기 (1, 2, 3단계)
+  const [arrowHeadSize, setArrowHeadSize] = useState<number>(1)
+
   // 6. 이미지 아이템 (image) 관련 속성
   const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
   const [imageSrcBorderWidth, setImageSrcBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
@@ -305,6 +324,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [imageSrcHasBorder, setImageSrcHasBorder] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
   const [imageSrcCaptionText, setImageSrcCaptionText] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
   const [imageSrcHasCaption, setImageSrcHasCaption] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
+  
+  // 속성 패널 리셋 트리거 상태
+  const [resetPanelTrigger, setResetPanelTrigger] = useState<number>(0)
   
   // 드로잉/인터랙션 임시 상태
   const [isDrawing, setIsDrawing] = useState(false)
@@ -686,7 +708,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     // 3. 아이템들 그리기 (원숫자, 사각형, 텍스트)
     items.forEach((item) => {
-      const isSelected = item.id === selectedItemId
+      const isSelected = item.id === selectedItemId && activeTool === 'pointer'
       ctx.save()
 
       if (item.type === 'circle-number') {
@@ -907,7 +929,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           item.style.borderColor || arrowColor,
           item.style.borderWidth || arrowLineWidth,
           item.style.lineStyle || arrowLineStyle,
-          isSelected
+          isSelected,
+          item.style.headSize || arrowHeadSize
         )
       }
       else if (item.type === 'orthogonal-arrow') {
@@ -925,7 +948,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           item.style.borderColor || arrowColor,
           item.style.borderWidth || arrowLineWidth,
           item.style.lineStyle || arrowLineStyle,
-          isSelected
+          isSelected,
+          item.style.headSize || arrowHeadSize
         )
       }
       else if (item.type === 'symbol') {
@@ -1023,7 +1047,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           arrowColor,
           arrowLineWidth,
           arrowLineStyle,
-          false
+          false,
+          arrowHeadSize
         )
       } else if (activeTool === 'orthogonal-arrow') {
         drawOrthogonalArrow(
@@ -1036,7 +1061,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           arrowColor,
           arrowLineWidth,
           arrowLineStyle,
-          false
+          false,
+          arrowHeadSize
         )
       } else if (activeTool === 'crop') {
         ctx.strokeStyle = '#6366f1'
@@ -1345,6 +1371,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setGeneratedImageUrl('')
     setActiveHistoryId(null)
     setActiveTool('pointer')
+    setResetPanelTrigger(prev => prev + 1)
+    setArrowHeadSize(1)
     
     setHasBorder(false)
     setBorderColor('#cbd5e1')
@@ -1969,7 +1997,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             style: {
               borderColor: arrowColor,
               borderWidth: arrowLineWidth,
-              lineStyle: arrowLineStyle
+              lineStyle: arrowLineStyle,
+              headSize: arrowHeadSize
             }
           }
           pushToUndo([...items, newItem])
@@ -1989,7 +2018,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderColor: arrowColor,
               borderWidth: arrowLineWidth,
               lineStyle: arrowLineStyle,
-              midX: x
+              midX: x,
+              headSize: arrowHeadSize
             }
           }
           pushToUndo([...items, newItem])
@@ -2343,130 +2373,139 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       return
     }
 
+    // 1. 선택 해제 및 툴 초기화 (ESC 키 누른 것과 동일)
+    setSelectedItemId(null)
+    setActiveTool('pointer')
+
     setInsertingImage(true)
-    canvas.toBlob(async (blob) => {
-      if (!blob) {
-        setInsertingImage(false)
-        return
-      }
 
-      try {
-        const formData = new FormData()
-        const cleanTitle = editorTitle.replace(/[^a-zA-Z0-9가-힣]/g, '_')
-        const file = new File([blob], `${cleanTitle || 'edited'}_${Date.now()}.png`, { type: 'image/png' })
-        formData.append('file', file)
-
-        const res = await apiClient.post<{ url: string }>('/content/image', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-
-        if (res && res.url) {
-          setGeneratedImageUrl(res.url)
-          
-          // 1번: 클립보드에 마크다운 복사까지 즉시 수행
-          const markdownFormat = `![image](${res.url})\n`
-          await copyTextToClipboard(markdownFormat)
-          
-          // 2번: 물리 url을 해당 이미지 작업 레코드에 영구적으로 귀속 저장 (덮어쓰기 업데이트)
-          if (activeHistoryId) {
-            const dataToSave = {
-              title: editorTitle,
-              originalImageUrl: bgImageSrc,
-              editedImageUrl: canvas.toDataURL('image/png') || '',
-              items: items,
-              circleCounter: circleCounter,
-              physicalUrl: res.url,
-              hasBorder: hasBorder,
-              borderColor: borderColor,
-              borderWidth: borderWidth,
-              borderStyle: borderStyle,
-              hasCaption: hasCaption,
-              captionText: captionText,
-              captionAlign: captionAlign,
-              circleNumberBgColor,
-              circleNumberTextColor,
-              circleNumberBorderColor,
-              circleNumberBorderWidth,
-              circleNumberFontSize,
-              boxBorderColor,
-              boxLineWidth,
-              boxLineStyle,
-              boxBgColor,
-              boxOpacity,
-              boxBorderRadius,
-              arrowColor,
-              arrowLineWidth,
-              arrowLineStyle,
-              textTextColor,
-              textFontSize,
-              symbolEmoji,
-              symbolScale,
-              imageSrcBorderColor,
-              imageSrcBorderWidth,
-              imageSrcBorderStyle,
-              imageSrcHasBorder,
-              imageSrcCaptionText,
-              imageSrcHasCaption
-            }
-            
-            await apiClient.post('/admin/image-work', {
-              id: activeHistoryId,
-              title: editorTitle,
-              jsonData: JSON.stringify(dataToSave)
-            })
-            
-            // 기준 상태 동기화
-            setLastSavedState({
-              title: editorTitle,
-              bgImageSrc: bgImageSrc,
-              items: items,
-              hasBorder: hasBorder,
-              borderColor: borderColor,
-              borderWidth: borderWidth,
-              borderStyle: borderStyle,
-              hasCaption: hasCaption,
-              captionText: captionText,
-              captionAlign: captionAlign,
-              circleNumberBgColor,
-              circleNumberTextColor,
-              circleNumberBorderColor,
-              circleNumberBorderWidth,
-              circleNumberFontSize,
-              boxBorderColor,
-              boxLineWidth,
-              boxLineStyle,
-              boxBgColor,
-              boxOpacity,
-              boxBorderRadius,
-              arrowColor,
-              arrowLineWidth,
-              arrowLineStyle,
-              textTextColor,
-              textFontSize,
-              symbolEmoji,
-              symbolScale,
-              imageSrcBorderColor,
-              imageSrcBorderWidth,
-              imageSrcBorderStyle,
-              imageSrcHasBorder,
-              imageSrcCaptionText,
-              imageSrcHasCaption
-            })
-            
-            fetchHistory()
-          }
-
-          showSaveMessage('물리 이미지 저장 성공 및 마크다운이 클립보드에 자동 복사되었습니다!', 'success')
-        } else {
-          showSaveMessage('서버로부터 업로드 URL을 받지 못했습니다.', 'error')
+    // 2. 리액트 상태 변경 리렌더링으로 캔버스 하이라이트가 지워지도록 100ms 지연 후 캡처 진행
+    setTimeout(() => {
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setInsertingImage(false)
+          return
         }
-      } catch (err) {
-        console.error('이미지 업로드 실패:', err)
-        showSaveMessage('이미지 업로드에 실패했습니다.', 'error')
-      } finally {
-        setInsertingImage(false)
-      }
-    }, 'image/png')
+
+        try {
+          const formData = new FormData()
+          const cleanTitle = editorTitle.replace(/[^a-zA-Z0-9가-힣]/g, '_')
+          const file = new File([blob], `${cleanTitle || 'edited'}_${Date.now()}.png`, { type: 'image/png' })
+          formData.append('file', file)
+
+          const res = await apiClient.post<{ url: string }>('/content/image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+
+          if (res && res.url) {
+            setGeneratedImageUrl(res.url)
+            
+            // 1번: 클립보드에 마크다운 복사까지 즉시 수행
+            const markdownFormat = `![image](${res.url})\n`
+            await copyTextToClipboard(markdownFormat)
+            
+            // 2번: 물리 url을 해당 이미지 작업 레코드에 영구적으로 귀속 저장 (덮어쓰기 업데이트)
+            if (activeHistoryId) {
+              const dataToSave = {
+                title: editorTitle,
+                originalImageUrl: bgImageSrc,
+                editedImageUrl: canvas.toDataURL('image/png') || '',
+                items: items,
+                circleCounter: circleCounter,
+                physicalUrl: res.url,
+                hasBorder: hasBorder,
+                borderColor: borderColor,
+                borderWidth: borderWidth,
+                borderStyle: borderStyle,
+                hasCaption: hasCaption,
+                captionText: captionText,
+                captionAlign: captionAlign,
+                circleNumberBgColor,
+                circleNumberTextColor,
+                circleNumberBorderColor,
+                circleNumberBorderWidth,
+                circleNumberFontSize,
+                boxBorderColor,
+                boxLineWidth,
+                boxLineStyle,
+                boxBgColor,
+                boxOpacity,
+                boxBorderRadius,
+                arrowColor,
+                arrowLineWidth,
+                arrowLineStyle,
+                arrowHeadSize, // 화살머리 크기 영구 귀속 저장 연동
+                textTextColor,
+                textFontSize,
+                symbolEmoji,
+                symbolScale,
+                imageSrcBorderColor,
+                imageSrcBorderWidth,
+                imageSrcBorderStyle,
+                imageSrcHasBorder,
+                imageSrcCaptionText,
+                imageSrcHasCaption
+              }
+              
+              await apiClient.post('/admin/image-work', {
+                id: activeHistoryId,
+                title: editorTitle,
+                jsonData: JSON.stringify(dataToSave)
+              })
+              
+              // 기준 상태 동기화
+              setLastSavedState({
+                title: editorTitle,
+                bgImageSrc: bgImageSrc,
+                items: items,
+                hasBorder: hasBorder,
+                borderColor: borderColor,
+                borderWidth: borderWidth,
+                borderStyle: borderStyle,
+                hasCaption: hasCaption,
+                captionText: captionText,
+                captionAlign: captionAlign,
+                circleNumberBgColor,
+                circleNumberTextColor,
+                circleNumberBorderColor,
+                circleNumberBorderWidth,
+                circleNumberFontSize,
+                boxBorderColor,
+                boxLineWidth,
+                boxLineStyle,
+                boxBgColor,
+                boxOpacity,
+                boxBorderRadius,
+                arrowColor,
+                arrowLineWidth,
+                arrowLineStyle,
+                textTextColor,
+                textFontSize,
+                symbolEmoji,
+                symbolScale,
+                imageSrcBorderColor,
+                imageSrcBorderWidth,
+                imageSrcBorderStyle,
+                imageSrcHasBorder,
+                imageSrcCaptionText,
+                imageSrcHasCaption
+              })
+              
+              fetchHistory()
+            }
+
+            showSaveMessage('물리 이미지 저장 성공 및 마크다운이 클립보드에 자동 복사되었습니다!', 'success')
+          } else {
+            showSaveMessage('서버로부터 업로드 URL을 받지 못했습니다.', 'error')
+          }
+        } catch (err) {
+          console.error('이미지 업로드 실패:', err)
+          showSaveMessage('이미지 업로드에 실패했습니다.', 'error')
+        } finally {
+          setInsertingImage(false)
+        }
+      }, 'image/png')
+    }, 100)
   }
 
   // 제목 인라인 수정 완료 처리
@@ -2957,6 +2996,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 imageSrcHasCaption={imageSrcHasCaption}
                 setImageSrcHasCaption={setImageSrcHasCaption}
                 onSaveDefaults={handleSaveUserSettings}
+                resetTrigger={resetPanelTrigger}
+                arrowHeadSize={arrowHeadSize}
+                setArrowHeadSize={setArrowHeadSize}
               />
             )}
           </main>

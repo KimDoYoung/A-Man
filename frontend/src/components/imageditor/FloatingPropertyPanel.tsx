@@ -89,6 +89,9 @@ interface FloatingPropertyPanelProps {
   setImageSrcCaptionText: (text: string) => void
   imageSrcHasCaption: boolean
   setImageSrcHasCaption: (val: boolean) => void
+  resetTrigger?: number
+  arrowHeadSize: number
+  setArrowHeadSize: (size: number) => void
 }
 
 const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
@@ -160,11 +163,22 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   imageSrcCaptionText,
   setImageSrcCaptionText,
   imageSrcHasCaption,
-  setImageSrcHasCaption
+  setImageSrcHasCaption,
+  resetTrigger,
+  arrowHeadSize,
+  setArrowHeadSize
 }) => {
   // 초기 띄우는 위치 (부모 캔버스 위에 뜨도록 고정/절대 좌표 적용)
-  const [position, setPosition] = useState({ x: 100, y: 150 })
+  const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  React.useEffect(() => {
+    if (resetTrigger !== undefined && resetTrigger > 0) {
+      setPosition({ x: 0, y: 0 })
+      setIsCollapsed(true)
+    }
+  }, [resetTrigger])
+
   const [activeTab, setActiveTab] = useState<'basic' | 'border' | 'caption'>('basic')
 
   const selectedItem = items.find(item => item.id === selectedItemId)
@@ -415,6 +429,41 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       pushToUndo(updated)
                     }}
                   />
+
+                  {/* 화살머리 크기 (화살표 계열일 때만) */}
+                  {(selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow') && (
+                    <div className="space-y-1.5">
+                      <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">화살머리 크기</span>
+                      <div className="flex space-x-1.5">
+                        {[
+                          { id: 1, label: '1단계 (기본)' },
+                          { id: 2, label: '2단계 (크게)' },
+                          { id: 3, label: '3단계 (더 크게)' }
+                        ].map((sz) => (
+                          <button
+                            key={sz.id}
+                            onClick={() => {
+                              setArrowHeadSize(sz.id)
+                              const updated = items.map(item => {
+                                if (item.id === selectedItemId) {
+                                  return { ...item, style: { ...item.style, headSize: sz.id } }
+                                }
+                                return item
+                              })
+                              pushToUndo(updated)
+                            }}
+                            className={`flex-1 px-2 py-1 border rounded-md font-bold text-[11px] cursor-pointer transition-all text-center justify-center items-center ${
+                              (selectedItem.style.headSize || 1) === sz.id
+                                ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                            }`}
+                          >
+                            {sz.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -932,6 +981,32 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           max={8}
                           onChangeValue={activeTool === 'box' ? setBoxLineWidth : setArrowLineWidth}
                         />
+
+                        {/* 화살머리 크기 (화살표 계열일 때만) */}
+                        {(activeTool === 'arrow' || activeTool === 'orthogonal-arrow') && (
+                          <div className="space-y-1.5">
+                            <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">화살머리 크기</span>
+                            <div className="flex space-x-1.5">
+                              {[
+                                { id: 1, label: '1단계 (기본)' },
+                                { id: 2, label: '2단계 (크게)' },
+                                { id: 3, label: '3단계 (더 크게)' }
+                              ].map((sz) => (
+                                <button
+                                  key={sz.id}
+                                  onClick={() => setArrowHeadSize(sz.id)}
+                                  className={`flex-1 px-2.5 py-1 border rounded-md font-bold text-[11px] cursor-pointer transition-all text-center justify-center items-center ${
+                                    arrowHeadSize === sz.id
+                                      ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                                      : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
+                                  }`}
+                                >
+                                  {sz.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
 
