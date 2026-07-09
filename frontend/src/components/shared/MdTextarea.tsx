@@ -728,6 +728,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         }
 
         if (e.ctrlKey) {
+            const key = e.key.toLowerCase();
             if (e.key === ' ' || e.code === 'Space') {
                 e.preventDefault();
                 const textarea = e.currentTarget;
@@ -736,8 +737,29 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 updateContent(textarea, start, end, '&nbsp;', 6, 0);
                 return;
             }
-            const key = e.key.toLowerCase();
-            if (e.shiftKey && ['r', 'b', 'o', 'g'].includes(key)) {
+            if (e.altKey && e.shiftKey && ['y', 'b', 'g', 'o', 'r'].includes(key)) {
+                e.preventDefault();
+                const textarea = e.currentTarget;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+
+                if (start !== end) {
+                    const bgColorMap: Record<string, string> = {
+                        y: '#FBF3DB',
+                        b: '#E9E5E3',
+                        g: '#DDEDEA',
+                        o: '#FAEBDD',
+                        r: '#FBE4E4'
+                    };
+                    const hexColor = bgColorMap[key];
+                    const selectedText = form.content.substring(start, end);
+                    const prefix = `<span style="background-color: ${hexColor}">`;
+                    const suffix = `</span>`;
+                    updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, prefix.length, suffix.length);
+                }
+                return;
+            }
+            if (!e.altKey && e.shiftKey && ['r', 'b', 'o', 'g', 'y'].includes(key)) {
                 e.preventDefault();
                 const textarea = e.currentTarget;
                 const start = textarea.selectionStart;
@@ -745,12 +767,17 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
 
                 if (start !== end) {
                     const colorMap: Record<string, string> = {
-                        r: 'red',
-                        b: 'blue',
-                        o: 'orange',
-                        g: 'green'
+                        r: '#E03E3E',
+                        b: '#64473A',
+                        o: '#D9730D',
+                        g: '#0F7B6C',
+                        y: '#DFAB01'
                     };
-                    handleAction(`color-${colorMap[key]}`);
+                    const hexColor = colorMap[key];
+                    const selectedText = form.content.substring(start, end);
+                    const prefix = `<font color="${hexColor}">`;
+                    const suffix = `</font>`;
+                    updateContent(textarea, start, end, `${prefix}${selectedText}${suffix}`, prefix.length, suffix.length);
                 }
                 return;
             }

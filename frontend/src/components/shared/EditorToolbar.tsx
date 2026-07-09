@@ -1,6 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
+import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, Highlighter, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+
+const TEXT_COLORS = [
+  { name: '회색', value: '#9B9A97' },
+  { name: '갈색', value: '#64473A' },
+  { name: '주황색', value: '#D9730D' },
+  { name: '노란색', value: '#DFAB01' },
+  { name: '초록색', value: '#0F7B6C' },
+  { name: '파란색', value: '#0B6E99' },
+  { name: '보라색', value: '#6940A5' },
+  { name: '분홍색', value: '#AD1A72' },
+  { name: '빨간색', value: '#E03E3E' },
+]
+
+const BG_COLORS = [
+  { name: '회색', value: '#EBECED' },
+  { name: '갈색', value: '#E9E5E3' },
+  { name: '주황색', value: '#FAEBDD' },
+  { name: '노란색', value: '#FBF3DB' },
+  { name: '초록색', value: '#DDEDEA' },
+  { name: '파란색', value: '#DDEBF1' },
+  { name: '보라색', value: '#EAE4F2' },
+  { name: '분홍색', value: '#F4DFEB' },
+  { name: '빨간색', value: '#FBE4E4' },
+]
 
 interface Asset {
   id?: number
@@ -88,6 +112,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const [phraseOpen, setPhraseOpen] = useState(false)
   const [templateOpen, setTemplateOpen] = useState(false)
   const [colorOpen, setColorOpen] = useState(false)
+  const [bgColorOpen, setBgColorOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [headingOpen, setHeadingOpen] = useState(false)
 
@@ -96,6 +121,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   const phrasePanelRef = useRef<HTMLDivElement>(null)
   const templatePanelRef = useRef<HTMLDivElement>(null)
   const colorPanelRef = useRef<HTMLDivElement>(null)
+  const bgColorPanelRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const headingPanelRef = useRef<HTMLDivElement>(null)
 
@@ -264,6 +290,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       if (colorPanelRef.current && !colorPanelRef.current.contains(target)) {
         setColorOpen(false)
       }
+      if (bgColorPanelRef.current && !bgColorPanelRef.current.contains(target)) {
+        setBgColorOpen(false)
+      }
       if (headingPanelRef.current && !headingPanelRef.current.contains(target)) {
         setHeadingOpen(false)
       }
@@ -380,45 +409,91 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <div className="relative" ref={colorPanelRef}>
           <button
             onClick={() => setColorOpen(!colorOpen)}
-            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${colorOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${colorOpen ? 'bg-indigo-50 text-indigo-650 border border-indigo-100' : ''}`}
             title="글자 색상 변경"
+          >
+            <Highlighter className="w-3.5 h-3.5" />
+          </button>
+          {colorOpen && (
+            <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg w-40 z-50">
+              <div className="text-[10px] text-gray-400 font-semibold px-1 mb-1.5 select-none">글자 색상 선택</div>
+              <div className="grid grid-cols-3 gap-2">
+                {TEXT_COLORS.map((c) => {
+                  const colorShortcuts: Record<string, string> = {
+                    '#E03E3E': 'Ctrl+Shift+R',
+                    '#64473A': 'Ctrl+Shift+B',
+                    '#D9730D': 'Ctrl+Shift+O',
+                    '#0F7B6C': 'Ctrl+Shift+G',
+                    '#DFAB01': 'Ctrl+Shift+Y',
+                  }
+                  const shortcut = colorShortcuts[c.value]
+                  const titleText = shortcut ? `${c.name} 텍스트 (${shortcut})` : `${c.name} 텍스트`
+
+                  return (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        insertMarkdown(`<font color="${c.value}">`, '</font>')
+                        setColorOpen(false)
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-md border border-gray-200 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer"
+                      title={titleText}
+                    >
+                      <span 
+                        className="text-base font-bold font-serif leading-none" 
+                        style={{ color: c.value }}
+                      >
+                        A
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 배경 색상 드롭다운 */}
+        <div className="relative" ref={bgColorPanelRef}>
+          <button
+            onClick={() => setBgColorOpen(!bgColorOpen)}
+            className={`p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer ${bgColorOpen ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : ''}`}
+            title="배경 색상 변경"
           >
             <Palette className="w-3.5 h-3.5" />
           </button>
-          {colorOpen && (
-            <div className="absolute left-0 mt-1 p-1.5 bg-white border border-gray-200 rounded-lg shadow-lg w-36 z-50 space-y-1">
-              {[
-                { name: '빨강 (Red)', value: 'red', colorClass: 'text-red-500', bgDot: 'bg-red-500' },
-                { name: '파랑 (Blue)', value: 'blue', colorClass: 'text-blue-500', bgDot: 'bg-blue-500' },
-                { name: '주황 (Orange)', value: 'orange', colorClass: 'text-orange-500', bgDot: 'bg-orange-500' },
-                { name: '초록 (Green)', value: 'green', colorClass: 'text-green-500', bgDot: 'bg-green-500' },
-              ].map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => {
-                    insertMarkdown(`<font color="${c.value}">`, '</font>')
-                    setColorOpen(false)
-                  }}
-                  className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-100 rounded text-xs transition-colors cursor-pointer text-left font-medium"
-                >
-                  <span className={`w-2.5 h-2.5 rounded-full ${c.bgDot} shrink-0 inline-block`} />
-                  <span className={c.colorClass}>{c.name}</span>
-                </button>
-              ))}
-              <div className="pt-1 border-t border-gray-100 mt-1">
-                <label className="w-full flex items-center justify-between px-2 py-1 hover:bg-gray-100 rounded text-xs transition-colors cursor-pointer font-medium text-gray-700">
-                  <span>직접 선택</span>
-                  <input
-                    type="color"
-                    defaultValue="#6366f1"
-                    onChange={(e) => {
-                      insertMarkdown(`<font color="${e.target.value}">`, '</font>')
-                      setColorOpen(false)
-                    }}
-                    className="w-5 h-5 rounded cursor-pointer border border-gray-300 p-0 bg-transparent shrink-0"
-                    title="사용자 지정 색상 선택"
-                  />
-                </label>
+          {bgColorOpen && (
+            <div className="absolute left-0 mt-1 p-2 bg-white border border-gray-200 rounded-lg shadow-lg w-40 z-50">
+              <div className="text-[10px] text-gray-400 font-semibold px-1 mb-1.5 select-none">배경 색상 선택</div>
+              <div className="grid grid-cols-3 gap-2">
+                {BG_COLORS.map((c) => {
+                  const bgShortcuts: Record<string, string> = {
+                    '#FBF3DB': 'Ctrl+Alt+Shift+Y',
+                    '#E9E5E3': 'Ctrl+Alt+Shift+B',
+                    '#DDEDEA': 'Ctrl+Alt+Shift+G',
+                    '#FAEBDD': 'Ctrl+Alt+Shift+O',
+                    '#FBE4E4': 'Ctrl+Alt+Shift+R',
+                  }
+                  const shortcut = bgShortcuts[c.value]
+                  const titleText = shortcut ? `${c.name} 배경 (${shortcut})` : `${c.name} 배경`
+
+                  return (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        insertMarkdown(`<span style="background-color: ${c.value}">`, '</span>')
+                        setBgColorOpen(false)
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-md border border-gray-200 flex flex-col items-center justify-center transition-all duration-150 cursor-pointer"
+                      title={titleText}
+                    >
+                      <span 
+                        className="w-5 h-5 rounded border border-gray-200/50 block shadow-xs" 
+                        style={{ backgroundColor: c.value }}
+                      />
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -695,6 +770,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         { name: '번호 매기기 리스트 변환', keys: ['Ctrl', '9'] },
                         { name: '표 ↔ CSV 양방향 전환 / 표 삽입', keys: ['Ctrl', ','] },
                         { name: '마크다운 링크 ([텍스트](URL)) 삽입', keys: ['Ctrl', 'L'] },
+                        { name: '글자색 (R/B/O/G/Y) 텍스트 감싸기', keys: ['Ctrl', 'Shift', 'R/B/O/G/Y'] },
+                        { name: '배경색 (Y/B/G/O/R) 텍스트 감싸기', keys: ['Ctrl', 'Alt', 'Shift', 'Y/B/G/O/R'] },
                       ].map((item) => (
                         <tr key={item.name} className="hover:bg-slate-50/50">
                           <td className="px-3 py-1.5 font-medium text-slate-700">{item.name}</td>
