@@ -3,6 +3,18 @@ import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square, Save } 
 import { CanvasItem } from './image_editor_types'
 import ColorPicker from './ColorPicker'
 import RangeSlider from './RangeSlider'
+import Toggle from './Toggle'
+import SegmentedControl from './SegmentedControl'
+import {
+  BOX_ARROW_BORDER_COLORS,
+  BOX_BG_COLORS,
+  CIRCLE_NUMBER_BG_COLORS,
+  CIRCLE_NUMBER_TEXT_COLORS,
+  CIRCLE_NUMBER_BORDER_COLORS,
+  TEXT_COLOR_PALETTE,
+  IMAGE_BORDER_COLORS,
+  SYMBOL_EMOJI_OPTIONS
+} from './image_items_defaults'
 
 interface FloatingPropertyPanelProps {
   // 1. 원숫자 (circle-number) 관련 속성
@@ -309,7 +321,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       })
                       pushToUndo(updated)
                     }}
-                    colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                    colors={BOX_ARROW_BORDER_COLORS}
                   />
 
                   {/* 배경색 및 투명도: box 타입일 때만 */}
@@ -329,7 +341,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           })
                           pushToUndo(updated)
                         }}
-                        colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                        colors={BOX_BG_COLORS}
                       />
 
                       {/* 투명도 */}
@@ -375,37 +387,27 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 선 타입 (실선/점선) */}
                   <div className="space-y-1.5">
                     <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 타입</span>
-                    <div className="flex space-x-1.5">
-                      {[
+                    <SegmentedControl
+                      options={[
                         { id: 'solid', label: '실선' },
                         { id: 'dashed', label: '점선' }
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => {
-                            if (selectedItem.type === 'box') {
-                              setBoxLineStyle(t.id as any)
-                            } else {
-                              setArrowLineStyle(t.id as any)
-                            }
-                            const updated = items.map(item => {
-                              if (item.id === selectedItemId) {
-                                  return { ...item, style: { ...item.style, lineStyle: t.id as any } }
-                              }
-                              return item
-                            })
-                            pushToUndo(updated)
-                          }}
-                          className={`px-3 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
-                            (selectedItem.style.lineStyle || 'solid') === t.id
-                              ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
-                              : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
+                      ]}
+                      value={selectedItem.style.lineStyle || 'solid'}
+                      onChange={(id) => {
+                        if (selectedItem.type === 'box') {
+                          setBoxLineStyle(id as any)
+                        } else {
+                          setArrowLineStyle(id as any)
+                        }
+                        const updated = items.map(item => {
+                          if (item.id === selectedItemId) {
+                            return { ...item, style: { ...item.style, lineStyle: id as any } }
+                          }
+                          return item
+                        })
+                        pushToUndo(updated)
+                      }}
+                    />
                   </div>
 
                   {/* 선 두께 */}
@@ -474,7 +476,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   <div className="space-y-2">
                     <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
                     <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
-                      {['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬'].map((emoji) => {
+                      {SYMBOL_EMOJI_OPTIONS.map((emoji) => {
                         const isCurrent = selectedItem.text === emoji
                         return (
                           <button
@@ -558,7 +560,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       })
                       pushToUndo(updated)
                     }}
-                    colors={['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444']}
+                    colors={CIRCLE_NUMBER_BG_COLORS}
                   />
 
                   {/* 글자 색상 */}
@@ -575,7 +577,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       })
                       pushToUndo(updated)
                     }}
-                    colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#eff37f']}
+                    colors={CIRCLE_NUMBER_TEXT_COLORS}
                   />
 
                   {/* 테두리 색상 */}
@@ -592,7 +594,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       })
                       pushToUndo(updated)
                     }}
-                    colors={['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']}
+                    colors={CIRCLE_NUMBER_BORDER_COLORS}
                   />
 
                   {/* 테두리 두께 */}
@@ -664,7 +666,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       })
                       pushToUndo(updated)
                     }}
-                    colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']}
+                    colors={TEXT_COLOR_PALETTE}
                   />
 
                   {/* 글자 크기 */}
@@ -691,27 +693,19 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               {selectedItem.type === 'image' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   {/* 테두리선 사용 여부 */}
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-gray-700 dark:text-slate-300">테두리선 사용</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedItem.style.hasBorder || false}
-                        onChange={(e) => {
-                          const val = e.target.checked
-                          const updated = items.map(item => {
-                            if (item.id === selectedItemId) {
-                              return { ...item, style: { ...item.style, hasBorder: val } }
-                            }
-                            return item
-                          })
-                          pushToUndo(updated)
-                        }}
-                        className="sr-only peer cursor-pointer"
-                      />
-                      <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
+                  <Toggle
+                    label="테두리선 사용"
+                    checked={selectedItem.style.hasBorder || false}
+                    onChange={(val) => {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, hasBorder: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
 
                   {/* 테두리 상세 설정 (테두리선이 켜져있을 때만) */}
                   {(selectedItem.style.hasBorder) && (
@@ -729,7 +723,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           })
                           pushToUndo(updated)
                         }}
-                        colors={['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']}
+                        colors={IMAGE_BORDER_COLORS}
                       />
 
                       {/* 테두리 두께 */}
@@ -752,58 +746,41 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       {/* 테두리 종류 */}
                       <div className="space-y-1.5">
                         <span className="block font-bold text-gray-705 dark:text-slate-300 mb-1 text-[11px]">테두리 종류</span>
-                        <div className="flex space-x-1.5">
-                          {[
+                        <SegmentedControl
+                          options={[
                             { id: 'solid', label: '실선' },
                             { id: 'dashed', label: '점선' }
-                          ].map((t) => (
-                            <button
-                              key={t.id}
-                              onClick={() => {
-                                const updated = items.map(item => {
-                                  if (item.id === selectedItemId) {
-                                    return { ...item, style: { ...item.style, lineStyle: t.id as any } }
-                                  }
-                                  return item
-                                })
-                                pushToUndo(updated)
-                              }}
-                              className={`px-3 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
-                                (selectedItem.style.lineStyle || 'solid') === t.id
-                                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
-                                  : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
-                              }`}
-                            >
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
+                          ]}
+                          value={selectedItem.style.lineStyle || 'solid'}
+                          onChange={(id) => {
+                            const updated = items.map(item => {
+                              if (item.id === selectedItemId) {
+                                return { ...item, style: { ...item.style, lineStyle: id as any } }
+                              }
+                              return item
+                            })
+                            pushToUndo(updated)
+                          }}
+                        />
                       </div>
                     </div>
                   )}
 
                   {/* 설명캡션 사용 여부 */}
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-slate-850">
-                    <span className="font-bold text-xs text-gray-700 dark:text-slate-300">설명캡션 사용</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedItem.style.hasCaption || false}
-                        onChange={(e) => {
-                          const val = e.target.checked
-                          const updated = items.map(item => {
-                            if (item.id === selectedItemId) {
-                              return { ...item, style: { ...item.style, hasCaption: val } }
-                            }
-                            return item
-                          })
-                          pushToUndo(updated)
-                        }}
-                        className="sr-only peer cursor-pointer"
-                      />
-                      <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
+                  <Toggle
+                    label="설명캡션 사용"
+                    className="pt-2 border-t border-gray-100 dark:border-slate-850"
+                    checked={selectedItem.style.hasCaption || false}
+                    onChange={(val) => {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, hasCaption: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
 
                   {/* 설명캡션 내용 기입 */}
                   {(selectedItem.style.hasCaption) && (
@@ -869,19 +846,19 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           label="원배경 색상"
                           selectedColor={circleNumberBgColor}
                           onChangeColor={setCircleNumberBgColor}
-                          colors={['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444']}
+                          colors={CIRCLE_NUMBER_BG_COLORS}
                         />
                         <ColorPicker
                           label="글자 색상"
                           selectedColor={circleNumberTextColor}
                           onChangeColor={setCircleNumberTextColor}
-                          colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']}
+                          colors={CIRCLE_NUMBER_TEXT_COLORS}
                         />
                         <ColorPicker
                           label="테두리 색상"
                           selectedColor={circleNumberBorderColor}
                           onChangeColor={setCircleNumberBorderColor}
-                          colors={['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']}
+                          colors={CIRCLE_NUMBER_BORDER_COLORS}
                         />
                         <RangeSlider
                           label="테두리 두께"
@@ -917,7 +894,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           label="강조선 색상"
                           selectedColor={activeTool === 'box' ? boxBorderColor : arrowColor}
                           onChangeColor={activeTool === 'box' ? setBoxBorderColor : setArrowColor}
-                          colors={['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                          colors={BOX_ARROW_BORDER_COLORS}
                         />
                         {activeTool === 'box' && (
                           <>
@@ -925,7 +902,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               label="배경색"
                               selectedColor={boxBgColor}
                               onChangeColor={setBoxBgColor}
-                              colors={['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                              colors={BOX_BG_COLORS}
                             />
                             <RangeSlider
                               label="투명도"
@@ -948,30 +925,20 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         {/* 선 종류 */}
                         <div className="space-y-1.5">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 종류</span>
-                          <div className="flex space-x-1.5">
-                            {[
+                          <SegmentedControl
+                            options={[
                               { id: 'solid', label: '실선' },
                               { id: 'dashed', label: '점선' }
-                            ].map((t) => (
-                              <button
-                                key={t.id}
-                                onClick={() => {
-                                  if (activeTool === 'box') {
-                                    setBoxLineStyle(t.id as any)
-                                  } else {
-                                    setArrowLineStyle(t.id as any)
-                                  }
-                                }}
-                                className={`px-3 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
-                                  (activeTool === 'box' ? boxLineStyle : arrowLineStyle) === t.id
-                                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
-                                    : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
-                                }`}
-                              >
-                                {t.label}
-                              </button>
-                            ))}
-                          </div>
+                            ]}
+                            value={activeTool === 'box' ? boxLineStyle : arrowLineStyle}
+                            onChange={(id) => {
+                              if (activeTool === 'box') {
+                                setBoxLineStyle(id as any)
+                              } else {
+                                setArrowLineStyle(id as any)
+                              }
+                            }}
+                          />
                         </div>
 
                         <RangeSlider
@@ -1016,7 +983,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         <div className="space-y-2">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
                           <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
-                            {['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬'].map((emoji) => {
+                            {SYMBOL_EMOJI_OPTIONS.map((emoji) => {
                               const isCurrent = symbolEmoji === emoji
                               return (
                                 <button
@@ -1066,7 +1033,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           label="글자 색상"
                           selectedColor={textTextColor}
                           onChangeColor={setTextTextColor}
-                          colors={['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']}
+                          colors={TEXT_COLOR_PALETTE}
                         />
                         <RangeSlider
                           label="글자 크기"
@@ -1089,18 +1056,12 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           </span>
                           
                           {/* 테두리선 여부 */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600 dark:text-slate-400">테두리선 사용</span>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={imageSrcHasBorder}
-                                onChange={(e) => setImageSrcHasBorder(e.target.checked)}
-                                className="sr-only peer cursor-pointer"
-                              />
-                              <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                            </label>
-                          </div>
+                          <Toggle
+                            label="테두리선 사용"
+                            labelClassName="text-xs text-gray-600 dark:text-slate-400"
+                            checked={imageSrcHasBorder}
+                            onChange={setImageSrcHasBorder}
+                          />
 
                           {imageSrcHasBorder && (
                             <div className="space-y-3 pl-2.5 border-l-2 border-indigo-500/20 dark:border-indigo-500/40 animate-in slide-in-from-top-1 duration-200">
@@ -1108,7 +1069,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                                 label="테두리 색상"
                                 selectedColor={imageSrcBorderColor}
                                 onChangeColor={setImageSrcBorderColor}
-                                colors={['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']}
+                                colors={IMAGE_BORDER_COLORS}
                               />
                               <RangeSlider
                                 label="테두리 두께"
@@ -1119,41 +1080,27 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               />
                               <div className="space-y-1.5">
                                 <span className="block font-bold text-gray-650 dark:text-slate-400 text-[10px]">테두리 종류</span>
-                                <div className="flex space-x-1.5">
-                                  {[
+                                <SegmentedControl
+                                  options={[
                                     { id: 'solid', label: '실선' },
                                     { id: 'dashed', label: '점선' }
-                                  ].map((t) => (
-                                    <button
-                                      key={t.id}
-                                      onClick={() => setImageSrcBorderStyle(t.id as any)}
-                                      className={`px-2.5 py-0.5 border rounded-md font-bold text-[10px] cursor-pointer transition-all ${
-                                        imageSrcBorderStyle === t.id
-                                          ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
-                                          : 'bg-white dark:bg-slate-900 text-gray-500 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
-                                      }`}
-                                    >
-                                      {t.label}
-                                    </button>
-                                  ))}
-                                </div>
+                                  ]}
+                                  value={imageSrcBorderStyle}
+                                  onChange={(id) => setImageSrcBorderStyle(id as any)}
+                                  sizeClassName="px-2.5 py-0.5 text-[10px]"
+                                />
                               </div>
                             </div>
                           )}
 
                           {/* 설명캡션 사용 여부 */}
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-xs text-gray-600 dark:text-slate-400">설명캡션 사용</span>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={imageSrcHasCaption}
-                                onChange={(e) => setImageSrcHasCaption(e.target.checked)}
-                                className="sr-only peer cursor-pointer"
-                              />
-                              <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                            </label>
-                          </div>
+                          <Toggle
+                            label="설명캡션 사용"
+                            labelClassName="text-xs text-gray-600 dark:text-slate-400"
+                            className="pt-1"
+                            checked={imageSrcHasCaption}
+                            onChange={setImageSrcHasCaption}
+                          />
 
                           {imageSrcHasCaption && (
                             <div className="space-y-1.5 pl-2.5 border-l-2 border-indigo-500/20 dark:border-indigo-500/40 animate-in slide-in-from-top-1 duration-200">
@@ -1176,18 +1123,12 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                 {/* 탭 B: 테두리 */}
                 {activeTab === 'border' && (
                   <div className="space-y-4 animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-700 dark:text-slate-300">외곽테두리 사용</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={hasBorder}
-                          onChange={(e) => setHasBorder(e.target.checked)}
-                          className="sr-only peer cursor-pointer"
-                        />
-                        <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
+                    <Toggle
+                      label="외곽테두리 사용"
+                      labelClassName="font-bold text-gray-700 dark:text-slate-300"
+                      checked={hasBorder}
+                      onChange={setHasBorder}
+                    />
 
                     {hasBorder && (
                       <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
@@ -1207,7 +1148,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           label="테두리 색상"
                           selectedColor={borderColor}
                           onChangeColor={setBorderColor}
-                          colors={['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']}
+                          colors={IMAGE_BORDER_COLORS}
                         />
 
                         <RangeSlider
@@ -1225,42 +1166,28 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                 {/* 탭 C: 설명캡션 */}
                 {activeTab === 'caption' && (
                   <div className="space-y-4 animate-in fade-in duration-150">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-700 dark:text-slate-300">설명캡션 사용</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={hasCaption}
-                          onChange={(e) => setHasCaption(e.target.checked)}
-                          className="sr-only peer cursor-pointer"
-                        />
-                        <div className="w-9 h-5 bg-gray-200 dark:bg-slate-700 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-                      </label>
-                    </div>
+                    <Toggle
+                      label="설명캡션 사용"
+                      labelClassName="font-bold text-gray-700 dark:text-slate-300"
+                      checked={hasCaption}
+                      onChange={setHasCaption}
+                    />
 
                     {hasCaption && (
                       <div className="space-y-2.5 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
                         {/* 정렬 방식 선택 */}
                         <div className="space-y-1.5">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">정렬 방식</span>
-                          <div className="flex space-x-1.5">
-                            {[
+                          <SegmentedControl
+                            options={[
                               { id: 'center', label: '중앙 정렬 (Center)' },
                               { id: 'left', label: '왼쪽 정렬 (Left)' }
-                            ].map((a) => (
-                              <button
-                                key={a.id}
-                                onClick={() => setCaptionAlign(a.id as 'left' | 'center')}
-                                className={`flex-1 py-1 border rounded-md font-bold text-xs cursor-pointer transition-all ${
-                                  captionAlign === a.id
-                                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
-                                    : 'bg-white dark:bg-slate-900 text-gray-505 hover:bg-gray-50 border-gray-200 dark:border-slate-800'
-                                }`}
-                              >
-                                {a.label}
-                              </button>
-                            ))}
-                          </div>
+                            ]}
+                            value={captionAlign}
+                            onChange={(id) => setCaptionAlign(id as 'left' | 'center')}
+                            sizeClassName="flex-1 py-1 text-xs"
+                            unselectedTextClassName="text-gray-505"
+                          />
                         </div>
 
                         <span className="font-bold text-gray-700 dark:text-slate-300 block mt-2">설명 캡션 문구 기입</span>

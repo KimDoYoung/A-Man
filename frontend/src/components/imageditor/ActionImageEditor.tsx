@@ -232,6 +232,36 @@ function drawOrthogonalArrow(
   ctx.restore()
 }
 
+// box/image 타입 공용: 선택 영역 하이라이트 및 4꼭지점 조절 핸들 그리기
+function drawSelectionHandles(
+  ctx: CanvasRenderingContext2D,
+  item: { x: number; y: number; width?: number; height?: number }
+) {
+  ctx.strokeStyle = '#3b82f6'
+  ctx.lineWidth = 1.5
+  ctx.setLineDash([4, 4])
+  ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
+
+  // 4꼭지점 핸들 그리기
+  ctx.save()
+  ctx.setLineDash([])
+  ctx.fillStyle = '#ffffff'
+  ctx.strokeStyle = '#3b82f6'
+  ctx.lineWidth = 1.5
+  const handleSize = 6
+  const points = [
+    { x: item.x, y: item.y }, // TL
+    { x: item.x + (item.width || 0), y: item.y }, // TR
+    { x: item.x, y: item.y + (item.height || 0) }, // BL
+    { x: item.x + (item.width || 0), y: item.y + (item.height || 0) } // BR
+  ]
+  points.forEach((pt) => {
+    ctx.fillRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
+    ctx.strokeRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
+  })
+  ctx.restore()
+}
+
 // HTTP 및 HTTPS 모두 호환되는 텍스트 클립보드 복사 헬퍼 함수
 async function copyTextToClipboard(text: string): Promise<void> {
   if (navigator.clipboard && window.isSecureContext) {
@@ -262,10 +292,35 @@ async function copyTextToClipboard(text: string): Promise<void> {
   }
 }
 
+// File → dataURL → HTMLImageElement 공용 로딩 헬퍼 (addSubImage/loadImage 공용)
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve((e.target?.result as string) || '')
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+async function loadImageFromFile(file: File): Promise<{ img: HTMLImageElement; dataUrl: string }> {
+  const dataUrl = await readFileAsDataURL(file)
+  const img = await loadImageElement(dataUrl)
+  return { img, dataUrl }
+}
+
 import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
 import FloatingPropertyPanel from './FloatingPropertyPanel'
 import WorkHistory from './WorkHistory'
-import { SYSTEM_ITEM_DEFAULTS } from './image_items_defaults'
+import { SYSTEM_ITEM_DEFAULTS, StyleConfig, WorkStyleConfig } from './image_items_defaults'
 
 
 const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
@@ -336,7 +391,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textInputValue, setTextInputValue] = useState('')
   const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
   const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | null>(null)
-  
+  // 드래그 이동 시작 시점의 items 스냅샷 (undo 기록용)
+  const dragMoveStartItemsRef = useRef<CanvasItem[] | null>(null)
+
   // 마지막 저장 시점 상태 (isDirty 체크용)
   const [lastSavedState, setLastSavedState] = useState<{
     title: string
@@ -582,8 +639,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 캔버스 변경 히스토리 푸시 (Undo용)
-  const pushToUndo = (newItems: CanvasItem[]) => {
-    setUndoStack((prev) => [...prev, items])
+  const pushToUndo = (newItems: CanvasItem[], baseItems: CanvasItem[] = items) => {
+    setUndoStack((prev) => [...prev, baseItems])
     setRedoStack([]) // 새로운 액션이 생기면 redo 스택 초기화
     setItems(newItems)
   }
@@ -804,31 +861,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         // 선택 영역 하이라이트 및 4꼭지점 조절 핸들
         if (isSelected) {
-          ctx.strokeStyle = '#3b82f6'
-          ctx.lineWidth = 1.5
-          ctx.setLineDash([4, 4])
-          ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
-
-          // 4꼭지점 핸들 그리기
-          ctx.save()
-          ctx.setLineDash([])
-          ctx.fillStyle = '#ffffff'
-          ctx.strokeStyle = '#3b82f6'
-          ctx.lineWidth = 1.5
-          const handleSize = 6
-          const points = [
-            { x: item.x, y: item.y }, // TL
-            { x: item.x + (item.width || 0), y: item.y }, // TR
-            { x: item.x, y: item.y + (item.height || 0) }, // BL
-            { x: item.x + (item.width || 0), y: item.y + (item.height || 0) } // BR
-          ]
-          points.forEach((pt) => {
-            ctx.fillRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
-            ctx.strokeRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
-          })
-          ctx.restore()
+          drawSelectionHandles(ctx, item)
         }
-      } 
+      }
       else if (item.type === 'image') {
         // 추가 서브 이미지 그리기
         const hasSubBorder = item.style.hasBorder ?? false
@@ -892,29 +927,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         // 선택 영역 하이라이트 및 4꼭지점 조절 핸들 (box와 완전히 동일)
         if (isSelected) {
-          ctx.strokeStyle = '#3b82f6'
-          ctx.lineWidth = 1.5
-          ctx.setLineDash([4, 4])
-          ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
-
-          // 4꼭지점 핸들 그리기
-          ctx.save()
-          ctx.setLineDash([])
-          ctx.fillStyle = '#ffffff'
-          ctx.strokeStyle = '#3b82f6'
-          ctx.lineWidth = 1.5
-          const handleSize = 6
-          const points = [
-            { x: item.x, y: item.y }, // TL
-            { x: item.x + (item.width || 0), y: item.y }, // TR
-            { x: item.x, y: item.y + (item.height || 0) }, // BL
-            { x: item.x + (item.width || 0), y: item.y + (item.height || 0) } // BR
-          ]
-          points.forEach((pt) => {
-            ctx.fillRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
-            ctx.strokeRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
-          })
-          ctx.restore()
+          drawSelectionHandles(ctx, item)
         }
       }
       else if (item.type === 'arrow') {
@@ -1198,6 +1211,120 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
+  // 현재 아이템별 스타일 상태(25필드)를 SYSTEM_ITEM_DEFAULTS와 동일한 shape으로 스냅샷
+  const buildStyleConfig = (): StyleConfig => ({
+    circleNumberBgColor,
+    circleNumberTextColor,
+    circleNumberBorderColor,
+    circleNumberBorderWidth,
+    circleNumberFontSize,
+    boxBorderColor,
+    boxLineWidth,
+    boxLineStyle,
+    boxBgColor,
+    boxOpacity,
+    boxBorderRadius,
+    arrowColor,
+    arrowLineWidth,
+    arrowLineStyle,
+    textTextColor,
+    textFontSize,
+    symbolEmoji,
+    symbolScale,
+    imageSrcBorderColor,
+    imageSrcBorderWidth,
+    imageSrcBorderStyle,
+    imageSrcHasBorder,
+    imageSrcCaptionText,
+    imageSrcHasCaption,
+    captionAlign
+  })
+
+  // buildStyleConfig() + 캔버스 테두리/캡션 6필드 (작업(Work) 저장/복원용 확장 shape)
+  const buildWorkStyleConfig = (): WorkStyleConfig => ({
+    ...buildStyleConfig(),
+    hasBorder,
+    borderColor,
+    borderWidth,
+    borderStyle,
+    hasCaption,
+    captionText
+  })
+
+  // 25필드 스타일 상태를 일괄 적용
+  const applyStyleConfig = (cfg: StyleConfig) => {
+    setCircleNumberBgColor(cfg.circleNumberBgColor)
+    setCircleNumberTextColor(cfg.circleNumberTextColor)
+    setCircleNumberBorderColor(cfg.circleNumberBorderColor)
+    setCircleNumberBorderWidth(cfg.circleNumberBorderWidth)
+    setCircleNumberFontSize(cfg.circleNumberFontSize)
+    setBoxBorderColor(cfg.boxBorderColor)
+    setBoxLineWidth(cfg.boxLineWidth)
+    setBoxLineStyle(cfg.boxLineStyle)
+    setBoxBgColor(cfg.boxBgColor)
+    setBoxOpacity(cfg.boxOpacity)
+    setBoxBorderRadius(cfg.boxBorderRadius)
+    setArrowColor(cfg.arrowColor)
+    setArrowLineWidth(cfg.arrowLineWidth)
+    setArrowLineStyle(cfg.arrowLineStyle)
+    setTextTextColor(cfg.textTextColor)
+    setTextFontSize(cfg.textFontSize)
+    setSymbolEmoji(cfg.symbolEmoji)
+    setSymbolScale(cfg.symbolScale)
+    setImageSrcBorderColor(cfg.imageSrcBorderColor)
+    setImageSrcBorderWidth(cfg.imageSrcBorderWidth)
+    setImageSrcBorderStyle(cfg.imageSrcBorderStyle)
+    setImageSrcHasBorder(cfg.imageSrcHasBorder)
+    setImageSrcCaptionText(cfg.imageSrcCaptionText)
+    setImageSrcHasCaption(cfg.imageSrcHasCaption)
+    setCaptionAlign(cfg.captionAlign)
+  }
+
+  // 구버전 jsonData/사용자설정 로드시 레거시 키 하위호환 폴백 체인
+  // (docs/설계_이미지에디터_속성분리.md §2.1과 동일한 우선순위 유지)
+  const resolveWorkStyleConfigFromLegacyData = (data: any): WorkStyleConfig => ({
+    circleNumberBgColor: data.circleNumberBgColor ?? data.indigoColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
+    circleNumberTextColor: data.circleNumberTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
+    circleNumberBorderColor: data.circleNumberBorderColor ?? data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
+    circleNumberBorderWidth: data.circleNumberBorderWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
+    circleNumberFontSize: data.circleNumberFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    boxBorderColor: data.boxBorderColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.boxBorderColor,
+    boxLineWidth: data.boxLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.boxLineWidth,
+    boxLineStyle: data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.boxLineStyle,
+    boxBgColor: data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor,
+    boxOpacity: data.boxOpacity ?? SYSTEM_ITEM_DEFAULTS.boxOpacity,
+    boxBorderRadius: data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    arrowColor: data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor,
+    arrowLineWidth: data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
+    arrowLineStyle: data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+    textTextColor: data.textTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.textTextColor,
+    textFontSize: data.textFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.textFontSize,
+    symbolEmoji: data.symbolEmoji ?? data.selectedEmoji ?? SYSTEM_ITEM_DEFAULTS.symbolEmoji,
+    symbolScale: data.symbolScale ?? SYSTEM_ITEM_DEFAULTS.symbolScale,
+    imageSrcBorderColor: data.imageSrcBorderColor ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
+    imageSrcBorderWidth: data.imageSrcBorderWidth ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth,
+    imageSrcBorderStyle: data.imageSrcBorderStyle ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
+    imageSrcHasBorder: data.imageSrcHasBorder ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
+    imageSrcCaptionText: data.imageSrcCaptionText ?? SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
+    imageSrcHasCaption: data.imageSrcHasCaption ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption,
+    captionAlign: data.captionAlign ?? SYSTEM_ITEM_DEFAULTS.captionAlign,
+    hasBorder: data.hasBorder ?? false,
+    borderColor: data.borderColor ?? '#cbd5e1',
+    borderWidth: data.borderWidth ?? 2,
+    borderStyle: data.borderStyle ?? 'basic',
+    hasCaption: data.hasCaption ?? false,
+    captionText: data.captionText ?? ''
+  })
+
+  // 이미지 작업 저장 payload 구성 및 POST 공용 함수 (handleSaveToHistory/handleGenerateUrl 공용)
+  const buildImageWorkPayload = (title: string, dataToSave: object, id?: number) => ({
+    ...(id !== undefined ? { id } : {}),
+    title,
+    jsonData: JSON.stringify(dataToSave)
+  })
+  const saveImageWork = (payload: { id?: number; title: string; jsonData: string }) =>
+    apiClient.post<{ id: number }>('/admin/image-work', payload)
+
   // 사용자 지정 기본값 저장 (Post)
   const handleSaveUserSettings = async () => {
     try {
@@ -1210,33 +1337,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
 
       const key = `image_editor_defaults_user_${userId}`
-      const config = {
-        circleNumberBgColor,
-        circleNumberTextColor,
-        circleNumberBorderColor,
-        circleNumberBorderWidth,
-        circleNumberFontSize,
-        boxBorderColor,
-        boxLineWidth,
-        boxLineStyle,
-        boxBgColor,
-        boxOpacity,
-        boxBorderRadius,
-        arrowColor,
-        arrowLineWidth,
-        arrowLineStyle,
-        textTextColor,
-        textFontSize,
-        symbolEmoji,
-        symbolScale,
-        imageSrcBorderColor,
-        imageSrcBorderWidth,
-        imageSrcBorderStyle,
-        imageSrcHasBorder,
-        imageSrcCaptionText,
-        imageSrcHasCaption,
-        captionAlign
-      }
+      const config = buildStyleConfig()
 
       await apiClient.post('/admin/user-settings', {
         key,
@@ -1252,57 +1353,49 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 서브 이미지 레이어로 이미지 추가
-  const addSubImage = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const img = new Image()
-      img.onload = () => {
-        // 원본 이미지 크기
-        const origW = img.width
-        const origH = img.height
+  const addSubImage = async (file: File) => {
+    const { img, dataUrl } = await loadImageFromFile(file)
 
-        // zoom 비율 적용하여 삽입 크기 결정
-        const targetW = Math.round(origW * zoom)
-        const targetH = Math.round(origH * zoom)
+    // 원본 이미지 크기
+    const origW = img.width
+    const origH = img.height
 
-        // 캔버스의 중앙 좌표 계산
-        const canvas = canvasRef.current
-        const canvasW = canvas ? canvas.width : 800
-        const canvasH = canvas ? canvas.height : 500
+    // zoom 비율 적용하여 삽입 크기 결정
+    const targetW = Math.round(origW * zoom)
+    const targetH = Math.round(origH * zoom)
 
-        const posX = Math.round((canvasW - targetW) / 2)
-        const posY = Math.round((canvasH - targetH) / 2)
+    // 캔버스의 중앙 좌표 계산
+    const canvas = canvasRef.current
+    const canvasW = canvas ? canvas.width : 800
+    const canvasH = canvas ? canvas.height : 500
 
-        const finalSrc = event.target?.result as string || ''
+    const posX = Math.round((canvasW - targetW) / 2)
+    const posY = Math.round((canvasH - targetH) / 2)
 
-        // CanvasItem 생성
-        const newItem: CanvasItem = {
-          id: `item-${Date.now()}`,
-          type: 'image',
-          x: posX,
-          y: posY,
-          width: targetW,
-          height: targetH,
-          imageSrc: finalSrc,
-          text: imageSrcHasCaption ? imageSrcCaptionText : '',
-          style: {
-            borderColor: imageSrcBorderColor,
-            borderWidth: imageSrcBorderWidth,
-            lineStyle: imageSrcBorderStyle,
-            hasBorder: imageSrcHasBorder,
-            hasCaption: imageSrcHasCaption
-          }
-        }
-
-        // 캐시에 미리 이미지 등록해 로드 시 깜빡임 방지
-        subImageCache.current.set(finalSrc, img)
-
-        pushToUndo([...items, newItem])
-        setSelectedItemId(newItem.id)
+    // CanvasItem 생성
+    const newItem: CanvasItem = {
+      id: `item-${Date.now()}`,
+      type: 'image',
+      x: posX,
+      y: posY,
+      width: targetW,
+      height: targetH,
+      imageSrc: dataUrl,
+      text: imageSrcHasCaption ? imageSrcCaptionText : '',
+      style: {
+        borderColor: imageSrcBorderColor,
+        borderWidth: imageSrcBorderWidth,
+        lineStyle: imageSrcBorderStyle,
+        hasBorder: imageSrcHasBorder,
+        hasCaption: imageSrcHasCaption
       }
-      img.src = event.target?.result as string || ''
     }
-    reader.readAsDataURL(file)
+
+    // 캐시에 미리 이미지 등록해 로드 시 깜빡임 방지
+    subImageCache.current.set(dataUrl, img)
+
+    pushToUndo([...items, newItem])
+    setSelectedItemId(newItem.id)
   }
 
   // 파일 업로드 처리
@@ -1382,31 +1475,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setCaptionText('')
     setCaptionAlign('center')
     
-    setCircleNumberBgColor(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
-    setCircleNumberTextColor(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
-    setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
-    setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
-    setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
-    setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
-    setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
-    setBoxLineStyle(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
-    setBoxBgColor(SYSTEM_ITEM_DEFAULTS.boxBgColor)
-    setBoxOpacity(SYSTEM_ITEM_DEFAULTS.boxOpacity)
-    setBoxBorderRadius(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
-    setArrowColor(SYSTEM_ITEM_DEFAULTS.arrowColor)
-    setArrowLineWidth(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
-    setArrowLineStyle(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
-    setTextTextColor(SYSTEM_ITEM_DEFAULTS.textTextColor)
-    setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
-    setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
-    setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
-    setImageSrcBorderColor(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
-    setImageSrcBorderWidth(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
-    setImageSrcBorderStyle(SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle)
-    setImageSrcHasBorder(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
-    setImageSrcCaptionText(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
-    setImageSrcHasCaption(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
-    
+    applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
+
     setLastSavedState({
       title: '새 이미지 작업',
       bgImageSrc: '',
@@ -1417,178 +1487,84 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       borderStyle: 'basic',
       hasCaption: false,
       captionText: '',
-      captionAlign: 'center',
-      circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
-      circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
-      circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
-      circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
-      circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
-      boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
-      boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
-      boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
-      boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
-      boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
-      boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
-      arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
-      arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
-      arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
-      textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
-      textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
-      symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
-      symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale,
-      imageSrcBorderColor: SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
-      imageSrcBorderWidth: SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth,
-      imageSrcBorderStyle: SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
-      imageSrcHasBorder: SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
-      imageSrcCaptionText: SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
-      imageSrcHasCaption: SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption
+      ...SYSTEM_ITEM_DEFAULTS
     })
     showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
   }
 
+  // loadImage 두 분기(리사이즈됨/안됨) 공용 후처리: 배경이미지 반영 + 편집상태 초기화 + lastSavedState 갱신
+  const applyLoadedImage = (img: HTMLImageElement, dataUrl: string) => {
+    setBgImage(img)
+    setBgImageSrc(dataUrl)
+    setZoom(1.0)
+    setItems([])
+    setCircleCounter(1)
+    setUndoStack([])
+    setRedoStack([])
+    setGeneratedImageUrl('')
+    setActiveHistoryId(null)
+    setLastSavedState({
+      title: '새 이미지 작업',
+      bgImageSrc: dataUrl,
+      items: [],
+      hasBorder: false,
+      borderColor: '#cbd5e1',
+      borderWidth: 2,
+      borderStyle: 'basic',
+      hasCaption: false,
+      captionText: '',
+      ...buildStyleConfig(),
+      // 기존 동작 보존: 라이브 captionAlign이 아닌 항상 'center'로 기록됨 (의도 불명확하나 그대로 유지)
+      captionAlign: 'center'
+    })
+  }
+
   // 이미지 파일을 HTMLImageElement로 로드 및 비율 유지 축소 리사이징
-  const loadImage = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const img = new Image()
-      img.onload = () => {
-        // 1. 최대 한계치 상수 정의
-        const MAX_CANVAS_WIDTH = 1200
-        const MAX_CANVAS_HEIGHT = 900
+  const loadImage = async (file: File) => {
+    const { img, dataUrl } = await loadImageFromFile(file)
 
-        let targetWidth = img.width
-        let targetHeight = img.height
+    // 1. 최대 한계치 상수 정의
+    const MAX_CANVAS_WIDTH = 1200
+    const MAX_CANVAS_HEIGHT = 900
 
-        // 2. 가로세로 비율 유지 축소 비율 산출
-        if (targetWidth > MAX_CANVAS_WIDTH || targetHeight > MAX_CANVAS_HEIGHT) {
-          const widthRatio = MAX_CANVAS_WIDTH / targetWidth
-          const heightRatio = MAX_CANVAS_HEIGHT / targetHeight
-          const bestRatio = Math.min(widthRatio, heightRatio)
+    let targetWidth = img.width
+    let targetHeight = img.height
 
-          targetWidth = Math.round(targetWidth * bestRatio)
-          targetHeight = Math.round(targetHeight * bestRatio)
-        }
+    // 2. 가로세로 비율 유지 축소 비율 산출
+    if (targetWidth > MAX_CANVAS_WIDTH || targetHeight > MAX_CANVAS_HEIGHT) {
+      const widthRatio = MAX_CANVAS_WIDTH / targetWidth
+      const heightRatio = MAX_CANVAS_HEIGHT / targetHeight
+      const bestRatio = Math.min(widthRatio, heightRatio)
 
-        // 3. 캔버스 해상도 세팅
-        const canvas = canvasRef.current
-        if (canvas) {
-          canvas.width = targetWidth
-          canvas.height = targetHeight
-        }
-
-        // 4. [용량 축소 핵심] 임시/메인 캔버스를 이용해 부드럽게 리사이징된 신규 Base64 이미지 소스 생성
-        const tempCanvas = document.createElement('canvas')
-        tempCanvas.width = targetWidth
-        tempCanvas.height = targetHeight
-        const tempCtx = tempCanvas.getContext('2d')
-        let finalSrc = event.target?.result as string || ''
-
-        if (tempCtx && (img.width > MAX_CANVAS_WIDTH || img.height > MAX_CANVAS_HEIGHT)) {
-          tempCtx.drawImage(img, 0, 0, targetWidth, targetHeight)
-          finalSrc = tempCanvas.toDataURL('image/png')
-          
-          // 축소된 데이터로 신규 HTMLImageElement 객체를 재성성하여 바인딩
-          const resizedImg = new Image()
-          resizedImg.onload = () => {
-            setBgImage(resizedImg)
-            setBgImageSrc(finalSrc)
-            setZoom(1.0)
-            setItems([])
-            setCircleCounter(1)
-            setUndoStack([])
-            setRedoStack([])
-            setGeneratedImageUrl('')
-            setActiveHistoryId(null)
-            setLastSavedState({
-              title: '새 이미지 작업',
-              bgImageSrc: finalSrc,
-              items: [],
-              hasBorder: false,
-              borderColor: '#cbd5e1',
-              borderWidth: 2,
-              borderStyle: 'basic',
-              hasCaption: false,
-              captionText: '',
-              captionAlign: 'center',
-              circleNumberBgColor,
-              circleNumberTextColor,
-              circleNumberBorderColor,
-              circleNumberBorderWidth,
-              circleNumberFontSize,
-              boxBorderColor,
-              boxLineWidth,
-              boxLineStyle,
-              boxBgColor,
-              boxOpacity,
-              boxBorderRadius,
-              arrowColor,
-              arrowLineWidth,
-              arrowLineStyle,
-              textTextColor,
-              textFontSize,
-              symbolEmoji,
-              symbolScale,
-              imageSrcBorderColor,
-              imageSrcBorderWidth,
-              imageSrcBorderStyle,
-              imageSrcHasBorder,
-              imageSrcCaptionText,
-              imageSrcHasCaption
-            })
-          }
-          resizedImg.src = finalSrc
-        } else {
-          // 크기가 한계치 이하여서 축소가 불필요한 경우 그대로 보관
-          setBgImage(img)
-          setBgImageSrc(finalSrc)
-          setZoom(1.0)
-          setItems([])
-          setCircleCounter(1)
-          setUndoStack([])
-          setRedoStack([])
-          setGeneratedImageUrl('')
-          setActiveHistoryId(null)
-          setLastSavedState({
-            title: '새 이미지 작업',
-            bgImageSrc: finalSrc,
-            items: [],
-            hasBorder: false,
-            borderColor: '#cbd5e1',
-            borderWidth: 2,
-            borderStyle: 'basic',
-            hasCaption: false,
-            captionText: '',
-            captionAlign: 'center',
-            circleNumberBgColor,
-            circleNumberTextColor,
-            circleNumberBorderColor,
-            circleNumberBorderWidth,
-            circleNumberFontSize,
-            boxBorderColor,
-            boxLineWidth,
-            boxLineStyle,
-            boxBgColor,
-            boxOpacity,
-            boxBorderRadius,
-            arrowColor,
-            arrowLineWidth,
-            arrowLineStyle,
-            textTextColor,
-            textFontSize,
-            symbolEmoji,
-            symbolScale,
-            imageSrcBorderColor,
-            imageSrcBorderWidth,
-            imageSrcBorderStyle,
-            imageSrcHasBorder,
-            imageSrcCaptionText,
-            imageSrcHasCaption
-          })
-        }
-      }
-      img.src = event.target?.result as string || ''
+      targetWidth = Math.round(targetWidth * bestRatio)
+      targetHeight = Math.round(targetHeight * bestRatio)
     }
-    reader.readAsDataURL(file)
+
+    // 3. 캔버스 해상도 세팅
+    const canvas = canvasRef.current
+    if (canvas) {
+      canvas.width = targetWidth
+      canvas.height = targetHeight
+    }
+
+    // 4. [용량 축소 핵심] 임시/메인 캔버스를 이용해 부드럽게 리사이징된 신규 Base64 이미지 소스 생성
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = targetWidth
+    tempCanvas.height = targetHeight
+    const tempCtx = tempCanvas.getContext('2d')
+    let finalSrc = dataUrl
+
+    if (tempCtx && (img.width > MAX_CANVAS_WIDTH || img.height > MAX_CANVAS_HEIGHT)) {
+      tempCtx.drawImage(img, 0, 0, targetWidth, targetHeight)
+      finalSrc = tempCanvas.toDataURL('image/png')
+
+      // 축소된 데이터로 신규 HTMLImageElement 객체를 재성성하여 바인딩
+      const resizedImg = await loadImageElement(finalSrc)
+      applyLoadedImage(resizedImg, finalSrc)
+    } else {
+      // 크기가 한계치 이하여서 축소가 불필요한 경우 그대로 보관
+      applyLoadedImage(img, finalSrc)
+    }
   }
 
   // 캔버스 마우스 상대 좌표 스케일링 계산 함수
@@ -1688,6 +1664,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
 
       // 가장 마지막에 추가된 도형부터 역순으로 클릭 타겟 판정 (상위 레이어 우선)
+      dragMoveStartItemsRef.current = items
       let found = false
       for (let i = items.length - 1; i >= 0; i--) {
         const item = items[i]
@@ -2056,6 +2033,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setDragCurrent(null)
     }
 
+    // 순수 이동(드래그) 종료 처리: 위치가 실제로 바뀐 경우에만 undo 기록
+    if (draggedItemOffset && dragMoveStartItemsRef.current) {
+      const startItem = dragMoveStartItemsRef.current.find((i) => i.id === selectedItemId)
+      const movedItem = items.find((i) => i.id === selectedItemId)
+      if (startItem && movedItem && (startItem.x !== movedItem.x || startItem.y !== movedItem.y)) {
+        pushToUndo(items, dragMoveStartItemsRef.current)
+      }
+    }
+    dragMoveStartItemsRef.current = null
+
     setDraggedItemOffset(null)
   }
 
@@ -2191,7 +2178,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             }
             const newItems = [...items, duplicatedItem]
             pushToUndo(newItems)
-            setItems(newItems)
             setSelectedItemId(duplicatedItem.id)
           }
         }
@@ -2273,44 +2259,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         items: items,
         circleCounter: circleCounter,
         physicalUrl: generatedImageUrl, // 물리 url이 이미 생성된 상태면 함께 저장
-        hasBorder: hasBorder,
-        borderColor: borderColor,
-        borderWidth: borderWidth,
-        borderStyle: borderStyle,
-        hasCaption: hasCaption,
-        captionText: captionText,
-        captionAlign: captionAlign,
-        circleNumberBgColor,
-        circleNumberTextColor,
-        circleNumberBorderColor,
-        circleNumberBorderWidth,
-        circleNumberFontSize,
-        boxBorderColor,
-        boxLineWidth,
-        boxLineStyle,
-        boxBgColor,
-        boxOpacity,
-        boxBorderRadius,
-        arrowColor,
-        arrowLineWidth,
-        arrowLineStyle,
-        textTextColor,
-        textFontSize,
-        symbolEmoji,
-        symbolScale,
-        imageSrcBorderColor,
-        imageSrcBorderWidth,
-        imageSrcBorderStyle,
-        imageSrcHasBorder,
-        imageSrcCaptionText,
-        imageSrcHasCaption
+        ...buildWorkStyleConfig(),
+        arrowHeadSize // 화살머리 크기 영구 귀속 저장 연동
       }
 
       // id 값을 전달하지 않아 언제나 새로운 이미지 작업 레코드로 DB 저장되게 처리
-      const res = await apiClient.post<{ id: number }>('/admin/image-work', {
-        title: finalTitle,
-        jsonData: JSON.stringify(dataToSave)
-      })
+      const res = await saveImageWork(buildImageWorkPayload(finalTitle, dataToSave))
 
       if (res && res.id) {
         setActiveHistoryId(res.id)
@@ -2321,37 +2275,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         title: finalTitle,
         bgImageSrc: bgImageSrc,
         items: items,
-        hasBorder: hasBorder,
-        borderColor: borderColor,
-        borderWidth: borderWidth,
-        borderStyle: borderStyle,
-        hasCaption: hasCaption,
-        captionText: captionText,
-        captionAlign: captionAlign,
-        circleNumberBgColor,
-        circleNumberTextColor,
-        circleNumberBorderColor,
-        circleNumberBorderWidth,
-        circleNumberFontSize,
-        boxBorderColor,
-        boxLineWidth,
-        boxLineStyle,
-        boxBgColor,
-        boxOpacity,
-        boxBorderRadius,
-        arrowColor,
-        arrowLineWidth,
-        arrowLineStyle,
-        textTextColor,
-        textFontSize,
-        symbolEmoji,
-        symbolScale,
-        imageSrcBorderColor,
-        imageSrcBorderWidth,
-        imageSrcBorderStyle,
-        imageSrcHasBorder,
-        imageSrcCaptionText,
-        imageSrcHasCaption
+        ...buildWorkStyleConfig()
       })
       setEditorTitle(finalTitle)
 
@@ -2413,84 +2337,20 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 items: items,
                 circleCounter: circleCounter,
                 physicalUrl: res.url,
-                hasBorder: hasBorder,
-                borderColor: borderColor,
-                borderWidth: borderWidth,
-                borderStyle: borderStyle,
-                hasCaption: hasCaption,
-                captionText: captionText,
-                captionAlign: captionAlign,
-                circleNumberBgColor,
-                circleNumberTextColor,
-                circleNumberBorderColor,
-                circleNumberBorderWidth,
-                circleNumberFontSize,
-                boxBorderColor,
-                boxLineWidth,
-                boxLineStyle,
-                boxBgColor,
-                boxOpacity,
-                boxBorderRadius,
-                arrowColor,
-                arrowLineWidth,
-                arrowLineStyle,
-                arrowHeadSize, // 화살머리 크기 영구 귀속 저장 연동
-                textTextColor,
-                textFontSize,
-                symbolEmoji,
-                symbolScale,
-                imageSrcBorderColor,
-                imageSrcBorderWidth,
-                imageSrcBorderStyle,
-                imageSrcHasBorder,
-                imageSrcCaptionText,
-                imageSrcHasCaption
+                ...buildWorkStyleConfig(),
+                arrowHeadSize // 화살머리 크기 영구 귀속 저장 연동
               }
-              
-              await apiClient.post('/admin/image-work', {
-                id: activeHistoryId,
-                title: editorTitle,
-                jsonData: JSON.stringify(dataToSave)
-              })
-              
+
+              await saveImageWork(buildImageWorkPayload(editorTitle, dataToSave, activeHistoryId))
+
               // 기준 상태 동기화
               setLastSavedState({
                 title: editorTitle,
                 bgImageSrc: bgImageSrc,
                 items: items,
-                hasBorder: hasBorder,
-                borderColor: borderColor,
-                borderWidth: borderWidth,
-                borderStyle: borderStyle,
-                hasCaption: hasCaption,
-                captionText: captionText,
-                captionAlign: captionAlign,
-                circleNumberBgColor,
-                circleNumberTextColor,
-                circleNumberBorderColor,
-                circleNumberBorderWidth,
-                circleNumberFontSize,
-                boxBorderColor,
-                boxLineWidth,
-                boxLineStyle,
-                boxBgColor,
-                boxOpacity,
-                boxBorderRadius,
-                arrowColor,
-                arrowLineWidth,
-                arrowLineStyle,
-                textTextColor,
-                textFontSize,
-                symbolEmoji,
-                symbolScale,
-                imageSrcBorderColor,
-                imageSrcBorderWidth,
-                imageSrcBorderStyle,
-                imageSrcHasBorder,
-                imageSrcCaptionText,
-                imageSrcHasCaption
+                ...buildWorkStyleConfig()
               })
-              
+
               fetchHistory()
             }
 
@@ -2538,10 +2398,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 선택된 항목 다중 삭제 (SQLite 락 충돌 방지를 위해 직렬 순차 처리)
+  const deleteImageWorkById = (id: number) => apiClient.delete(`/admin/image-work/${id}`)
+
   const handleDeleteSelected = async (ids: number[]) => {
     try {
       for (const id of ids) {
-        await apiClient.delete(`/admin/image-work/${id}`)
+        // 순차 삭제: SQLite 락 회피 목적, 병렬화 금지
+        await deleteImageWorkById(id)
       }
       fetchHistory()
     } catch (err) {
@@ -2572,81 +2435,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         }
         
         // 새로운 설정 값들 로드 및 적용 (하위 호환성 Fallback 적용)
-        const loadedHasBorder = data.hasBorder ?? false
-        const loadedBorderColor = data.borderColor ?? '#cbd5e1'
-        const loadedBorderWidth = data.borderWidth ?? 2
-        const loadedBorderStyle = data.borderStyle ?? 'basic'
-        const loadedHasCaption = data.hasCaption ?? false
-        const loadedCaptionText = data.captionText ?? ''
-        const loadedCaptionAlign = data.captionAlign ?? 'center'
-
-        const loadedCircleNumberBgColor = data.circleNumberBgColor ?? data.indigoColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBgColor
-        const loadedCircleNumberTextColor = data.circleNumberTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberTextColor
-        const loadedCircleNumberBorderColor = data.circleNumberBorderColor ?? data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor
-        const loadedCircleNumberBorderWidth = data.circleNumberBorderWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth
-        const loadedCircleNumberFontSize = data.circleNumberFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.circleNumberFontSize
-
-        const loadedBoxBorderColor = data.boxBorderColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.boxBorderColor
-        const loadedBoxLineWidth = data.boxLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.boxLineWidth
-        const loadedBoxLineStyle = data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.boxLineStyle
-        const loadedBoxBgColor = data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor
-        const loadedBoxOpacity = data.boxOpacity ?? SYSTEM_ITEM_DEFAULTS.boxOpacity
-        const loadedBoxBorderRadius = data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius
-
-        const loadedArrowColor = data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor
-        const loadedArrowLineWidth = data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth
-        const loadedArrowLineStyle = data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle
-
-        const loadedTextTextColor = data.textTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.textTextColor
-        const loadedTextFontSize = data.textFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.textFontSize
-
-        const loadedSymbolEmoji = data.symbolEmoji ?? data.selectedEmoji ?? '💡'
-        const loadedSymbolScale = data.symbolScale ?? 3
-
-        const loadedImageSrcBorderColor = data.imageSrcBorderColor ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor
-        const loadedImageSrcBorderWidth = data.imageSrcBorderWidth ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth
-        const loadedImageSrcBorderStyle = data.imageSrcBorderStyle ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle
-        const loadedImageSrcHasBorder = data.imageSrcHasBorder ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder
-        const loadedImageSrcCaptionText = data.imageSrcCaptionText ?? SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText
-        const loadedImageSrcHasCaption = data.imageSrcHasCaption ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption
-        
-        setHasBorder(loadedHasBorder)
-        setBorderColor(loadedBorderColor)
-        setBorderWidth(loadedBorderWidth)
-        setBorderStyle(loadedBorderStyle)
-        setHasCaption(loadedHasCaption)
-        setCaptionText(loadedCaptionText)
-        setCaptionAlign(loadedCaptionAlign)
-
-        setImageSrcBorderColor(loadedImageSrcBorderColor)
-        setImageSrcBorderWidth(loadedImageSrcBorderWidth)
-        setImageSrcBorderStyle(loadedImageSrcBorderStyle)
-        setImageSrcHasBorder(loadedImageSrcHasBorder)
-        setImageSrcCaptionText(loadedImageSrcCaptionText)
-        setImageSrcHasCaption(loadedImageSrcHasCaption)
-
-        setCircleNumberBgColor(loadedCircleNumberBgColor)
-        setCircleNumberTextColor(loadedCircleNumberTextColor)
-        setCircleNumberBorderColor(loadedCircleNumberBorderColor)
-        setCircleNumberBorderWidth(loadedCircleNumberBorderWidth)
-        setCircleNumberFontSize(loadedCircleNumberFontSize)
-
-        setBoxBorderColor(loadedBoxBorderColor)
-        setBoxLineWidth(loadedBoxLineWidth)
-        setBoxLineStyle(loadedBoxLineStyle)
-        setBoxBgColor(loadedBoxBgColor)
-        setBoxOpacity(loadedBoxOpacity)
-        setBoxBorderRadius(loadedBoxBorderRadius)
-
-        setArrowColor(loadedArrowColor)
-        setArrowLineWidth(loadedArrowLineWidth)
-        setArrowLineStyle(loadedArrowLineStyle)
-
-        setTextTextColor(loadedTextTextColor)
-        setTextFontSize(loadedTextFontSize)
-
-        setSymbolEmoji(loadedSymbolEmoji)
-        setSymbolScale(loadedSymbolScale)
+        const resolved = resolveWorkStyleConfigFromLegacyData(data)
+        applyStyleConfig(resolved)
+        setHasBorder(resolved.hasBorder)
+        setBorderColor(resolved.borderColor)
+        setBorderWidth(resolved.borderWidth)
+        setBorderStyle(resolved.borderStyle)
+        setHasCaption(resolved.hasCaption)
+        setCaptionText(resolved.captionText)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -2672,37 +2468,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           title: work.title,
           bgImageSrc: data.originalImageUrl || '',
           items: data.items || [],
-          hasBorder: loadedHasBorder,
-          borderColor: loadedBorderColor,
-          borderWidth: loadedBorderWidth,
-          borderStyle: loadedBorderStyle,
-          hasCaption: loadedHasCaption,
-          captionText: loadedCaptionText,
-          captionAlign: loadedCaptionAlign,
-          circleNumberBgColor: loadedCircleNumberBgColor,
-          circleNumberTextColor: loadedCircleNumberTextColor,
-          circleNumberBorderColor: loadedCircleNumberBorderColor,
-          circleNumberBorderWidth: loadedCircleNumberBorderWidth,
-          circleNumberFontSize: loadedCircleNumberFontSize,
-          boxBorderColor: loadedBoxBorderColor,
-          boxLineWidth: loadedBoxLineWidth,
-          boxLineStyle: loadedBoxLineStyle,
-          boxBgColor: loadedBoxBgColor,
-          boxOpacity: loadedBoxOpacity,
-          boxBorderRadius: loadedBoxBorderRadius,
-          arrowColor: loadedArrowColor,
-          arrowLineWidth: loadedArrowLineWidth,
-          arrowLineStyle: loadedArrowLineStyle,
-          textTextColor: loadedTextTextColor,
-          textFontSize: loadedTextFontSize,
-          symbolEmoji: loadedSymbolEmoji,
-          symbolScale: loadedSymbolScale,
-          imageSrcBorderColor: loadedImageSrcBorderColor,
-          imageSrcBorderWidth: loadedImageSrcBorderWidth,
-          imageSrcBorderStyle: loadedImageSrcBorderStyle,
-          imageSrcHasBorder: loadedImageSrcHasBorder,
-          imageSrcCaptionText: loadedImageSrcCaptionText,
-          imageSrcHasCaption: loadedImageSrcHasCaption
+          ...resolved
         })
       }
       img.src = data.originalImageUrl
@@ -2715,7 +2481,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 이력 삭제
   const handleDeleteHistory = async (id: number) => {
     try {
-      await apiClient.delete(`/admin/image-work/${id}`)
+      await deleteImageWorkById(id)
       fetchHistory()
     } catch (err) {
       console.error('이력 삭제 오류:', err)

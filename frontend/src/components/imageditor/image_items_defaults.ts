@@ -38,3 +38,26 @@ export const SYSTEM_ITEM_DEFAULTS = {
   // 7. 기타 공통 레이아웃 속성
   captionAlign: 'center' as 'left' | 'center'
 } as const
+
+// 아이템별 스타일 속성 25필드 shape (SYSTEM_ITEM_DEFAULTS와 동일)
+export type StyleConfig = typeof SYSTEM_ITEM_DEFAULTS
+
+// StyleConfig + 캔버스 테두리/캡션 6필드 (작업(Work) 저장/복원 시 사용하는 확장 shape)
+export type WorkStyleConfig = StyleConfig & {
+  hasBorder: boolean
+  borderColor: string
+  borderWidth: number
+  borderStyle: 'basic' | 'rounded'
+  hasCaption: boolean
+  captionText: string
+}
+
+// FloatingPropertyPanel 색상/이모지 팔레트 (인스펙터/글로벌 탭 공용)
+export const BOX_ARROW_BORDER_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']
+export const BOX_BG_COLORS = ['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']
+export const CIRCLE_NUMBER_BG_COLORS = ['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444']
+export const CIRCLE_NUMBER_TEXT_COLORS = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']
+export const CIRCLE_NUMBER_BORDER_COLORS = ['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']
+export const TEXT_COLOR_PALETTE = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']
+export const IMAGE_BORDER_COLORS = ['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#10b981']
+export const SYMBOL_EMOJI_OPTIONS = ['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬']
