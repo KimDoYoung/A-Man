@@ -174,7 +174,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         if (start === end) return;
 
         const selectedText = form.content.substring(start, end);
-        const textColors = ['#E03E3E', '#64473A', '#D9730D', '#0F7B6C', '#DFAB01'];
+        const textColors = ['#E03E3E', '#0B6E99', '#DFAB01', '#64473A', '#0F7B6C'];
         const fontRegex = /^<font color="[^"]+">([\s\S]*)<\/font>$/i;
         const match = selectedText.match(fontRegex);
 
@@ -207,7 +207,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
         if (start === end) return;
 
         const selectedText = form.content.substring(start, end);
-        const bgColors = ['#FBF3DB', '#E9E5E3', '#DDEDEA', '#FAEBDD', '#FBE4E4'];
+        const bgColors = ['#FBE4E4', '#DDEBF1', '#FBF3DB', '#E9E5E3', '#DDEDEA'];
         const bgRegex = /^<span style="background-color:\s*([^";\s]+)">([\s\S]*)<\/span>$/i;
         const match = selectedText.match(bgRegex);
 

@@ -1,5 +1,12 @@
 [
     { 
+        "version": "1.3.3",
+        "date": "2026-07-10",
+        "description": [
+            "글자색, 배경색 순서배경"
+        ]
+    },
+    { 
         "version": "1.3.2",
         "date": "2026-07-09",
         "description": [
