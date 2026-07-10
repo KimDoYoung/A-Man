@@ -1520,51 +1520,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }
 
   // 이미지 파일을 HTMLImageElement로 로드 및 비율 유지 축소 리사이징
+  // 원본 해상도 그대로 캔버스에 적용 (화면보다 크면 스크롤로 작업)
   const loadImage = async (file: File) => {
     const { img, dataUrl } = await loadImageFromFile(file)
-
-    // 1. 최대 한계치 상수 정의
-    const MAX_CANVAS_WIDTH = 1200
-    const MAX_CANVAS_HEIGHT = 900
-
-    let targetWidth = img.width
-    let targetHeight = img.height
-
-    // 2. 가로세로 비율 유지 축소 비율 산출
-    if (targetWidth > MAX_CANVAS_WIDTH || targetHeight > MAX_CANVAS_HEIGHT) {
-      const widthRatio = MAX_CANVAS_WIDTH / targetWidth
-      const heightRatio = MAX_CANVAS_HEIGHT / targetHeight
-      const bestRatio = Math.min(widthRatio, heightRatio)
-
-      targetWidth = Math.round(targetWidth * bestRatio)
-      targetHeight = Math.round(targetHeight * bestRatio)
-    }
-
-    // 3. 캔버스 해상도 세팅
-    const canvas = canvasRef.current
-    if (canvas) {
-      canvas.width = targetWidth
-      canvas.height = targetHeight
-    }
-
-    // 4. [용량 축소 핵심] 임시/메인 캔버스를 이용해 부드럽게 리사이징된 신규 Base64 이미지 소스 생성
-    const tempCanvas = document.createElement('canvas')
-    tempCanvas.width = targetWidth
-    tempCanvas.height = targetHeight
-    const tempCtx = tempCanvas.getContext('2d')
-    let finalSrc = dataUrl
-
-    if (tempCtx && (img.width > MAX_CANVAS_WIDTH || img.height > MAX_CANVAS_HEIGHT)) {
-      tempCtx.drawImage(img, 0, 0, targetWidth, targetHeight)
-      finalSrc = tempCanvas.toDataURL('image/png')
-
-      // 축소된 데이터로 신규 HTMLImageElement 객체를 재성성하여 바인딩
-      const resizedImg = await loadImageElement(finalSrc)
-      applyLoadedImage(resizedImg, finalSrc)
-    } else {
-      // 크기가 한계치 이하여서 축소가 불필요한 경우 그대로 보관
-      applyLoadedImage(img, finalSrc)
-    }
+    applyLoadedImage(img, dataUrl)
   }
 
   // 캔버스 마우스 상대 좌표 스케일링 계산 함수

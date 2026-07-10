@@ -191,6 +191,29 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
     }
   }, [resetTrigger])
 
+  // ` (백틱) 키로 패널 접기/펼치기 토글
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== '`') return
+
+      const activeEl = document.activeElement
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return
+      }
+
+      e.preventDefault()
+      setIsCollapsed((prev) => !prev)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const [activeTab, setActiveTab] = useState<'basic' | 'border' | 'caption'>('basic')
 
   const selectedItem = items.find(item => item.id === selectedItemId)
@@ -270,12 +293,12 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   return (
     <div
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
-      className="absolute w-80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-gray-200 dark:border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 select-none animate-in fade-in zoom-in-95 duration-200"
+      className="absolute w-80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-gray-200 dark:border-slate-800 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden text-slate-800 dark:text-slate-100 select-none animate-in fade-in zoom-in-95 duration-200"
     >
       {/* 헤더 바 */}
       <div
         onMouseDown={handleMouseDown}
-        className="px-4 py-3 bg-gray-50/50 dark:bg-slate-900/50 border-b border-gray-200/60 dark:border-slate-800/80 flex items-center justify-between cursor-move"
+        className="px-4 py-3 bg-gray-50/35 dark:bg-slate-900/35 border-b border-gray-200/60 dark:border-slate-800/80 flex items-center justify-between cursor-move"
       >
         <div className="flex items-center space-x-2">
           {getSelectedIcon()}
