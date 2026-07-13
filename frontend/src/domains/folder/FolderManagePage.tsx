@@ -15,6 +15,7 @@ interface FolderNode {
   parentId: number | null
   sortOrder: number
   children: FolderNode[]
+  isUse?: boolean
 }
 
 const FolderManagePage: React.FC = () => {
@@ -132,7 +133,8 @@ const FolderManagePage: React.FC = () => {
         name: f.name,
         level: f.level,
         parentId: null,
-        sortOrder: f.sortOrder
+        sortOrder: f.sortOrder,
+        isUse: f.isUse !== false
       }))
       setRowData(roots)
     } catch (error) {
@@ -179,7 +181,8 @@ const FolderManagePage: React.FC = () => {
         level: item.level,
         parentId: pId,
         sortOrder: item.sortOrder || 0,
-        children: []
+        children: [],
+        isUse: item.isUse !== false
       }
     })
 
@@ -286,6 +289,28 @@ const FolderManagePage: React.FC = () => {
       headerName: '레벨 (Depth)', 
       width: 100, 
       cellClass: 'text-center font-mono text-gray-500' 
+    },
+    { 
+      field: 'isUse', 
+      headerName: '사용 여부', 
+      width: 100,
+      cellRenderer: (params: any) => {
+        const checked = params.value !== false
+        return (
+          <div className="flex items-center justify-center h-full">
+            <input 
+              type="checkbox" 
+              checked={checked}
+              onChange={(e) => {
+                const isChecked = e.target.checked
+                params.node.setDataValue('isUse', isChecked)
+              }}
+              className="w-4 h-4 cursor-pointer"
+            />
+          </div>
+        )
+      },
+      cellClass: 'text-center'
     }
   ]
 
@@ -331,6 +356,7 @@ const FolderManagePage: React.FC = () => {
       sortOrder: nextSortOrder,
       level: nextLevel,
       parentId: selectedFolder ? selectedFolder.id : null,
+      isUse: true,
       isNew: true
     }
 
@@ -387,14 +413,16 @@ const FolderManagePage: React.FC = () => {
             nums: row.nums,
             level: row.level,
             sortOrder: row.sortOrder,
-            parentId: row.parentId
+            parentId: row.parentId,
+            isUse: row.isUse !== false
           })
         } else {
           await apiClient.patch(`/folder/${row.id}`, {
             name: row.name,
             nums: row.nums,
             level: row.level,
-            sortOrder: row.sortOrder
+            sortOrder: row.sortOrder,
+            isUse: row.isUse !== false
           })
         }
       }

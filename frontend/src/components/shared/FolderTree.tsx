@@ -346,6 +346,12 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
     // 2. 평탄화된 모든 아이템을 map에 등록
     flatList.forEach((item) => {
       const parentId = item.parentId !== undefined ? item.parentId : (item.parent ? item.parent.id : null);
+      
+      // 일반 사용자의 경우 사용 비활성화(isUse === false)된 폴더는 제외시킵니다.
+      if (!isDocUser && item.isUse === false) {
+        return;
+      }
+
       map[item.id] = {
         id: item.id,
         nums: item.nums,
@@ -354,13 +360,16 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
         parentId: parentId,
         sortOrder: item.sortOrder || 0,
         children: [],
-        pages: item.pages || []
+        pages: item.pages || [],
+        isUse: item.isUse !== false
       }
     })
 
     // 3. 부모-자식 관계 재조립 (중복 추가 방지)
     flatList.forEach((item) => {
       const node = map[item.id]
+      if (!node) return // 부모 비활성화 등으로 맵에 등록되지 않은 경우 스킵
+
       if (node.parentId === null) {
         if (!roots.some(r => r.id === node.id)) {
           roots.push(node)
@@ -373,10 +382,12 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
           }
           parent.children.sort((a, b) => a.sortOrder - b.sortOrder)
         } else {
-          // 필터링 등으로 인해 부모 노드가 목록에 없는 경우,
-          // 노드가 유실되지 않도록 최상위(roots)로 노출시킵니다.
-          if (!roots.some(r => r.id === node.id)) {
-            roots.push(node)
+          // 일반 사용자의 경우에는 부모 노드가 비활성화되어 맵에 없는 경우
+          // 자식 노드도 최상위(roots)로 유실 노출시키지 않고 제외시킵니다.
+          if (isDocUser) {
+            if (!roots.some(r => r.id === node.id)) {
+              roots.push(node)
+            }
           }
         }
       }
@@ -462,15 +473,25 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
               <Folder className="w-3.5 h-3.5 mr-2 text-gray-400 dark:text-slate-500" />
             )}
             {node.level === 3 ? (
-              <span>
+              <span className={`inline-flex items-center ${isDocUser && node.isUse === false ? 'text-gray-400 line-through' : ''}`}>
                 {formatNodeName(node)}
+                {isDocUser && node.isUse === false && (
+                  <span className="ml-1.5 text-[9px] bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-1 py-0.5 rounded font-normal border border-rose-200/50 dark:border-rose-900/30 line-none no-underline">
+                    미사용
+                  </span>
+                )}
               </span>
             ) : (
               <span 
                 onClick={(e) => handleNavigateOnly(node.id, e)}
-                className="hover:underline hover:text-indigo-600 dark:hover:text-indigo-400"
+                className={`hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center ${isDocUser && node.isUse === false ? 'text-gray-400 line-through' : ''}`}
               >
                 {formatNodeName(node)}
+                {isDocUser && node.isUse === false && (
+                  <span className="ml-1.5 text-[9px] bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 px-1 py-0.5 rounded font-normal border border-rose-200/50 dark:border-rose-900/30 no-underline inline-block">
+                    미사용
+                  </span>
+                )}
               </span>
             )}
           </div>

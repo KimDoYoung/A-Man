@@ -55,7 +55,7 @@ const DocUserMain: React.FC = () => {
 
 
   // 문서 데이터 상태
-  const [page, setPage] = useState<PageData & { folder?: { id: number; name: string; nums?: string } } | null>(null)
+  const [page, setPage] = useState<PageData & { folder?: { id: number; name: string; nums?: string; isUse?: boolean } } | null>(null)
   const [, setPageTitle] = useState('')
   const [pageContent, setPageContent] = useState('')
   const [pageAka, setPageAka] = useState('')
@@ -608,6 +608,13 @@ const DocUserMain: React.FC = () => {
             {page && !page.id && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-100 text-amber-800 rounded-md text-xs flex items-center justify-between shrink-0">
                 <span>⚠️ 현재 이 메뉴에 도움말 페이지가 비어 있습니다. 아래에 내용을 작성하여 새 도움말을 저장하십시오.</span>
+              </div>
+            )}
+
+            {/* 비활성화(미사용) 상태 알림 */}
+            {page && page.folder && page.folder.isUse === false && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-100 text-rose-800 rounded-md text-xs flex items-center justify-between shrink-0">
+                <span>🚫 현재 이 메뉴(폴더)는 <strong>'사용 안 함'</strong> 상태입니다. 일반 사용자 도움말(메뉴 트리) 화면에서는 숨겨집니다.</span>
               </div>
             )}
 

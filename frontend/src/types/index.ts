@@ -8,6 +8,7 @@ export interface FolderNode {
   sortOrder: number;
   children: FolderNode[];
   pages: PageSummary[];
+  isUse?: boolean;
 }
 
 // 폴더 노드 내부의 페이지 요약 정보 인터페이스

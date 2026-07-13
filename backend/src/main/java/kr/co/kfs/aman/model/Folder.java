@@ -57,6 +57,10 @@ public class Folder {
     @Builder.Default
     private Integer sortOrder = 0;
 
+    @Column(name = "is_use")
+    @Builder.Default
+    private Boolean isUse = true;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -52,12 +52,15 @@ public class FolderController {
             parent = parentOpt.get();
         }
 
+        Boolean isUse = body.get("isUse") != null ? Boolean.parseBoolean(body.get("isUse").toString()) : true;
+
         Folder folder = Folder.builder()
                 .name(name.trim())
                 .nums(nums != null ? nums.trim() : "")
                 .level(level != null ? level : 1)
                 .sortOrder(sortOrder != null ? sortOrder : 0)
                 .parent(parent)
+                .isUse(isUse)
                 .build();
 
         Folder saved = folderRepository.save(folder);
@@ -101,6 +104,9 @@ public class FolderController {
                     folder.setParent(parentOpt.get());
                 }
             }
+        }
+        if (body.containsKey("isUse")) {
+            folder.setIsUse(Boolean.parseBoolean(body.get("isUse").toString()));
         }
 
         Folder saved = folderRepository.save(folder);
