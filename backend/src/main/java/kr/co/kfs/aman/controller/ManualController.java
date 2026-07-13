@@ -689,6 +689,7 @@ public class ManualController {
             "<html lang=\"ko\">\n" +
             "<head>\n" +
             "    <meta charset=\"UTF-8\">\n" +
+            "    <link rel=\"icon\" type=\"image/png\" href=\"/aman/favicon.png\">\n" +
             "    <title>" + escapeHtml(title) + "</title>\n" +
             "    <style>\n" +
             "        body {\n" +
@@ -806,28 +807,24 @@ public class ManualController {
             "            color: #475569;\n" +
             "        }\n" +
             "        blockquote {\n" +
-            "            border-left: 4px solid #cbd5e1;\n" + // 인디고에서 연회색(#cbd5e1)으로 수정
-            "            padding: 6px 16px;\n" +
-            "            margin: 16px 0;\n" +
-            "            background-color: #f9fafb;\n" +
-            "            color: #4b5563;\n" +
-            "            font-style: italic;\n" +
-            "            border-radius: 0 6px 6px 0;\n" +
-            "            font-size: 13px;\n" +
+            "            margin: 14px 0;\n" +
+            "            padding: 12px 18px;\n" +
+            "            background-color: #f7f9fb;\n" +
+            "            border-left: 3px solid #c7dbf0;\n" +
+            "            border-radius: 6px;\n" +
+            "            color: #455160;\n" +
+            "            font-size: 14px;\n" +
             "            transition: border-color 0.2s, color 0.2s, background-color 0.2s;\n" +
             "        }\n" +
-            "        blockquote p:first-child {\n" +
-            "            margin-top: 0;\n" +
-            "        }\n" +
-            "        blockquote p:last-child {\n" +
-            "            margin-bottom: 0;\n" +
+            "        blockquote p {\n" +
+            "            margin: 4px 0;\n" +
+            "            font-size: 14px;\n" +
             "        }\n" +
             "        img {\n" +
             "            max-width: 100%;\n" +
             "            height: auto;\n" +
             "            display: block;\n" +
             "            margin: 16px auto;\n" +
-            "            border-radius: 8px;\n" +
             "            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);\n" +
             "        }\n" +
             "        a {\n" +
@@ -1158,7 +1155,7 @@ public class ManualController {
             "        }\n" +
             "        .dark-mode blockquote {\n" +
             "            background-color: rgba(30, 41, 59, 0.4);\n" +
-            "            border-left-color: #475569;\n" +
+            "            border-left-color: #3b5266;\n" +
             "            color: #cbd5e1;\n" +
             "        }\n" +
             "        .dark-mode table {\n" +
@@ -1375,6 +1372,7 @@ public class ManualController {
                 "<html lang=\"ko\">\n" +
                 "<head>\n" +
                 "    <meta charset=\"UTF-8\">\n" +
+                "    <link rel=\"icon\" type=\"image/png\" href=\"/aman/favicon.png\">\n" +
                 "    <title>A-Man 도움말</title>\n" +
                 "    <style>\n" +
                 "        body {\n" +
@@ -1442,27 +1440,23 @@ public class ManualController {
                 "            color: #475569;\n" +
                 "        }\n" +
                 "        blockquote {\n" +
-                "            border-left: 4px solid #6366f1;\n" +
-                "            padding: 6px 16px;\n" +
-                "            margin: 16px 0;\n" +
-                "            background-color: #f9fafb;\n" +
-                "            color: #4b5563;\n" +
-                "            font-style: italic;\n" +
-                "            border-radius: 0 6px 6px 0;\n" +
-                "            font-size: 13px;\n" +
+                "            margin: 14px 0;\n" +
+                "            padding: 12px 18px;\n" +
+                "            background-color: #f7f9fb;\n" +
+                "            border-left: 3px solid #c7dbf0;\n" +
+                "            border-radius: 6px;\n" +
+                "            color: #455160;\n" +
+                "            font-size: 14px;\n" +
                 "        }\n" +
-                "        blockquote p:first-child {\n" +
-                "            margin-top: 0;\n" +
-                "        }\n" +
-                "        blockquote p:last-child {\n" +
-                "            margin-bottom: 0;\n" +
+                "        blockquote p {\n" +
+                "            margin: 4px 0;\n" +
+                "            font-size: 14px;\n" +
                 "        }\n" +
                 "        img {\n" +
                 "            max-width: 100%;\n" +
                 "            height: auto;\n" +
                 "            display: block;\n" +
                 "            margin: 16px auto;\n" +
-                "            border-radius: 8px;\n" +
                 "            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);\n" +
                 "        }\n" +
                 "        a {\n" +

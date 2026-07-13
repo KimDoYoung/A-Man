@@ -73,7 +73,10 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
           </h3>
         ),
         blockquote: ({ children, ...props }) => (
-          <blockquote className="border-l-4 border-gray-300 pl-4 py-1.5 bg-slate-50 text-slate-600 italic my-3 text-sm rounded-r [&_p:last-child]:mb-0" {...props}>
+          <blockquote
+            className="border-l-[3px] border-l-[#c7dbf0] dark:border-l-[#3b5266] px-[18px] py-[12px] my-[14px] bg-[#f7f9fb] dark:bg-slate-900/40 rounded-[6px] text-[#455160] dark:text-slate-300 text-sm [&_p]:my-[4px] [&_p]:text-[14px] [&_p]:leading-relaxed"
+            {...props}
+          >
             {children}
           </blockquote>
         ),
