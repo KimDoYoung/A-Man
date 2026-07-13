@@ -1,43 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { useState } from 'react'
+import React from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
-import { Copy, Check } from 'lucide-react'
-
-const extractText = (node: any): string => {
-  if (!node) return ''
-  if (typeof node === 'string') return node
-  if (typeof node === 'number') return String(node)
-  if (Array.isArray(node)) return node.map(extractText).join('')
-  if (node.props && node.props.children) return extractText(node.props.children)
-  return ''
-}
-
-const CopyButton: React.FC<{ text: string }> = ({ text }) => {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy text: ', err)
-    }
-  }
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="absolute top-2.5 right-2.5 p-1.5 rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 shadow-xs transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
-      title="코드 복사"
-    >
-      {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-    </button>
-  )
-}
 
 export const parseInlineStyles = (text: string): React.ReactNode => {
   // 하위 호환성을 위해 남겨두되, 이제 사용되지 않습니다.
@@ -121,28 +87,22 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
             {children}
           </td>
         ),
-        pre: ({ children, ...props }) => {
-          const text = extractText(children)
-          return (
-            <div className="relative group my-4">
-              <pre className="bg-slate-100 text-slate-800 border border-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto leading-normal whitespace-pre m-0" {...props}>
-                {children}
-              </pre>
-              <CopyButton text={text} />
-            </div>
-          )
-        },
+        pre: ({ children, ...props }) => (
+          <pre className="bg-slate-100 text-slate-800 border border-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto leading-normal whitespace-pre my-4 select-none" {...props}>
+            {children}
+          </pre>
+        ),
         code: ({ className, children, ...props }) => {
           const isInline = !className;
           if (isInline) {
             return (
-              <code className="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200" {...props}>
+              <code className="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200 select-none" {...props}>
                 {children}
               </code>
             );
           }
           return (
-            <code className={className} {...props}>
+            <code className={`${className} select-none`} {...props}>
               {children}
             </code>
           );

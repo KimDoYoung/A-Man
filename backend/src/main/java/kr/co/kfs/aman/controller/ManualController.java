@@ -273,14 +273,18 @@ public class ManualController {
         "            const closeBtn = document.createElement('button');\n" +
         "            closeBtn.className = 'toc-drawer-close';\n" +
         "            closeBtn.innerHTML = '✕';\n" +
-        "            header.appendChild(closeBtn);\n" +
+"            header.appendChild(closeBtn);\n" +
         "            drawer.appendChild(header);\n" +
         "            \n" +
         "            const ol = document.createElement('ol');\n" +
         "            ol.className = 'toc-drawer-list';\n" +
         "            \n" +
         "            headings.forEach((heading, idx) => {\n" +
-        "                const id = 'heading-' + idx;\n" +
+        "                let id = heading.textContent.trim()\n" +
+        "                    .toLowerCase()\n" +
+        "                    .replace(/\\s+/g, '-')\n" +
+        "                    .replace(/[^\\w\\s가-힣.-]/g, '');\n" +
+        "                if (!id) id = 'heading-' + idx;\n" +
         "                heading.id = id;\n" +
         "                heading.style.scrollMarginTop = '30px';\n" +
         "                \n" +
@@ -538,28 +542,6 @@ public class ManualController {
             "                links[i].setAttribute('target', '_blank');\n" +
             "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
             "            }\n" : "") +
-            "            var pres = document.querySelectorAll('pre');\n" +
-            "            pres.forEach(function(pre) {\n" +
-            "                var codeEl = pre.querySelector('code');\n" +
-            "                if (!codeEl) return;\n" +
-            "                var button = document.createElement('button');\n" +
-            "                button.className = 'copy-btn';\n" +
-            "                button.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg> <span>Copy</span>';\n" +
-            "                button.addEventListener('click', function() {\n" +
-            "                    var text = codeEl.innerText;\n" +
-            "                    navigator.clipboard.writeText(text).then(function() {\n" +
-            "                        button.classList.add('copied');\n" +
-            "                        button.querySelector('span').innerText = 'Copied!';\n" +
-            "                        setTimeout(function() {\n" +
-            "                            button.classList.remove('copied');\n" +
-            "                            button.querySelector('span').innerText = 'Copy';\n" +
-            "                        }, 2000);\n" +
-            "                    }).catch(function(err) {\n" +
-            "                        console.error('Failed to copy: ', err);\n" +
-            "                    });\n" +
-            "                });\n" +
-            "                pre.appendChild(button);\n" +
-            "            });\n" +
             "        });\n" +
             "    </script>\n";
 
@@ -720,6 +702,10 @@ public class ManualController {
             "            font-size: 0.85em;\n" +
             "            border: 1px solid #e2e8f0;\n" +
             "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
+            "            user-select: none;\n" +
+            "            -webkit-user-select: none;\n" +
+            "            -ms-user-select: none;\n" +
+            "            -moz-user-select: none;\n" +
             "        }\n" +
             "        kbd {\n" +
             "            display: inline-block;\n" +
@@ -746,33 +732,10 @@ public class ManualController {
             "            border: 1px solid #cbd5e1;\n" +
             "            position: relative;\n" +
             "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
-            "        }\n" +
-            "        .copy-btn {\n" +
-            "            position: absolute;\n" +
-            "            top: 8px;\n" +
-            "            right: 8px;\n" +
-            "            padding: 4px 8px;\n" +
-            "            background-color: #ffffff;\n" +
-            "            border: 1px solid #cbd5e1;\n" +
-            "            border-radius: 4px;\n" +
-            "            font-size: 11px;\n" +
-            "            color: #475569;\n" +
-            "            cursor: pointer;\n" +
-            "            display: flex;\n" +
-            "            align-items: center;\n" +
-            "            gap: 4px;\n" +
-            "            opacity: 0.7;\n" +
-            "            transition: opacity 0.2s, background-color 0.2s, color 0.2s, border-color 0.2s;\n" +
-            "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n" +
-            "        }\n" +
-            "        .copy-btn:hover {\n" +
-            "            opacity: 1;\n" +
-            "            background-color: #f8fafc;\n" +
-            "        }\n" +
-            "        .copy-btn.copied {\n" +
-            "            background-color: #10b981;\n" +
-            "            color: #ffffff;\n" +
-            "            border-color: #10b981;\n" +
+            "            user-select: none;\n" +
+            "            -webkit-user-select: none;\n" +
+            "            -ms-user-select: none;\n" +
+            "            -moz-user-select: none;\n" +
             "        }\n" +
             "        pre code {\n" +
             "            background-color: transparent;\n" +
@@ -1144,15 +1107,6 @@ public class ManualController {
             "            border-color: #334155;\n" +
             "            color: #e2e8f0;\n" +
             "        }\n" +
-            "        .dark-mode .copy-btn {\n" +
-            "            background-color: #1e293b;\n" +
-            "            border-color: #334155;\n" +
-            "            color: #94a3b8;\n" +
-            "        }\n" +
-            "        .dark-mode .copy-btn:hover {\n" +
-            "            background-color: #334155;\n" +
-            "            color: #cbd5e1;\n" +
-            "        }\n" +
             "        .dark-mode blockquote {\n" +
             "            background-color: rgba(30, 41, 59, 0.4);\n" +
             "            border-left-color: #3b5266;\n" +
@@ -1342,28 +1296,6 @@ public class ManualController {
                 "                links[i].setAttribute('target', '_blank');\n" +
                 "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
                 "            }\n" : "") +
-                "            var pres = document.querySelectorAll('pre');\n" +
-                "            pres.forEach(function(pre) {\n" +
-                "                var codeEl = pre.querySelector('code');\n" +
-                "                if (!codeEl) return;\n" +
-                "                var button = document.createElement('button');\n" +
-                "                button.className = 'copy-btn';\n" +
-                "                button.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/></svg> <span>Copy</span>';\n" +
-                "                button.addEventListener('click', function() {\n" +
-                "                    var text = codeEl.innerText;\n" +
-                "                    navigator.clipboard.writeText(text).then(function() {\n" +
-                "                        button.classList.add('copied');\n" +
-                "                        button.querySelector('span').innerText = 'Copied!';\n" +
-                "                        setTimeout(function() {\n" +
-                "                            button.classList.remove('copied');\n" +
-                "                            button.querySelector('span').innerText = 'Copy';\n" +
-                "                        }, 2000);\n" +
-                "                    }).catch(function(err) {\n" +
-                "                        console.error('Failed to copy: ', err);\n" +
-                "                    });\n" +
-                "                });\n" +
-                "                pre.appendChild(button);\n" +
-                "            });\n" +
                 "        });\n" +
                 "    </script>\n";
 
