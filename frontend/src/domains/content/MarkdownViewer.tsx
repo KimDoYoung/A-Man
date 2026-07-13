@@ -317,7 +317,7 @@ const MarkdownViewer: React.FC = () => {
           },
           img: ({ src, alt, ...props }) => (
             <span className="my-4 flex justify-center">
-              <img src={src} alt={alt} className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-slate-800 shadow-sm" {...props} />
+              <img src={src} alt={alt} className="max-w-full h-auto border border-gray-200 dark:border-slate-800 shadow-sm" {...props} />
             </span>
           ),
           a: ({ href, children, ...props }) => {

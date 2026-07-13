@@ -4,6 +4,15 @@ import { apiClient } from '@/lib/apiClient'
 import TextItemInput from './TextItemInput'
 
 
+// wYYMMDD 형태의 기본 타이틀을 생성하는 헬퍼 함수
+function getDefaultEditorTitle(): string {
+  const d = new Date()
+  const yy = String(d.getFullYear()).slice(-2)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `w${yy}${mm}${dd}`
+}
+
 // 선분과 점 사이의 거리를 계산하는 수학 헬퍼 함수
 function getDistanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
   const dx = x2 - x1
@@ -502,7 +511,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 임시 보관함 이력 상태
   const [historyList, setHistoryList] = useState<ImageWork[]>([])
   const [totalHistoryCount, setTotalHistoryCount] = useState<number>(0)
-  const [editorTitle, setEditorTitle] = useState('새 이미지 작업')
+  const [editorTitle, setEditorTitle] = useState(getDefaultEditorTitle())
   const [savingWork, setSavingWork] = useState(false)
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [insertingImage, setInsertingImage] = useState(false)
@@ -1135,13 +1144,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ctx.lineWidth = borderWidth
       
       if (borderStyle === 'rounded') {
+        ctx.lineJoin = 'round'
         const radius = 8
-        const offset = borderWidth / 2
-        createRoundedRectPath(ctx, offset, offset, canvas.width - borderWidth, canvas.height - borderWidth, radius - offset)
+        const offset = borderWidth / 2 + 0.5
+        createRoundedRectPath(ctx, offset, offset, canvas.width - borderWidth - 1, canvas.height - borderWidth - 1, radius - offset)
         ctx.stroke()
       } else {
-        const offset = borderWidth / 2
-        ctx.strokeRect(offset, offset, canvas.width - borderWidth, canvas.height - borderWidth)
+        ctx.lineJoin = 'miter'
+        // 모서리가 캔버스 경계에 의해 잘려 두 라인이 만나지 않는 현상을 방지하기 위해 0.5px 안쪽으로 인셋하여 그립니다.
+        const offset = borderWidth / 2 + 0.5
+        ctx.strokeRect(offset, offset, canvas.width - borderWidth - 1, canvas.height - borderWidth - 1)
       }
       ctx.restore()
     }
@@ -1385,7 +1397,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         note: '사용자 지정 이미지 편집 기본 속성'
       })
 
-      showSaveMessage('현재 속성들이 개인 기본값으로 영구 보관되었습니다.', 'success')
+      showSaveMessage('현재 속성들이 개인 기본값으로 보관되었습니다.', 'success')
     } catch (e) {
       console.error('Failed to save user settings:', e)
       showSaveMessage('기본값 보관 처리 중 오류가 발생했습니다.', 'error')
@@ -1498,7 +1510,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setZoom(1.0)
     setSelectedItemId(null)
     setCircleCounter(1)
-    setEditorTitle('새 이미지 작업')
+    setEditorTitle(getDefaultEditorTitle())
     setUndoStack([])
     setRedoStack([])
     setGeneratedImageUrl('')
@@ -1518,7 +1530,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
 
     setLastSavedState({
-      title: '새 이미지 작업',
+      title: getDefaultEditorTitle(),
       bgImageSrc: '',
       items: [],
       hasBorder: false,
@@ -1539,12 +1551,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setZoom(1.0)
     setItems([])
     setCircleCounter(1)
+    setEditorTitle(getDefaultEditorTitle())
     setUndoStack([])
     setRedoStack([])
     setGeneratedImageUrl('')
     setActiveHistoryId(null)
     setLastSavedState({
-      title: '새 이미지 작업',
+      title: getDefaultEditorTitle(),
       bgImageSrc: dataUrl,
       items: [],
       hasBorder: false,
