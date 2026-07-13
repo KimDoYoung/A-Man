@@ -364,6 +364,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 4. 일반 텍스트 (text) 관련 속성
   const [textTextColor, setTextTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textTextColor)
   const [textFontSize, setTextFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.textFontSize)
+  const [textBgColor, setTextBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textBgColor)
+  const [textFontStyle, setTextFontStyle] = useState<'normal' | 'italic'>(SYSTEM_ITEM_DEFAULTS.textFontStyle)
+  const [textTextDecoration, setTextTextDecoration] = useState<'none' | 'underline' | 'line-through'>(SYSTEM_ITEM_DEFAULTS.textTextDecoration)
 
   // 5. 이모지 심볼 (symbol) 관련 속성
   const [symbolEmoji, setSymbolEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
@@ -424,6 +427,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowLineStyle: 'solid' | 'dashed'
     textTextColor: string
     textFontSize: number
+    textBgColor: string
+    textFontStyle: 'normal' | 'italic'
+    textTextDecoration: 'none' | 'underline' | 'line-through'
     symbolEmoji: string
     symbolScale: number
     imageSrcBorderColor: string
@@ -460,6 +466,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
     textTextColor: SYSTEM_ITEM_DEFAULTS.textTextColor,
     textFontSize: SYSTEM_ITEM_DEFAULTS.textFontSize,
+    textBgColor: SYSTEM_ITEM_DEFAULTS.textBgColor,
+    textFontStyle: SYSTEM_ITEM_DEFAULTS.textFontStyle,
+    textTextDecoration: SYSTEM_ITEM_DEFAULTS.textTextDecoration,
     symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
     symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale,
     imageSrcBorderColor: SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
@@ -593,6 +602,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowLineStyle !== lastSavedState.arrowLineStyle ||
     textTextColor !== lastSavedState.textTextColor ||
     textFontSize !== lastSavedState.textFontSize ||
+    textBgColor !== lastSavedState.textBgColor ||
+    textFontStyle !== lastSavedState.textFontStyle ||
+    textTextDecoration !== lastSavedState.textTextDecoration ||
     symbolEmoji !== lastSavedState.symbolEmoji ||
     symbolScale !== lastSavedState.symbolScale ||
     imageSrcBorderColor !== lastSavedState.imageSrcBorderColor ||
@@ -610,7 +622,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
-    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, symbolEmoji, symbolScale,
     imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption
   ])
 
@@ -991,17 +1003,20 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
       else if (item.type === 'text') {
         // 텍스트 박스
-        ctx.fillStyle = item.style.textColor || textTextColor
-        ctx.font = `bold ${item.style.fontSize || textFontSize}px sans-serif`
+        const fontStyle = item.style.fontStyle || 'normal'
+        const textDecoration = item.style.textDecoration || 'none'
+
+        ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${item.style.fontSize || textFontSize}px sans-serif`
         ctx.textBaseline = 'top'
         ctx.textAlign = 'left'
 
-        // 텍스트 감싸는 흰색 반투명 박스가 필요한 경우 추가 지원 가능
-        if (item.style.backgroundColor) {
+        // 텍스트 감싸는 배경 박스
+        const textBg = item.style.backgroundColor || 'transparent'
+        if (textBg && textBg !== 'transparent') {
           const metrics = ctx.measureText(item.text || '')
           const bgW = metrics.width + 12
           const bgH = (item.style.fontSize || textFontSize) + 10
-          ctx.fillStyle = item.style.backgroundColor
+          ctx.fillStyle = textBg
           ctx.fillRect(item.x - 6, item.y - 4, bgW, bgH)
           ctx.strokeStyle = item.style.borderColor || '#cbd5e1'
           ctx.lineWidth = 1
@@ -1010,6 +1025,26 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         ctx.fillStyle = item.style.textColor || textTextColor
         ctx.fillText(item.text || '', item.x, item.y)
+
+        // 밑줄 / 취소선 데코레이션 그리기
+        if (textDecoration && textDecoration !== 'none') {
+          const metrics = ctx.measureText(item.text || '')
+          const fSize = item.style.fontSize || textFontSize
+          ctx.beginPath()
+          ctx.strokeStyle = item.style.textColor || textTextColor
+          ctx.lineWidth = Math.max(1.5, fSize / 12)
+          
+          if (textDecoration === 'underline') {
+            const underlineY = item.y + fSize + 2
+            ctx.moveTo(item.x, underlineY)
+            ctx.lineTo(item.x + metrics.width, underlineY)
+          } else if (textDecoration === 'line-through') {
+            const lineThroughY = item.y + fSize / 2 + 1
+            ctx.moveTo(item.x, lineThroughY)
+            ctx.lineTo(item.x + metrics.width, lineThroughY)
+          }
+          ctx.stroke()
+        }
 
         // 선택 영역 하이라이트
         if (isSelected) {
@@ -1189,6 +1224,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.textFontSize !== undefined) setTextFontSize(config.textFontSize)
         else if (config.fontSize !== undefined) setTextFontSize(config.fontSize)
 
+        if (config.textBgColor) setTextBgColor(config.textBgColor)
+        if (config.textFontStyle) setTextFontStyle(config.textFontStyle)
+        if (config.textTextDecoration) setTextTextDecoration(config.textTextDecoration)
+
         // 5. 이모지 심볼
         if (config.symbolEmoji) setSymbolEmoji(config.symbolEmoji)
         else if (config.selectedEmoji) setSymbolEmoji(config.selectedEmoji)
@@ -1229,6 +1268,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowLineStyle,
     textTextColor,
     textFontSize,
+    textBgColor,
+    textFontStyle,
+    textTextDecoration,
     symbolEmoji,
     symbolScale,
     imageSrcBorderColor,
@@ -1269,6 +1311,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setArrowLineStyle(cfg.arrowLineStyle)
     setTextTextColor(cfg.textTextColor)
     setTextFontSize(cfg.textFontSize)
+    setTextBgColor(cfg.textBgColor || 'transparent')
+    setTextFontStyle(cfg.textFontStyle || 'normal')
+    setTextTextDecoration(cfg.textTextDecoration || 'none')
     setSymbolEmoji(cfg.symbolEmoji)
     setSymbolScale(cfg.symbolScale)
     setImageSrcBorderColor(cfg.imageSrcBorderColor)
@@ -1299,6 +1344,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowLineStyle: data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
     textTextColor: data.textTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.textTextColor,
     textFontSize: data.textFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.textFontSize,
+    textBgColor: data.textBgColor ?? SYSTEM_ITEM_DEFAULTS.textBgColor,
+    textFontStyle: data.textFontStyle ?? SYSTEM_ITEM_DEFAULTS.textFontStyle,
+    textTextDecoration: data.textTextDecoration ?? SYSTEM_ITEM_DEFAULTS.textTextDecoration,
     symbolEmoji: data.symbolEmoji ?? data.selectedEmoji ?? SYSTEM_ITEM_DEFAULTS.symbolEmoji,
     symbolScale: data.symbolScale ?? SYSTEM_ITEM_DEFAULTS.symbolScale,
     imageSrcBorderColor: data.imageSrcBorderColor ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
@@ -2086,7 +2134,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       text: textInputValue,
       style: {
         textColor: textTextColor,
-        fontSize: textFontSize
+        fontSize: textFontSize,
+        backgroundColor: textBgColor,
+        fontStyle: textFontStyle,
+        textDecoration: textTextDecoration
       }
     }
     pushToUndo([...items, newItem])
@@ -2684,6 +2735,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setTextTextColor={setTextTextColor}
                 textFontSize={textFontSize}
                 setTextFontSize={setTextFontSize}
+                textBgColor={textBgColor}
+                setTextBgColor={setTextBgColor}
+                textFontStyle={textFontStyle}
+                setTextFontStyle={setTextFontStyle}
+                textTextDecoration={textTextDecoration}
+                setTextTextDecoration={setTextTextDecoration}
                 symbolEmoji={symbolEmoji}
                 setSymbolEmoji={setSymbolEmoji}
                 symbolScale={symbolScale}

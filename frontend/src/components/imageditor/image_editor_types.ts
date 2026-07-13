@@ -19,6 +19,8 @@ export interface CanvasItem {
     midX?: number
     hasBorder?: boolean
     hasCaption?: boolean
+    fontStyle?: 'normal' | 'italic'
+    textDecoration?: 'none' | 'underline' | 'line-through'
   }
 }
 

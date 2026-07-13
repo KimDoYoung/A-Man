@@ -56,6 +56,12 @@ interface FloatingPropertyPanelProps {
   setTextTextColor: (color: string) => void
   textFontSize: number
   setTextFontSize: (size: number) => void
+  textBgColor: string
+  setTextBgColor: (color: string) => void
+  textFontStyle: 'normal' | 'italic'
+  setTextFontStyle: (style: 'normal' | 'italic') => void
+  textTextDecoration: 'none' | 'underline' | 'line-through'
+  setTextTextDecoration: (deco: 'none' | 'underline' | 'line-through') => void
 
   // 5. 이모지 심볼 (symbol) 관련 속성
   symbolEmoji: string
@@ -139,6 +145,12 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setTextTextColor,
   textFontSize,
   setTextFontSize,
+  textBgColor,
+  setTextBgColor,
+  textFontStyle,
+  setTextFontStyle,
+  textTextDecoration,
+  setTextTextDecoration,
   symbolEmoji,
   setSymbolEmoji,
   symbolScale,
@@ -164,18 +176,6 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   activeTool,
   items,
   pushToUndo,
-  imageSrcBorderColor,
-  setImageSrcBorderColor,
-  imageSrcBorderWidth,
-  setImageSrcBorderWidth,
-  imageSrcBorderStyle,
-  setImageSrcBorderStyle,
-  imageSrcHasBorder,
-  setImageSrcHasBorder,
-  imageSrcCaptionText,
-  setImageSrcCaptionText,
-  imageSrcHasCaption,
-  setImageSrcHasCaption,
   resetTrigger,
   arrowHeadSize,
   setArrowHeadSize
@@ -709,6 +709,63 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       pushToUndo(updated)
                     }}
                   />
+
+                  {/* 글자 스타일 */}
+                  <div className="space-y-1.5">
+                    <span className="block font-bold text-gray-707 dark:text-slate-350 mb-1 text-xs">글자 스타일</span>
+                    <SegmentedControl
+                      options={[
+                        { id: 'normal', label: '보통' },
+                        { id: 'italic', label: '기울임체' },
+                        { id: 'underline', label: '밑줄' },
+                        { id: 'line-through', label: '취소선' }
+                      ]}
+                      value={
+                        selectedItem.style.fontStyle === 'italic'
+                          ? 'italic'
+                          : selectedItem.style.textDecoration === 'underline'
+                          ? 'underline'
+                          : selectedItem.style.textDecoration === 'line-through'
+                          ? 'line-through'
+                          : 'normal'
+                      }
+                      onChange={(id) => {
+                        let fStyle: 'normal' | 'italic' = 'normal'
+                        let tDeco: 'none' | 'underline' | 'line-through' = 'none'
+                        if (id === 'italic') fStyle = 'italic'
+                        else if (id === 'underline') tDeco = 'underline'
+                        else if (id === 'line-through') tDeco = 'line-through'
+
+                        setTextFontStyle(fStyle)
+                        setTextTextDecoration(tDeco)
+
+                        const updated = items.map(item => {
+                          if (item.id === selectedItemId) {
+                            return { ...item, style: { ...item.style, fontStyle: fStyle, textDecoration: tDeco } }
+                          }
+                          return item
+                        })
+                        pushToUndo(updated)
+                      }}
+                    />
+                  </div>
+
+                  {/* 배경색 */}
+                  <ColorPicker
+                    label="배경색"
+                    selectedColor={selectedItem.style.backgroundColor || 'transparent'}
+                    onChangeColor={(col) => {
+                      setTextBgColor(col)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, backgroundColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                    colors={['transparent', '#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                  />
                 </div>
               )}
 
@@ -1065,78 +1122,51 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           max={28}
                           onChangeValue={setTextFontSize}
                         />
+                        {/* 글자 스타일 */}
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-707 dark:text-slate-350 mb-1 text-xs">글자 스타일</span>
+                          <SegmentedControl
+                            options={[
+                              { id: 'normal', label: '보통' },
+                              { id: 'italic', label: '기울임체' },
+                              { id: 'underline', label: '밑줄' },
+                              { id: 'line-through', label: '취소선' }
+                            ]}
+                            value={
+                              textFontStyle === 'italic'
+                                ? 'italic'
+                                : textTextDecoration === 'underline'
+                                ? 'underline'
+                                : textTextDecoration === 'line-through'
+                                ? 'line-through'
+                                : 'normal'
+                            }
+                            onChange={(id) => {
+                              let fStyle: 'normal' | 'italic' = 'normal'
+                              let tDeco: 'none' | 'underline' | 'line-through' = 'none'
+                              if (id === 'italic') fStyle = 'italic'
+                              else if (id === 'underline') tDeco = 'underline'
+                              else if (id === 'line-through') tDeco = 'line-through'
+
+                              setTextFontStyle(fStyle)
+                              setTextTextDecoration(tDeco)
+                            }}
+                          />
+                        </div>
+                        {/* 배경색 */}
+                        <ColorPicker
+                          label="배경색"
+                          selectedColor={textBgColor}
+                          onChangeColor={setTextBgColor}
+                          colors={['transparent', '#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                        />
                       </>
                     )}
 
                     {activeTool === 'pointer' && (
                       <div className="space-y-4 pt-2 animate-in slide-in-from-top-1 duration-200">
-                        <div className="text-center text-gray-400 dark:text-slate-500 py-3 text-xs leading-relaxed border-b border-gray-100 dark:border-slate-850">
+                        <div className="text-center text-gray-400 dark:text-slate-500 py-3 text-xs leading-relaxed">
                           캔버스 위의 요소를 클릭하면<br />그 요소의 세부 속성을 수정할 수 있습니다.
-                        </div>
-                        <div className="space-y-3 pt-2">
-                          <span className="block font-bold text-gray-700 dark:text-slate-350 text-xs tracking-wider">
-                            [기본 설정] 붙여넣기 이미지 속성
-                          </span>
-                          
-                          {/* 테두리선 여부 */}
-                          <Toggle
-                            label="테두리선 사용"
-                            labelClassName="text-xs text-gray-600 dark:text-slate-400"
-                            checked={imageSrcHasBorder}
-                            onChange={setImageSrcHasBorder}
-                          />
-
-                          {imageSrcHasBorder && (
-                            <div className="space-y-3 pl-2.5 border-l-2 border-indigo-500/20 dark:border-indigo-500/40 animate-in slide-in-from-top-1 duration-200">
-                              <ColorPicker
-                                label="테두리 색상"
-                                selectedColor={imageSrcBorderColor}
-                                onChangeColor={setImageSrcBorderColor}
-                                colors={IMAGE_BORDER_COLORS}
-                              />
-                              <RangeSlider
-                                label="테두리 두께"
-                                value={imageSrcBorderWidth}
-                                min={1}
-                                max={8}
-                                onChangeValue={setImageSrcBorderWidth}
-                              />
-                              <div className="space-y-1.5">
-                                <span className="block font-bold text-gray-650 dark:text-slate-400 text-[10px]">테두리 종류</span>
-                                <SegmentedControl
-                                  options={[
-                                    { id: 'solid', label: '실선' },
-                                    { id: 'dashed', label: '점선' }
-                                  ]}
-                                  value={imageSrcBorderStyle}
-                                  onChange={(id) => setImageSrcBorderStyle(id as any)}
-                                  sizeClassName="px-2.5 py-0.5 text-[10px]"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 설명캡션 사용 여부 */}
-                          <Toggle
-                            label="설명캡션 사용"
-                            labelClassName="text-xs text-gray-600 dark:text-slate-400"
-                            className="pt-1"
-                            checked={imageSrcHasCaption}
-                            onChange={setImageSrcHasCaption}
-                          />
-
-                          {imageSrcHasCaption && (
-                            <div className="space-y-1.5 pl-2.5 border-l-2 border-indigo-500/20 dark:border-indigo-500/40 animate-in slide-in-from-top-1 duration-200">
-                              <span className="block font-bold text-gray-650 dark:text-slate-400 text-[10px]">설명 캡션 문구</span>
-                              <textarea
-                                value={imageSrcCaptionText}
-                                onChange={(e) => setImageSrcCaptionText(e.target.value)}
-                                placeholder="기본 설명 문구 입력..."
-                                rows={2}
-                                className="w-full p-2 bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-800 dark:text-slate-100 font-semibold focus:outline-hidden focus:border-indigo-500 resize-none font-sans"
-                              />
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}

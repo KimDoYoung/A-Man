@@ -22,6 +22,9 @@ export const SYSTEM_ITEM_DEFAULTS = {
   // 4. 일반 텍스트 (text) 전용 속성
   textTextColor: '#0f172a',
   textFontSize: 16,
+  textBgColor: 'transparent',
+  textFontStyle: 'normal' as 'normal' | 'italic',
+  textTextDecoration: 'none' as 'none' | 'underline' | 'line-through',
 
   // 5. 이모지 심볼 (symbol) 전용 속성
   symbolEmoji: '💡',
