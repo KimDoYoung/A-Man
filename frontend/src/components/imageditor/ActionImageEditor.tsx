@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import TextItemInput from './TextItemInput'
 
 
 // 선분과 점 사이의 거리를 계산하는 수학 헬퍼 함수
@@ -328,7 +329,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const textInputRef = useRef<HTMLTextAreaElement>(null)
   
   // 에디터 상태
   const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'>('pointer')
@@ -513,15 +513,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [undoStack, setUndoStack] = useState<CanvasItem[][]>([])
   const [redoStack, setRedoStack] = useState<CanvasItem[][]>([])
 
-  // 텍스트 입력창이 켜질 때 명시적으로 인풋 포커스 이동
-  useEffect(() => {
-    if (textInput.visible) {
-      const timer = setTimeout(() => {
-        textInputRef.current?.focus()
-      }, 50)
-      return () => clearTimeout(timer)
-    }
-  }, [textInput.visible])
+
 
   // activeHistoryId 상태가 변경되면 localStorage에 자동 보관
   useEffect(() => {
@@ -1587,6 +1579,38 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
+  // 더블클릭 핸들러: 텍스트 요소를 더블클릭 시 즉시 편집 팝업창 활성화
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!bgImage) return
+    const { x, y } = getCanvasCoords(e)
+
+    const clickedItem = [...items].reverse().find((item) => {
+      if (item.type === 'text') {
+        const textLength = item.text?.length || 1
+        const boundsWidth = textLength * (item.style.fontSize || textFontSize) * 0.65
+        const boundsHeight = (item.style.fontSize || textFontSize) + 6
+        return (
+          x >= item.x - 4 &&
+          x <= item.x + boundsWidth &&
+          y >= item.y - 4 &&
+          y <= item.y + boundsHeight
+        )
+      }
+      return false
+    })
+
+    if (clickedItem) {
+      setTextInputValue(clickedItem.text || '')
+      setTextInput({
+        x: clickedItem.x,
+        y: clickedItem.y,
+        visible: true,
+        id: clickedItem.id
+      })
+      setSelectedItemId(clickedItem.id)
+    }
+  }
+
   // 마우스 다운 핸들러
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!bgImage) return
@@ -2121,27 +2145,39 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // 텍스트 완료 처리
   const handleTextSubmit = () => {
-    if (!textInputValue.trim() || !dragStart) {
+    if (!textInputValue.trim()) {
       setTextInput({ x: 0, y: 0, visible: false })
       return
     }
 
-    const newItem: CanvasItem = {
-      id: `item-${Date.now()}`,
-      type: 'text',
-      x: dragStart.x,
-      y: dragStart.y,
-      text: textInputValue,
-      style: {
-        textColor: textTextColor,
-        fontSize: textFontSize,
-        backgroundColor: textBgColor,
-        fontStyle: textFontStyle,
-        textDecoration: textTextDecoration
+    if (textInput.id) {
+      // 기존 텍스트 수정
+      const updated = items.map((item) => {
+        if (item.id === textInput.id) {
+          return { ...item, text: textInputValue }
+        }
+        return item
+      })
+      pushToUndo(updated)
+    } else if (dragStart) {
+      // 신규 생성
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'text',
+        x: dragStart.x,
+        y: dragStart.y,
+        text: textInputValue,
+        style: {
+          textColor: textTextColor,
+          fontSize: textFontSize,
+          backgroundColor: textBgColor,
+          fontStyle: textFontStyle,
+          textDecoration: textTextDecoration
+        }
       }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
     }
-    pushToUndo([...items, newItem])
-    setSelectedItemId(newItem.id)
     setTextInput({ x: 0, y: 0, visible: false })
     setTextInputValue('')
     setDragStart(null)
@@ -2644,6 +2680,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
+                onDoubleClick={handleDoubleClick}
                 className={`block ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
                 style={{
                   width: bgImage ? `${bgImage.width * zoom}px` : 'auto',
@@ -2655,48 +2692,19 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
               {/* 텍스트 실시간 캔버스 오버레이 인풋 창 */}
               {textInput.visible && (
-                <div
-                  className="absolute z-40 bg-white dark:bg-slate-900 border border-indigo-500 shadow-xl rounded p-2 flex flex-col space-y-1.5"
-                  style={{
-                    top: textInput.y * zoom,
-                    left: textInput.x * zoom,
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'top left'
+                <TextItemInput
+                  x={textInput.x}
+                  y={textInput.y}
+                  zoom={zoom}
+                  value={textInputValue}
+                  onChange={setTextInputValue}
+                  onSubmit={handleTextSubmit}
+                  onCancel={() => {
+                    setTextInput({ x: 0, y: 0, visible: false })
+                    setTextInputValue('')
+                    setDragStart(null)
                   }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <textarea
-                    ref={textInputRef}
-                    autoFocus
-                    value={textInputValue}
-                    onChange={(e) => setTextInputValue(e.target.value)}
-                    placeholder="설명 텍스트 기입..."
-                    className="w-48 h-16 p-1 text-xs focus:outline-hidden border border-gray-200 dark:border-slate-800 rounded bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 font-sans"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault()
-                        handleTextSubmit()
-                      }
-                    }}
-                  />
-                  <div className="flex justify-between items-center text-[10px]">
-                    <span className="text-gray-400 font-medium">Enter 로 삽입</span>
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={handleTextSubmit}
-                        className="px-1.5 py-0.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded cursor-pointer font-bold"
-                      >
-                        확인
-                      </button>
-                      <button
-                        onClick={() => setTextInput({ x: 0, y: 0, visible: false })}
-                        className="px-1.5 py-0.5 bg-gray-200 dark:bg-slate-800 hover:bg-gray-300 rounded cursor-pointer text-gray-700 dark:text-slate-300"
-                      >
-                        취소
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                />
               )}
             </div>
 
