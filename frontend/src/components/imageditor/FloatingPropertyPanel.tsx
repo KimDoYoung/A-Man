@@ -92,7 +92,7 @@ interface FloatingPropertyPanelProps {
   onSaveDefaults: () => Promise<void> | void
   onLoadDefaults: () => Promise<void> | void
   onDeleteDefaults: () => Promise<void> | void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 
@@ -112,6 +112,10 @@ interface FloatingPropertyPanelProps {
   resetTrigger?: number
   arrowHeadSize: number
   setArrowHeadSize: (size: number) => void
+  stampScale: number
+  setStampScale: (scale: number) => void
+  stampDirection: string
+  setStampDirection: (dir: string) => void
 }
 
 const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
@@ -182,7 +186,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   pushToUndo,
   resetTrigger,
   arrowHeadSize,
-  setArrowHeadSize
+  setArrowHeadSize,
+  stampScale,
+  setStampScale,
+  stampDirection,
+  setStampDirection
 }) => {
   // 초기 띄우는 위치 (부모 캔버스 위에 뜨도록 고정/절대 좌표 적용)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -550,6 +558,110 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               const updated = items.map(item => {
                                 if (item.id === selectedItemId) {
                                   return { ...item, style: { ...item.style, fontSize: actualSize } }
+                                }
+                                return item
+                              })
+                              pushToUndo(updated)
+                            }}
+                            className={`flex-1 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'bg-white dark:bg-slate-900 text-indigo-650 dark:text-indigo-400 shadow-xs border border-gray-200 dark:border-slate-800'
+                                : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                            }`}
+                          >
+                            {scale}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* block-arrow-stamp 타입 인스펙터 */}
+              {selectedItem.type === 'block-arrow-stamp' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 스탬프 색상 */}
+                  <ColorPicker
+                    label="스탬프 색상"
+                    selectedColor={selectedItem.style.borderColor || arrowColor}
+                    onChangeColor={(col) => {
+                      setArrowColor(col)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, borderColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                    colors={BOX_ARROW_BORDER_COLORS}
+                  />
+
+                  {/* 스탬프 방향 */}
+                  <div className="space-y-1.5">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">스탬프 방향</span>
+                    <div className="grid grid-cols-4 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
+                      {[
+                        { id: 'left', label: '←' },
+                        { id: 'up-left', label: '↖' },
+                        { id: 'up', label: '↑' },
+                        { id: 'up-right', label: '↗' },
+                        { id: 'right', label: '→' },
+                        { id: 'down-right', label: '↘' },
+                        { id: 'down', label: '↓' },
+                        { id: 'down-left', label: '↙' }
+                      ].map((dir) => {
+                        const isCurrent = (selectedItem.style.stampDirection || stampDirection) === dir.id
+                        return (
+                          <button
+                            key={dir.id}
+                            onClick={() => {
+                              setStampDirection(dir.id)
+                              const updated = items.map(item => {
+                                if (item.id === selectedItemId) {
+                                  return { ...item, style: { ...item.style, stampDirection: dir.id } }
+                                }
+                                return item
+                              })
+                              pushToUndo(updated)
+                            }}
+                            className={`py-2 text-center text-sm font-black rounded-md transition-all cursor-pointer ${
+                              isCurrent
+                                ? 'bg-indigo-600 text-white shadow-xs transform scale-105'
+                                : 'bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {dir.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 크기 선택 */}
+                  <div className="space-y-2">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                    <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
+                      {[1, 2, 3, 4, 5].map((scale) => {
+                        const scaleMapping = [32, 48, 64, 80, 96]
+                        const currentScale = selectedItem.style.stampScale || stampScale
+                        const isCurrent = currentScale === scale
+
+                        return (
+                          <button
+                            key={scale}
+                            onClick={() => {
+                              setStampScale(scale)
+                              const size = scaleMapping[scale - 1]
+                              const updated = items.map(item => {
+                                if (item.id === selectedItemId) {
+                                  return {
+                                    ...item,
+                                    width: size,
+                                    height: size,
+                                    style: { ...item.style, stampScale: scale }
+                                  }
                                 }
                                 return item
                               })
@@ -1058,6 +1170,73 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                             </div>
                           </div>
                         )}
+                      </>
+                    )}
+
+                    {activeTool === 'block-arrow-stamp' && (
+                      <>
+                        {/* 1. 스탬프 색상 */}
+                        <ColorPicker
+                          label="스탬프 색상"
+                          selectedColor={arrowColor}
+                          onChangeColor={setArrowColor}
+                          colors={BOX_ARROW_BORDER_COLORS}
+                        />
+
+                        {/* 2. 스탬프 방향 */}
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">스탬프 방향</span>
+                          <div className="grid grid-cols-4 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
+                            {[
+                              { id: 'left', label: '←' },
+                              { id: 'up-left', label: '↖' },
+                              { id: 'up', label: '↑' },
+                              { id: 'up-right', label: '↗' },
+                              { id: 'right', label: '→' },
+                              { id: 'down-right', label: '↘' },
+                              { id: 'down', label: '↓' },
+                              { id: 'down-left', label: '↙' }
+                            ].map((dir) => {
+                              const isCurrent = stampDirection === dir.id
+                              return (
+                                <button
+                                  key={dir.id}
+                                  onClick={() => setStampDirection(dir.id)}
+                                  className={`py-2 text-center text-sm font-black rounded-md transition-all cursor-pointer ${
+                                    isCurrent
+                                      ? 'bg-indigo-600 text-white shadow-xs transform scale-105'
+                                      : 'bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 text-gray-700 dark:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {dir.label}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 3. 크기 선택 */}
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                          <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
+                            {[1, 2, 3, 4, 5].map((scale) => {
+                              const isCurrent = stampScale === scale
+                              return (
+                                <button
+                                  key={scale}
+                                  onClick={() => setStampScale(scale)}
+                                  className={`flex-1 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                                    isCurrent
+                                      ? 'bg-white dark:bg-slate-900 text-indigo-650 dark:text-indigo-400 shadow-xs border border-gray-200 dark:border-slate-800'
+                                      : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                                  }`}
+                                >
+                                  {scale}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </>
                     )}
 

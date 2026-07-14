@@ -10,6 +10,7 @@
   - 단순 이모지 화살표(방안 C)는 회색 테두리 배경 등 OS 폰트 제약으로 시인성이 어긋납니다.
   - 단순 비트맵 캡처본(방안 B)은 해상도가 깨지고 색상 변경이 어렵습니다.
   - 따라서 **스탬프의 간편한 조작 UX(래스터) + 깨끗하고 색상 변경이 자유로운 렌더링(벡터)의 장점을 결합한 하이브리드 방식**을 최종 제안 및 구현합니다.
+* **모듈화 아키텍처**: 3,000라인이 넘는 `ActionImageEditor.tsx`의 가독성을 지키고 향후 다양한 스탬프 확장이 쉽도록, 화살표 다각형 드로잉 알고리즘은 **별도의 모듈인 [arrowStamp.ts](file:///home/kdy987/work/aman/frontend/src/components/imageditor/arrowStamp.ts)로 완전히 분리**하여 개발합니다.
 
 ---
 
@@ -50,12 +51,16 @@
 graph TD
     A[UI: 스탬프 화살표 선택 및 방향/색상 지정] --> B[캔버스 클릭 시 block-arrow-stamp 객체 생성]
     B --> C[renderCanvas 실행]
-    C --> D[각도 매핑 및 ctx.rotate 중심점 회전]
-    D --> E[7꼭짓점 블록 화살표 벡터 드로잉]
-    E --> F[마우스 드래그로 스탬프 크기 및 위치 미세 Nudge 조절]
+    C --> D[arrowStamp.ts 모듈 호출]
+    D --> E[각도 매핑 및 ctx.rotate 중심점 회전]
+    E --> F[7꼭짓점 블록 화살표 벡터 드로잉]
 ```
 
 ### [frontend Component]
+
+#### [NEW] [arrowStamp.ts](file:///home/kdy987/work/aman/frontend/src/components/imageditor/arrowStamp.ts)
+* 8방향 각도 매핑 딕셔너리(`STAMP_ANGLES`)를 포함합니다.
+* 중심점 이동, 회전, 7꼭짓점 다각형 생성 및 색상 칠하기를 담당하는 공용 함수 `drawBlockArrowStamp(ctx, x, y, width, height, direction, color)`를 외부에 노출합니다.
 
 #### [MODIFY] [image_editor_types.ts](file:///home/kdy987/work/aman/frontend/src/components/imageditor/image_editor_types.ts)
 * `ToolType`에 `'block-arrow-stamp'`를 추가합니다.
@@ -63,7 +68,7 @@ graph TD
 
 #### [MODIFY] [ActionImageEditor.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ActionImageEditor.tsx)
 * `activeTool === 'block-arrow-stamp'` 모드일 때 클릭 이벤트를 받아 지정된 크기(1-5단계 매핑 크기 예: 32px ~ 96px)로 스탬프 아이템을 생성하는 로직을 마운트합니다.
-* `renderCanvas` 내부에 캔버스 좌표계 회전을 경유해 7꼭짓점 다각형 블록 화살표를 드로잉하는 `drawBlockArrowStamp(ctx, item)` 함수를 구현합니다.
+* `draw` 함수 루프 내부에서 `arrowStamp.ts` 모듈의 `drawBlockArrowStamp`를 호출하도록 렌더러를 연동합니다.
 * 상단 툴바에 `스탬프 화살표` 실행 버튼을 배치합니다.
 
 #### [MODIFY] [FloatingPropertyPanel.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/FloatingPropertyPanel.tsx)

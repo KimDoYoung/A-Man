@@ -39,6 +39,10 @@ export const SYSTEM_ITEM_DEFAULTS = {
   imageSrcCaptionText: '',
   imageSrcHasCaption: false,
 
+  // 7. 화살표 스탬프 전용 속성
+  stampScale: 3,
+  stampDirection: 'right',
+
   // 7. 기타 공통 레이아웃 속성
   captionAlign: 'center' as 'left' | 'center',
   hasBorder: true,

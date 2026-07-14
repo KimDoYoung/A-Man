@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import { drawBlockArrowStamp } from './arrowStamp'
 import TextItemInput from './TextItemInput'
 
 
@@ -340,7 +341,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
   const [zoom, setZoom] = useState<number>(1.0)
@@ -383,6 +384,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // 5-1. 화살머리 크기 (1, 2, 3단계)
   const [arrowHeadSize, setArrowHeadSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+
+  // 5-2. 화살표 스탬프 관련 속성
+  const [stampScale, setStampScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.stampScale)
+  const [stampDirection, setStampDirection] = useState<string>(SYSTEM_ITEM_DEFAULTS.stampDirection)
 
   // 6. 이미지 아이템 (image) 관련 속성
   const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
@@ -781,7 +786,18 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       const isSelected = item.id === selectedItemId && activeTool === 'pointer'
       ctx.save()
 
-      if (item.type === 'circle-number') {
+      if (item.type === 'block-arrow-stamp') {
+        drawBlockArrowStamp(ctx, item)
+        if (isSelected) {
+          ctx.save()
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.setLineDash([4, 4])
+          ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
+          ctx.restore()
+        }
+      }
+      else if (item.type === 'circle-number') {
         const radius = (item.style.fontSize || circleNumberFontSize) * 1.05
         // 테두리 및 그림자
         ctx.beginPath()
@@ -1224,6 +1240,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.imageSrcHasCaption !== undefined) setImageSrcHasCaption(config.imageSrcHasCaption)
 
         if (config.captionAlign !== undefined) setCaptionAlign(config.captionAlign)
+        if (config.stampScale !== undefined) setStampScale(config.stampScale)
+        if (config.stampDirection !== undefined) setStampDirection(config.stampDirection)
         if (config.hasBorder !== undefined) setHasBorder(config.hasBorder)
         if (config.borderColor !== undefined) setBorderColor(config.borderColor)
         if (config.borderWidth !== undefined) setBorderWidth(config.borderWidth)
@@ -1265,6 +1283,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcCaptionText,
     imageSrcHasCaption,
     captionAlign,
+    stampScale,
+    stampDirection,
     hasBorder,
     borderColor,
     borderWidth,
@@ -1308,6 +1328,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setImageSrcCaptionText(cfg.imageSrcCaptionText)
     setImageSrcHasCaption(cfg.imageSrcHasCaption)
     setCaptionAlign(cfg.captionAlign)
+    setStampScale(cfg.stampScale !== undefined ? cfg.stampScale : SYSTEM_ITEM_DEFAULTS.stampScale)
+    setStampDirection(cfg.stampDirection || SYSTEM_ITEM_DEFAULTS.stampDirection)
     setHasBorder(cfg.hasBorder)
     setBorderColor(cfg.borderColor)
     setBorderWidth(cfg.borderWidth)
@@ -1346,6 +1368,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcCaptionText: data.imageSrcCaptionText ?? SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
     imageSrcHasCaption: data.imageSrcHasCaption ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption,
     captionAlign: data.captionAlign ?? SYSTEM_ITEM_DEFAULTS.captionAlign,
+    stampScale: data.stampScale ?? SYSTEM_ITEM_DEFAULTS.stampScale,
+    stampDirection: data.stampDirection ?? SYSTEM_ITEM_DEFAULTS.stampDirection,
     hasBorder: data.hasBorder ?? SYSTEM_ITEM_DEFAULTS.hasBorder,
     borderColor: data.borderColor ?? SYSTEM_ITEM_DEFAULTS.borderColor,
     borderWidth: data.borderWidth ?? SYSTEM_ITEM_DEFAULTS.borderWidth,
@@ -1460,6 +1484,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setImageSrcHasCaption(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
 
       setCaptionAlign(SYSTEM_ITEM_DEFAULTS.captionAlign)
+      setStampScale(SYSTEM_ITEM_DEFAULTS.stampScale)
+      setStampDirection(SYSTEM_ITEM_DEFAULTS.stampDirection)
       setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
       setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
       setBorderWidth(SYSTEM_ITEM_DEFAULTS.borderWidth)
@@ -1586,6 +1612,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setActiveTool('pointer')
     setResetPanelTrigger(prev => prev + 1)
     setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+    setStampScale(SYSTEM_ITEM_DEFAULTS.stampScale)
+    setStampDirection(SYSTEM_ITEM_DEFAULTS.stampDirection)
     
     setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
     setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
@@ -1837,7 +1865,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             break
           }
         } 
-        else if (item.type === 'box' || item.type === 'image') {
+        else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
           const x2 = item.x + (item.width || 0)
           const y2 = item.y + (item.height || 0)
           const minX = Math.min(item.x, x2)
@@ -1905,6 +1933,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setSelectedItemId(null)
       }
     } 
+    else if (activeTool === 'block-arrow-stamp') {
+      const scaleMapping = [32, 48, 64, 80, 96]
+      const size = scaleMapping[stampScale - 1] || 64
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'block-arrow-stamp',
+        x: x - size / 2,
+        y: y - size / 2,
+        width: size,
+        height: size,
+        style: {
+          borderColor: arrowColor,
+          stampDirection: stampDirection,
+          stampScale: stampScale
+        }
+      }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
+    }
     else if (activeTool === 'circle-number') {
       const newItem: CanvasItem = {
         id: `item-${Date.now()}`,
@@ -2244,7 +2291,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           if (item.type === 'circle-number') {
             const r = (item.style.fontSize || 13) * 1.05
             return item.x >= -r && item.x <= cW + r && item.y >= -r && item.y <= cH + r
-          } else if (item.type === 'box' || item.type === 'image') {
+          } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
             return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
           } else if (item.type === 'text') {
             return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
@@ -2802,6 +2849,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'arrow', label: '가리키는 화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
               { id: 'orthogonal-arrow', label: '직각 꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
+              { id: 'block-arrow-stamp', label: '블록 화살표 스탬프', icon: <CornerDownRight className="w-4 h-4 text-orange-500 -rotate-45" /> },
               { id: 'symbol', label: '아이콘 이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
               { id: 'crop', label: '러버밴드 점선 자르기', icon: <Crop className="w-4 h-4" /> }
@@ -2992,6 +3040,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 resetTrigger={resetPanelTrigger}
                 arrowHeadSize={arrowHeadSize}
                 setArrowHeadSize={setArrowHeadSize}
+                stampScale={stampScale}
+                setStampScale={setStampScale}
+                stampDirection={stampDirection}
+                setStampDirection={setStampDirection}
               />
             )}
           </main>

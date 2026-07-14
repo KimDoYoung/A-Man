@@ -1,6 +1,6 @@
 export interface CanvasItem {
   id: string
-  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'image'
+  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'image' | 'block-arrow-stamp'
   x: number
   y: number
   width?: number
@@ -21,6 +21,7 @@ export interface CanvasItem {
     hasCaption?: boolean
     fontStyle?: 'normal' | 'italic'
     textDecoration?: 'none' | 'underline' | 'line-through'
+    stampDirection?: string
   }
 }
 
