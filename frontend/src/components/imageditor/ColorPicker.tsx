@@ -16,8 +16,9 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const isPresetSelected = colors.includes(selectedColor)
-  const isCustomSelected = !isPresetSelected && selectedColor !== 'transparent' && selectedColor !== ''
+  const effectiveColor = selectedColor || 'transparent'
+  const isPresetSelected = colors.includes(effectiveColor)
+  const isCustomSelected = !isPresetSelected && effectiveColor !== 'transparent'
 
   const handleCustomClick = () => {
     inputRef.current?.click()
@@ -36,7 +37,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
             key={col}
             onClick={() => onChangeColor(col)}
             className={`w-4 h-4 rounded-full border border-gray-200 dark:border-slate-800 cursor-pointer transition-transform relative flex items-center justify-center ${
-              selectedColor === col ? 'scale-100 ring-2 ring-indigo-500 border-indigo-500' : 'hover:scale-110'
+              effectiveColor === col ? 'scale-100 ring-2 ring-indigo-500 border-indigo-500' : 'hover:scale-110'
             }`}
             style={col === 'transparent' ? { backgroundColor: '#ffffff' } : { backgroundColor: col }}
             title={col === 'transparent' ? '투명 배경' : col}
@@ -55,7 +56,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
           <input
             ref={inputRef}
             type="color"
-            value={isCustomSelected ? selectedColor : '#ffffff'}
+            value={isCustomSelected ? effectiveColor : '#ffffff'}
             onChange={handleCustomChange}
             className="sr-only"
           />
@@ -66,8 +67,8 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                 ? 'scale-100 ring-2 ring-indigo-500 border-indigo-500'
                 : 'border border-dashed border-gray-300 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900 hover:bg-gray-100 hover:scale-110 text-gray-400 dark:text-slate-500'
             }`}
-            style={isCustomSelected ? { backgroundColor: selectedColor } : {}}
-            title={isCustomSelected ? `사용자 색상: ${selectedColor}` : '사용자 정의 색상 선택'}
+            style={isCustomSelected ? { backgroundColor: effectiveColor } : {}}
+            title={isCustomSelected ? `사용자 색상: ${effectiveColor}` : '사용자 정의 색상 선택'}
           >
             {!isCustomSelected && <Plus className="w-2.5 h-2.5" />}
           </button>

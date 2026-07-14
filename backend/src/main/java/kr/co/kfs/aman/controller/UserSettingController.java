@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +47,10 @@ public class UserSettingController {
 
         Optional<UserSetting> settingOpt = userSettingRepository.findBySettingKey(key);
         if (!settingOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("해당 설정을 찾을 수 없습니다.");
+            Map<String, Object> response = new HashMap<>();
+            response.put("key", key);
+            response.put("value", null);
+            return ResponseEntity.ok(response);
         }
 
         UserSetting setting = settingOpt.get();
@@ -105,5 +109,28 @@ public class UserSettingController {
         response.put("key", saved.getSettingKey());
         response.put("value", saved.getSettingValue());
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{key}")
+    @Transactional
+    public ResponseEntity<?> deleteUserSetting(@PathVariable("key") String key) {
+        User user = getLoginUser();
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증된 사용자를 찾을 수 없습니다.");
+        }
+
+        Optional<UserSetting> settingOpt = userSettingRepository.findBySettingKey(key);
+        if (!settingOpt.isPresent()) {
+            return ResponseEntity.ok().body("설정이 이미 존재하지 않습니다.");
+        }
+
+        UserSetting setting = settingOpt.get();
+        // 소유권 확인
+        if (!setting.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("본인의 설정 정보만 삭제할 수 있습니다.");
+        }
+
+        userSettingRepository.delete(setting);
+        return ResponseEntity.ok().body("설정이 성공적으로 삭제되었습니다.");
     }
 }

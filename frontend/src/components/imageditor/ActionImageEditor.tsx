@@ -382,7 +382,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [symbolScale, setSymbolScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.symbolScale)
 
   // 5-1. 화살머리 크기 (1, 2, 3단계)
-  const [arrowHeadSize, setArrowHeadSize] = useState<number>(1)
+  const [arrowHeadSize, setArrowHeadSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
 
   // 6. 이미지 아이템 (image) 관련 속성
   const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
@@ -498,10 +498,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null)
 
   // 테두리(박스라인) 및 캡션 설정 상태
-  const [hasBorder, setHasBorder] = useState<boolean>(false)
-  const [borderColor, setBorderColor] = useState<string>('#cbd5e1')
-  const [borderWidth, setBorderWidth] = useState<number>(2)
-  const [borderStyle, setBorderStyle] = useState<'basic' | 'rounded'>('basic')
+  const [hasBorder, setHasBorder] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.hasBorder)
+  const [borderColor, setBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.borderColor)
+  const [borderWidth, setBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.borderWidth)
+  const [borderStyle, setBorderStyle] = useState<'basic' | 'rounded'>(SYSTEM_ITEM_DEFAULTS.borderStyle)
   
   const [hasCaption, setHasCaption] = useState<boolean>(false)
   const [captionText, setCaptionText] = useState<string>('')
@@ -822,7 +822,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         
         ctx.save()
         // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
-        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent') {
+        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent' && item.style.backgroundColor !== '') {
           ctx.save()
           ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
           ctx.fillStyle = item.style.backgroundColor
@@ -1184,72 +1184,52 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         const config = JSON.parse(res.value)
         
         // 1. 원숫자
-        if (config.circleNumberBgColor) setCircleNumberBgColor(config.circleNumberBgColor)
-        else if (config.indigoColor) setCircleNumberBgColor(config.indigoColor)
-
-        if (config.circleNumberTextColor) setCircleNumberTextColor(config.circleNumberTextColor)
-        else if (config.textColor) setCircleNumberTextColor(config.textColor)
-
-        if (config.circleNumberBorderColor) setCircleNumberBorderColor(config.circleNumberBorderColor)
-        else if (config.circleBorderColor) setCircleNumberBorderColor(config.circleBorderColor)
-
+        if (config.circleNumberBgColor !== undefined) setCircleNumberBgColor(config.circleNumberBgColor)
+        if (config.circleNumberTextColor !== undefined) setCircleNumberTextColor(config.circleNumberTextColor)
+        if (config.circleNumberBorderColor !== undefined) setCircleNumberBorderColor(config.circleNumberBorderColor)
         if (config.circleNumberBorderWidth !== undefined) setCircleNumberBorderWidth(config.circleNumberBorderWidth)
-        else if (config.lineWidth !== undefined) setCircleNumberBorderWidth(config.lineWidth)
-
         if (config.circleNumberFontSize !== undefined) setCircleNumberFontSize(config.circleNumberFontSize)
-        else if (config.fontSize !== undefined) setCircleNumberFontSize(config.fontSize)
 
         // 2. 강조 상자
-        if (config.boxBorderColor) setBoxBorderColor(config.boxBorderColor)
-        else if (config.primaryColor) setBoxBorderColor(config.primaryColor)
-
+        if (config.boxBorderColor !== undefined) setBoxBorderColor(config.boxBorderColor)
         if (config.boxLineWidth !== undefined) setBoxLineWidth(config.boxLineWidth)
-        else if (config.lineWidth !== undefined) setBoxLineWidth(config.lineWidth)
-
-        if (config.boxLineStyle) setBoxLineStyle(config.boxLineStyle)
-        if (config.boxBgColor) setBoxBgColor(config.boxBgColor)
+        if (config.boxLineStyle !== undefined) setBoxLineStyle(config.boxLineStyle)
+        if (config.boxBgColor !== undefined) setBoxBgColor(config.boxBgColor)
         if (config.boxOpacity !== undefined) setBoxOpacity(config.boxOpacity)
         if (config.boxBorderRadius !== undefined) setBoxBorderRadius(config.boxBorderRadius)
 
         // 3. 화살표
-        if (config.arrowColor) setArrowColor(config.arrowColor)
-        else if (config.primaryColor) setArrowColor(config.primaryColor)
-
+        if (config.arrowColor !== undefined) setArrowColor(config.arrowColor)
         if (config.arrowLineWidth !== undefined) setArrowLineWidth(config.arrowLineWidth)
-        else if (config.lineWidth !== undefined) setArrowLineWidth(config.lineWidth)
-
-        if (config.arrowLineStyle) setArrowLineStyle(config.arrowLineStyle)
-        else if (config.boxLineStyle) setArrowLineStyle(config.boxLineStyle)
+        if (config.arrowLineStyle !== undefined) setArrowLineStyle(config.arrowLineStyle)
+        if (config.arrowHeadSize !== undefined) setArrowHeadSize(config.arrowHeadSize)
 
         // 4. 일반 텍스트
-        if (config.textTextColor) setTextTextColor(config.textTextColor)
-        else if (config.textColor) setTextTextColor(config.textColor)
-
+        if (config.textTextColor !== undefined) setTextTextColor(config.textTextColor)
         if (config.textFontSize !== undefined) setTextFontSize(config.textFontSize)
-        else if (config.fontSize !== undefined) setTextFontSize(config.fontSize)
-
-        if (config.textBgColor) setTextBgColor(config.textBgColor)
-        if (config.textFontStyle) setTextFontStyle(config.textFontStyle)
-        if (config.textTextDecoration) setTextTextDecoration(config.textTextDecoration)
+        if (config.textBgColor !== undefined) setTextBgColor(config.textBgColor)
+        if (config.textFontStyle !== undefined) setTextFontStyle(config.textFontStyle)
+        if (config.textTextDecoration !== undefined) setTextTextDecoration(config.textTextDecoration)
 
         // 5. 이모지 심볼
-        if (config.symbolEmoji) setSymbolEmoji(config.symbolEmoji)
-        else if (config.selectedEmoji) setSymbolEmoji(config.selectedEmoji)
-
+        if (config.symbolEmoji !== undefined) setSymbolEmoji(config.symbolEmoji)
         if (config.symbolScale !== undefined) setSymbolScale(config.symbolScale)
 
         // 6. 이미지 아이템
-        if (config.imageSrcBorderColor) setImageSrcBorderColor(config.imageSrcBorderColor)
+        if (config.imageSrcBorderColor !== undefined) setImageSrcBorderColor(config.imageSrcBorderColor)
         if (config.imageSrcBorderWidth !== undefined) setImageSrcBorderWidth(config.imageSrcBorderWidth)
-        if (config.imageSrcBorderStyle) setImageSrcBorderStyle(config.imageSrcBorderStyle)
+        if (config.imageSrcBorderStyle !== undefined) setImageSrcBorderStyle(config.imageSrcBorderStyle)
         if (config.imageSrcHasBorder !== undefined) setImageSrcHasBorder(config.imageSrcHasBorder)
         if (config.imageSrcCaptionText !== undefined) setImageSrcCaptionText(config.imageSrcCaptionText)
         if (config.imageSrcHasCaption !== undefined) setImageSrcHasCaption(config.imageSrcHasCaption)
 
-        if (config.captionAlign) setCaptionAlign(config.captionAlign)
+        if (config.captionAlign !== undefined) setCaptionAlign(config.captionAlign)
+        if (config.hasBorder !== undefined) setHasBorder(config.hasBorder)
+        if (config.borderColor !== undefined) setBorderColor(config.borderColor)
+        if (config.borderWidth !== undefined) setBorderWidth(config.borderWidth)
+        if (config.borderStyle !== undefined) setBorderStyle(config.borderStyle)
       }
     } catch (e) {
-      // 404 등 존재하지 않는 경우는 첫 사용이므로 에러 로그만 남기고 시스템 기본값을 유지합니다.
       console.log('No user settings found or error fetching settings:', e)
     }
   }
@@ -1270,6 +1250,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowColor,
     arrowLineWidth,
     arrowLineStyle,
+    arrowHeadSize,
     textTextColor,
     textFontSize,
     textBgColor,
@@ -1283,16 +1264,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcHasBorder,
     imageSrcCaptionText,
     imageSrcHasCaption,
-    captionAlign
-  })
-
-  // buildStyleConfig() + 캔버스 테두리/캡션 6필드 (작업(Work) 저장/복원용 확장 shape)
-  const buildWorkStyleConfig = (): WorkStyleConfig => ({
-    ...buildStyleConfig(),
+    captionAlign,
     hasBorder,
     borderColor,
     borderWidth,
-    borderStyle,
+    borderStyle
+  })
+
+  // buildStyleConfig() + 캔버스 캡션 2필드 (작업(Work) 저장/복원용 확장 shape)
+  const buildWorkStyleConfig = (): WorkStyleConfig => ({
+    ...buildStyleConfig(),
     hasCaption,
     captionText
   })
@@ -1327,6 +1308,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setImageSrcCaptionText(cfg.imageSrcCaptionText)
     setImageSrcHasCaption(cfg.imageSrcHasCaption)
     setCaptionAlign(cfg.captionAlign)
+    setHasBorder(cfg.hasBorder)
+    setBorderColor(cfg.borderColor)
+    setBorderWidth(cfg.borderWidth)
+    setBorderStyle(cfg.borderStyle)
   }
 
   // 구버전 jsonData/사용자설정 로드시 레거시 키 하위호환 폴백 체인
@@ -1360,10 +1345,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcCaptionText: data.imageSrcCaptionText ?? SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
     imageSrcHasCaption: data.imageSrcHasCaption ?? SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption,
     captionAlign: data.captionAlign ?? SYSTEM_ITEM_DEFAULTS.captionAlign,
-    hasBorder: data.hasBorder ?? false,
-    borderColor: data.borderColor ?? '#cbd5e1',
-    borderWidth: data.borderWidth ?? 2,
-    borderStyle: data.borderStyle ?? 'basic',
+    hasBorder: data.hasBorder ?? SYSTEM_ITEM_DEFAULTS.hasBorder,
+    borderColor: data.borderColor ?? SYSTEM_ITEM_DEFAULTS.borderColor,
+    borderWidth: data.borderWidth ?? SYSTEM_ITEM_DEFAULTS.borderWidth,
+    borderStyle: data.borderStyle ?? SYSTEM_ITEM_DEFAULTS.borderStyle,
     hasCaption: data.hasCaption ?? false,
     captionText: data.captionText ?? ''
   })
@@ -1401,6 +1386,88 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     } catch (e) {
       console.error('Failed to save user settings:', e)
       showSaveMessage('기본값 보관 처리 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  // 사용자 지정 기본값 불러오기 (Get)
+  const handleLoadUserSettings = async () => {
+    try {
+      await fetchUserSettings()
+      showSaveMessage('보관된 개인 기본 설정을 적용했습니다.', 'success')
+    } catch (e) {
+      console.error('Failed to load user settings:', e)
+      showSaveMessage('기본 설정을 불러오는 중 오류가 발생했습니다.', 'error')
+    }
+  }
+
+  // 사용자 지정 기본값 삭제 (Delete)
+  const handleDeleteUserSettings = async () => {
+    try {
+      const userStr = localStorage.getItem('aman_user')
+      const user = userStr ? JSON.parse(userStr) : null
+      const userId = user?.id
+      if (!userId) {
+        showSaveMessage('사용자 정보를 획득할 수 없어 삭제할 수 없습니다.', 'error')
+        return
+      }
+
+      const key = `image_editor_defaults_user_${userId}`
+      
+      // 백엔드 DELETE API 호출
+      try {
+        await apiClient.delete(`/admin/user-settings/${key}`)
+      } catch (err: any) {
+        // 이미 해당 키가 존재하지 않아 404가 발생한 경우 에러를 무시하고 로컬 리셋을 진행합니다.
+        if (err?.response?.status !== 404) {
+          throw err
+        }
+      }
+
+      // 설정을 시스템 디폴트 설정으로 복원
+      setCircleNumberBgColor(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
+      setCircleNumberTextColor(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
+      setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
+      setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
+      setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+
+      setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
+      setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
+      setBoxLineStyle(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
+      setBoxBgColor(SYSTEM_ITEM_DEFAULTS.boxBgColor)
+      setBoxOpacity(SYSTEM_ITEM_DEFAULTS.boxOpacity)
+      setBoxBorderRadius(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+
+      setArrowColor(SYSTEM_ITEM_DEFAULTS.arrowColor)
+      setArrowLineWidth(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
+      setArrowLineStyle(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
+      setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+
+      setTextTextColor(SYSTEM_ITEM_DEFAULTS.textTextColor)
+      setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
+      setTextBgColor(SYSTEM_ITEM_DEFAULTS.textBgColor)
+      setTextFontStyle(SYSTEM_ITEM_DEFAULTS.textFontStyle)
+      setTextTextDecoration(SYSTEM_ITEM_DEFAULTS.textTextDecoration)
+
+      setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
+      setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
+
+      setImageSrcBorderColor(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
+      setImageSrcBorderWidth(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
+      setImageSrcBorderStyle(SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle)
+      setImageSrcHasBorder(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
+      setImageSrcCaptionText(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
+      setImageSrcHasCaption(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
+
+      setCaptionAlign(SYSTEM_ITEM_DEFAULTS.captionAlign)
+      setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
+      setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
+      setBorderWidth(SYSTEM_ITEM_DEFAULTS.borderWidth)
+      setBorderStyle(SYSTEM_ITEM_DEFAULTS.borderStyle)
+
+      showSaveMessage('개인 설정을 삭제하고 시스템 기본값으로 복원했습니다.', 'success')
+    } catch (e) {
+      console.error('Failed to delete user settings:', e)
+      showSaveMessage('기본 설정 삭제 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -1997,7 +2064,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               borderWidth: boxLineWidth,
               lineStyle: boxLineStyle,
               backgroundColor: boxBgColor,
-              opacity: boxBgColor === 'transparent' ? 1.0 : boxOpacity / 100,
+              opacity: boxOpacity / 100,
               borderRadius: boxBorderRadius
             }
           }
@@ -2799,6 +2866,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 imageSrcHasCaption={imageSrcHasCaption}
                 setImageSrcHasCaption={setImageSrcHasCaption}
                 onSaveDefaults={handleSaveUserSettings}
+                onLoadDefaults={handleLoadUserSettings}
+                onDeleteDefaults={handleDeleteUserSettings}
                 resetTrigger={resetPanelTrigger}
                 arrowHeadSize={arrowHeadSize}
                 setArrowHeadSize={setArrowHeadSize}

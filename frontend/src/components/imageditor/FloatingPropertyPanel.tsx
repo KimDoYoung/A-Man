@@ -90,6 +90,8 @@ interface FloatingPropertyPanelProps {
   circleCounter: number
   setCircleCounter: (val: number) => void
   onSaveDefaults: () => Promise<void> | void
+  onLoadDefaults: () => Promise<void> | void
+  onDeleteDefaults: () => Promise<void> | void
   activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
@@ -173,6 +175,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   circleCounter,
   setCircleCounter,
   onSaveDefaults,
+  onLoadDefaults,
+  onDeleteDefaults,
   activeTool,
   items,
   pushToUndo,
@@ -353,7 +357,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       {/* 배경색 */}
                       <ColorPicker
                         label="배경색"
-                        selectedColor={selectedItem.style.backgroundColor || boxBgColor}
+                        selectedColor={selectedItem.style.backgroundColor || boxBgColor || 'transparent'}
                         onChangeColor={(col) => {
                           setBoxBgColor(col)
                           const updated = items.map(item => {
@@ -1262,19 +1266,38 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
             </>
           )}
 
-          {/* 기본 속성으로 지정 버튼: 개별 요소 선택이 아닐 때만 렌더링 */}
-          {!selectedItemId && (
-            <div className="p-3 pt-0 border-t border-gray-150 dark:border-slate-850 shrink-0">
-              <button
-                onClick={onSaveDefaults}
-                className="w-full py-1.5 flex items-center justify-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 rounded-md font-bold cursor-pointer transition-colors border border-indigo-100 dark:border-indigo-900/50 text-xs shadow-2xs"
-                title="현재 지정된 색상, 두께, 둥글기 등의 전역 설정을 개인 기본값으로 영구 지정합니다."
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>현재 설정을 내 기본값으로 지정</span>
-              </button>
+          {/* 나의 속성 설정 영역 - 언제든지 렌더링하도록 조건 해제 */}
+          <div className="p-3 pt-2.5 border-t border-gray-150 dark:border-slate-850 shrink-0">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-gray-505 dark:text-slate-400">나의 속성</span>
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={onSaveDefaults}
+                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 rounded-md font-bold cursor-pointer transition-colors border border-indigo-100 dark:border-indigo-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-50 dark:disabled:hover:bg-indigo-950/20"
+                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 저장할 수 없습니다." : "현재 지정된 설정을 개인 기본값으로 저장합니다."}
+                >
+                  설정
+                </button>
+                <button
+                  onClick={onLoadDefaults}
+                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-650 dark:text-emerald-400 rounded-md font-bold cursor-pointer transition-colors border border-emerald-100 dark:border-emerald-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-50 dark:disabled:hover:bg-emerald-950/20"
+                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 불러올 수 없습니다." : "저장된 나의 기본 설정을 불러와 적용합니다."}
+                >
+                  가져오기
+                </button>
+                <button
+                  onClick={onDeleteDefaults}
+                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-650 dark:text-rose-400 rounded-md font-bold cursor-pointer transition-colors border border-rose-100 dark:border-rose-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-50 dark:disabled:hover:bg-rose-950/20"
+                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 삭제할 수 없습니다." : "저장된 나의 설정을 삭제하고 시스템 디폴트 설정으로 복원합니다."}
+                >
+                  삭제
+                </button>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
