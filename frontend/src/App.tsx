@@ -13,38 +13,6 @@ import AboutPage from '@/domains/system/AboutPage'
 import axios from 'axios'
 import { apiClient } from '@/lib/apiClient'
 
-// 1. JWT 토큰 자동 첨부 인터셉터
-axios.interceptors.request.use((config) => {
-  const userStr = localStorage.getItem('aman_user')
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr)
-      if (user && user.accessToken) {
-        config.headers.Authorization = `Bearer ${user.accessToken}`
-      }
-    } catch (e) {
-      console.error('인증 헤더 설정 에러:', e)
-    }
-  }
-  return config
-}, (error) => {
-  return Promise.reject(error)
-})
-
-// 2. 인증 만료(401/403) 시 로그인 페이지로 자동 리다이렉트 인터셉터
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const isLoginRequest = error.config && error.config.url && error.config.url.includes('/auth/login')
-    if (!isLoginRequest && error.response && (error.response.status === 401 || error.response.status === 403)) {
-      localStorage.removeItem('aman_user')
-      alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
-      window.location.href = '/aman/login'
-    }
-    return Promise.reject(error)
-  }
-)
-
 // JWT 토큰에서 만료 시각(ms)을 가져오는 헬퍼 함수
 function getJwtExpiry(token: string): number | null {
   try {
@@ -157,10 +125,22 @@ function App() {
     // 1분마다 주기적으로 확인
     const intervalId = setInterval(checkAndRefresh, 60 * 1000)
 
+    // 브라우저 탭이 활성화될 때(슬립 모드 해제 등) 즉시 토큰 체크하도록 리스너 등록
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Tab became visible. Checking token validity...')
+        checkAndRefresh()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     // 마운트 시 최초 즉시 확인
     checkAndRefresh()
 
-    return () => clearInterval(intervalId)
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   return <RouterProvider router={router} />
