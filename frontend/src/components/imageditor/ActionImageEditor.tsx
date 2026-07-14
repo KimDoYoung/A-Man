@@ -2586,14 +2586,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           {bgImage && (
             <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs mr-2">
               <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">보기 배율:</span>
-              {[1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
+              {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
                 <button
                   key={z}
                   onClick={() => setZoom(z)}
                   className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
                     zoom === z
-                      ? 'bg-indigo-650 text-white shadow-xs'
-                      : 'bg-transparent text-gray-600 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                      ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                      : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
                   }`}
                 >
                   {Math.round(z * 100)}%
