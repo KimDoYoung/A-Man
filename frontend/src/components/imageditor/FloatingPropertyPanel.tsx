@@ -465,9 +465,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">화살머리 크기</span>
                       <div className="flex space-x-1.5">
                         {[
-                          { id: 1, label: '1단계 (기본)' },
-                          { id: 2, label: '2단계 (크게)' },
-                          { id: 3, label: '3단계 (더 크게)' }
+                          { id: 1, label: '1. 기본' },
+                          { id: 2, label: '2. 크게' },
+                          { id: 3, label: '3. 더 크게' }
                         ].map((sz) => (
                           <button
                             key={sz.id}

@@ -1331,6 +1331,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     arrowColor: data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor,
     arrowLineWidth: data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
     arrowLineStyle: data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
+    arrowHeadSize: data.arrowHeadSize ?? SYSTEM_ITEM_DEFAULTS.arrowHeadSize,
     textTextColor: data.textTextColor ?? data.textColor ?? SYSTEM_ITEM_DEFAULTS.textTextColor,
     textFontSize: data.textFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.textFontSize,
     textBgColor: data.textBgColor ?? SYSTEM_ITEM_DEFAULTS.textBgColor,
@@ -1584,15 +1585,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setActiveHistoryId(null)
     setActiveTool('pointer')
     setResetPanelTrigger(prev => prev + 1)
-    setArrowHeadSize(1)
+    setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
     
-    setHasBorder(false)
-    setBorderColor('#cbd5e1')
-    setBorderWidth(2)
-    setBorderStyle('basic')
+    setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
+    setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
+    setBorderWidth(SYSTEM_ITEM_DEFAULTS.borderWidth)
+    setBorderStyle(SYSTEM_ITEM_DEFAULTS.borderStyle)
     setHasCaption(false)
     setCaptionText('')
-    setCaptionAlign('center')
+    setCaptionAlign(SYSTEM_ITEM_DEFAULTS.captionAlign)
     
     applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
 
@@ -1609,6 +1610,49 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ...SYSTEM_ITEM_DEFAULTS
     })
     showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
+  }
+
+  // 이미지 최초 로딩 시 백엔드 자동 임시저장 수행
+  const autoSaveOnImageLoad = async (img: HTMLImageElement, dataUrl: string) => {
+    setSavingWork(true)
+    try {
+      const prefix = getDefaultEditorTitle()
+      const cleanPrefix = prefix.replace(/_\d+$/, '')
+      const count = historyList.filter(h => h.title === cleanPrefix || h.title.startsWith(cleanPrefix + '_')).length
+      const finalTitle = `${cleanPrefix}_${count + 1}`
+
+      const dataToSave = {
+        title: finalTitle,
+        originalImageUrl: dataUrl,
+        editedImageUrl: dataUrl,
+        items: [],
+        circleCounter: 1,
+        physicalUrl: '',
+        ...buildWorkStyleConfig(),
+        arrowHeadSize
+      }
+
+      const res = await saveImageWork(buildImageWorkPayload(finalTitle, dataToSave))
+
+      if (res && res.id) {
+        setActiveHistoryId(res.id)
+      }
+
+      setLastSavedState({
+        title: finalTitle,
+        bgImageSrc: dataUrl,
+        items: [],
+        ...buildWorkStyleConfig()
+      })
+      setEditorTitle(finalTitle)
+
+      showSaveMessage(`원본 이미지가 로드되어 '${finalTitle}' 명칭으로 자동 임시 저장되었습니다.`, 'success')
+      fetchHistory()
+    } catch (err) {
+      console.error('이미지 로딩 시 자동 임시저장 에러:', err)
+    } finally {
+      setSavingWork(false)
+    }
   }
 
   // loadImage 두 분기(리사이즈됨/안됨) 공용 후처리: 배경이미지 반영 + 편집상태 초기화 + lastSavedState 갱신
@@ -1637,6 +1681,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 기존 동작 보존: 라이브 captionAlign이 아닌 항상 'center'로 기록됨 (의도 불명확하나 그대로 유지)
       captionAlign: 'center'
     })
+
+    // 이미지 로드 완료 시점 자동 임시저장 실행
+    autoSaveOnImageLoad(img, dataUrl)
   }
 
   // 이미지 파일을 HTMLImageElement로 로드 및 비율 유지 축소 리사이징
@@ -2281,9 +2328,83 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         return
       }
 
+      // Ctrl + 키보드 화살표 키를 이용한 box 요소의 크기 미세 조절 (Resize - 1px)
+      if (selectedItemId && (e.ctrlKey || e.metaKey) && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const targetItem = items.find(item => item.id === selectedItemId)
+        if (targetItem && targetItem.type === 'box') {
+          e.preventDefault() // 브라우저 방향키에 의한 스크롤 방지
+          let dw = 0
+          let dh = 0
+          if (e.key === 'ArrowLeft') dw = -1
+          else if (e.key === 'ArrowRight') dw = 1
+          else if (e.key === 'ArrowUp') dh = -1
+          else if (e.key === 'ArrowDown') dh = 1
+
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              const currentW = item.width ?? 10
+              const currentH = item.height ?? 10
+              return {
+                ...item,
+                width: Math.max(5, currentW + dw),
+                height: Math.max(5, currentH + dh)
+              }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+      }
+
+      // 키보드 화살표 키를 이용한 선택 요소 미세 이동 (Nudge - 1px)
+      if (selectedItemId && !e.ctrlKey && !e.metaKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault() // 브라우저 방향키에 의한 스크롤 방지
+        let dx = 0
+        let dy = 0
+        if (e.key === 'ArrowLeft') dx = -1
+        else if (e.key === 'ArrowRight') dx = 1
+        else if (e.key === 'ArrowUp') dy = -1
+        else if (e.key === 'ArrowDown') dy = 1
+
+        const updated = items.map((item) => {
+          if (item.id === selectedItemId) {
+            return {
+              ...item,
+              x: item.x + dx,
+              y: item.y + dy
+            }
+          }
+          return item
+        })
+        pushToUndo(updated)
+        return
+      }
+
       if (e.key === 'Escape') {
         setSelectedItemId(null)
         setActiveTool('pointer')
+        return
+      }
+
+      // Ctrl + Z / Cmd + Z (Undo 실행 취소)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        handleUndo()
+        return
+      }
+
+      // Ctrl + Y / Cmd + Y (Redo 다시 실행)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault()
+        handleRedo()
+        return
+      }
+
+      // Ctrl + Shift + Z / Cmd + Shift + Z (Redo 다시 실행 - 보조 단축키)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        handleRedo()
         return
       }
 
