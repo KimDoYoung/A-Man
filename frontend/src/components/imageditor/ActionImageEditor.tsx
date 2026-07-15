@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { drawBlockArrowStamp } from './arrowStamp'
 import TextItemInput from './TextItemInput'
@@ -2845,14 +2845,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           <aside className="w-14 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 flex flex-col items-center py-4 space-y-2 shrink-0">
             {[
               { id: 'pointer', label: '선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
-              { id: 'circle-number', label: '원숫자 마크 스탬프', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
+              { id: 'circle-number', label: '원숫자 마크', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
-              { id: 'arrow', label: '가리키는 화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
-              { id: 'orthogonal-arrow', label: '직각 꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
-              { id: 'block-arrow-stamp', label: '블록 화살표 스탬프', icon: <CornerDownRight className="w-4 h-4 text-orange-500 -rotate-45" /> },
-              { id: 'symbol', label: '아이콘 이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
+              { id: 'arrow', label: '화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
+              { id: 'orthogonal-arrow', label: '꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
+              { id: 'block-arrow-stamp', label: '스탬프', icon: <Stamp className="w-4 h-4 text-orange-500 -rotate-45" /> },
+              { id: 'symbol', label: '이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
-              { id: 'crop', label: '러버밴드 점선 자르기', icon: <Crop className="w-4 h-4" /> }
+              { id: 'crop', label: '잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> }
             ].map((tool) => (
               <button
                 key={tool.id}
@@ -2878,7 +2878,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               onClick={handleUndo}
               disabled={undoStack.length === 0}
               className="p-2.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-              title="실행 취소 (Undo)"
+              title="실행 취소 (Ctrl+Z)"
             >
               <Undo className="w-4 h-4" />
             </button>
@@ -2886,7 +2886,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               onClick={handleRedo}
               disabled={redoStack.length === 0}
               className="p-2.5 rounded-lg text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-              title="재실행 (Redo)"
+              title="재실행 (Ctrl+Y)"
             >
               <Redo className="w-4 h-4" />
             </button>

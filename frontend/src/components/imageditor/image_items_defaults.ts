@@ -61,11 +61,11 @@ export type WorkStyleConfig = StyleConfig & {
 }
 
 // FloatingPropertyPanel 색상/이모지 팔레트 (인스펙터/글로벌 탭 공용)
-export const BOX_ARROW_BORDER_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']
-export const BOX_BG_COLORS = ['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']
-export const CIRCLE_NUMBER_BG_COLORS = ['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444']
-export const CIRCLE_NUMBER_TEXT_COLORS = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']
-export const CIRCLE_NUMBER_BORDER_COLORS = ['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a']
-export const TEXT_COLOR_PALETTE = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981']
-export const IMAGE_BORDER_COLORS = ['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#808080']
+export const BOX_ARROW_BORDER_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a','#ffff00']
+export const BOX_BG_COLORS = ['transparent', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a','#ffff00']
+export const CIRCLE_NUMBER_BG_COLORS = ['#4f46e5', '#3b82f6', '#0f172a', '#10b981', '#ef4444','#ffff00']
+export const CIRCLE_NUMBER_TEXT_COLORS = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981','#ffff00']
+export const CIRCLE_NUMBER_BORDER_COLORS = ['#ffffff', '#ef4444', '#f59e0b', '#3b82f6', '#0f172a','#ffff00']
+export const TEXT_COLOR_PALETTE = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981','#ffff00']
+export const IMAGE_BORDER_COLORS = ['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#808080','#ffff00']
 export const SYMBOL_EMOJI_OPTIONS = ['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬']
