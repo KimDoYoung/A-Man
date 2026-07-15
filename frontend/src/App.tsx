@@ -10,7 +10,6 @@ import UserManagePage from '@/domains/user/UserManagePage'
 import FolderManagePage from '@/domains/folder/FolderManagePage'
 import SettingsPage from '@/domains/system/SettingsPage'
 import AboutPage from '@/domains/system/AboutPage'
-import axios from 'axios'
 import { apiClient } from '@/lib/apiClient'
 
 // JWT 토큰에서 만료 시각(ms)을 가져오는 헬퍼 함수

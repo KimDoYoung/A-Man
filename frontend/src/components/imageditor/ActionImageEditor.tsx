@@ -2478,6 +2478,58 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         return
       }
 
+      // 앞으로 보내기 (Ctrl + ]) / 맨 앞으로 보내기 (Ctrl + Shift + ])
+      if ((e.ctrlKey || e.metaKey) && e.key === ']') {
+        if (selectedItemId) {
+          e.preventDefault()
+          const index = items.findIndex(item => item.id === selectedItemId)
+          if (index !== -1 && index < items.length - 1) {
+            if (e.shiftKey) {
+              // 맨 앞으로 보내기
+              const item = items[index]
+              const newItems = [...items]
+              newItems.splice(index, 1)
+              newItems.push(item)
+              pushToUndo(newItems)
+            } else {
+              // 앞으로 한 단계 보내기
+              const newItems = [...items]
+              const temp = newItems[index]
+              newItems[index] = newItems[index + 1]
+              newItems[index + 1] = temp
+              pushToUndo(newItems)
+            }
+          }
+        }
+        return
+      }
+
+      // 뒤로 보내기 (Ctrl + [) / 맨 뒤로 보내기 (Ctrl + Shift + [)
+      if ((e.ctrlKey || e.metaKey) && e.key === '[') {
+        if (selectedItemId) {
+          e.preventDefault()
+          const index = items.findIndex(item => item.id === selectedItemId)
+          if (index !== -1 && index > 0) {
+            if (e.shiftKey) {
+              // 맨 뒤로 보내기
+              const item = items[index]
+              const newItems = [...items]
+              newItems.splice(index, 1)
+              newItems.unshift(item)
+              pushToUndo(newItems)
+            } else {
+              // 뒤로 한 단계 보내기
+              const newItems = [...items]
+              const temp = newItems[index]
+              newItems[index] = newItems[index - 1]
+              newItems[index - 1] = temp
+              pushToUndo(newItems)
+            }
+          }
+        }
+        return
+      }
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedItemId) {
           const filtered = items.filter((x) => x.id !== selectedItemId)
