@@ -1295,6 +1295,24 @@ public class ManualController {
         }
     }
 
+    @GetMapping(value = "/help/icons", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
+    public ResponseEntity<String> getIconsPage() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/help/icons.html")) {
+            if (is == null) {
+                return ResponseEntity.status(404).body("아이콘 찾기 페이지가 존재하지 않습니다.");
+            }
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            return ResponseEntity.ok(bos.toString("UTF-8"));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).body("오류가 발생했습니다.");
+        }
+    }
+
     @GetMapping(value = "/help", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
     public ResponseEntity<String> getHelpPage(javax.servlet.http.HttpServletRequest request) {
         try (java.io.InputStream is = getClass().getResourceAsStream("/help/doc-user-help.md")) {
@@ -1331,14 +1349,125 @@ public class ManualController {
                 "        });\n" +
                 "    </script>\n";
 
+            String tabScript = 
+                "    <script>\n" +
+                "        function switchTab(evt, tabId) {\n" +
+                "            var i, tabcontent, tablinks;\n" +
+                "            tabcontent = document.getElementsByClassName('tab-pane');\n" +
+                "            for (i = 0; i < tabcontent.length; i++) {\n" +
+                "                tabcontent[i].classList.remove('active');\n" +
+                "            }\n" +
+                "            tablinks = document.getElementsByClassName('tab-btn');\n" +
+                "            for (i = 0; i < tablinks.length; i++) {\n" +
+                "                tablinks[i].classList.remove('active');\n" +
+                "            }\n" +
+                "            document.getElementById(tabId).classList.add('active');\n" +
+                "            evt.currentTarget.classList.add('active');\n" +
+                "        }\n" +
+                "    </script>\n";
+
             String fullHtml = 
                 "<!DOCTYPE html>\n" +
                 "<html lang=\"ko\">\n" +
                 "<head>\n" +
                 "    <meta charset=\"UTF-8\">\n" +
                 "    <link rel=\"icon\" type=\"image/png\" href=\"/aman/favicon.png\">\n" +
+                "    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css\" />\n" +
                 "    <title>A-Man 도움말</title>\n" +
                 "    <style>\n" +
+                "        kbd {\n" +
+                "            display: inline-block;\n" +
+                "            padding: 2px 6px;\n" +
+                "            font-size: 0.8em;\n" +
+                "            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n" +
+                "            color: #24292e;\n" +
+                "            background: #f6f8fa;\n" +
+                "            border: 1px solid #d1d5da;\n" +
+                "            border-radius: 4px;\n" +
+                "            box-shadow: inset 0 -2px 0 #d1d5da;\n" +
+                "            line-height: 1.4;\n" +
+                "            white-space: nowrap;\n" +
+                "            margin: 0 1px;\n" +
+                "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
+                "        }\n" +
+                "        kbd.asset-kbd-btn {\n" +
+                "            display: inline-flex;\n" +
+                "            align-items: center;\n" +
+                "            justify-content: center;\n" +
+                "            gap: 6px;\n" +
+                "            padding: 3px 8px;\n" +
+                "            font-size: 11px;\n" +
+                "            font-weight: 600;\n" +
+                "            border-radius: 4px;\n" +
+                "            border: 1px solid rgba(0, 0, 0, 0.15);\n" +
+                "            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);\n" +
+                "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n" +
+                "            line-height: 1.2;\n" +
+                "            vertical-align: middle;\n" +
+                "            cursor: default;\n" +
+                "            user-select: none;\n" +
+                "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
+                "        }\n" +
+                "        kbd.asset-kbd-btn .kbd-fa-icon {\n" +
+                "            font-size: 10px;\n" +
+                "            margin-bottom: 0;\n" +
+                "        }\n" +
+                "        kbd.asset-kbd-btn .kbd-text {\n" +
+                "            letter-spacing: 0.5px;\n" +
+                "        }\n" +
+                "        .tabs {\n" +
+                "            margin: 30px 0;\n" +
+                "            border: 1px solid #e2e8f0;\n" +
+                "            border-radius: 8px;\n" +
+                "            overflow: hidden;\n" +
+                "            background: #ffffff;\n" +
+                "        }\n" +
+                "        .tab-header {\n" +
+                "            display: flex;\n" +
+                "            background-color: #f8fafc;\n" +
+                "            border-bottom: 1px solid #e2e8f0;\n" +
+                "        }\n" +
+                "        .tab-btn {\n" +
+                "            flex: 1;\n" +
+                "            padding: 14px 16px;\n" +
+                "            font-size: 14px;\n" +
+                "            font-weight: 600;\n" +
+                "            color: #64748b;\n" +
+                "            background: none;\n" +
+                "            border: none;\n" +
+                "            cursor: pointer;\n" +
+                "            transition: all 0.2s;\n" +
+                "            outline: none;\n" +
+                "            text-align: center;\n" +
+                "            border-bottom: 2px solid transparent;\n" +
+                "        }\n" +
+                "        .tab-btn:hover {\n" +
+                "            color: #0f172a;\n" +
+                "            background-color: #f1f5f9;\n" +
+                "        }\n" +
+                "        .tab-btn.active {\n" +
+                "            color: #4f46e5;\n" +
+                "            background-color: #ffffff;\n" +
+                "            border-bottom: 2px solid #4f46e5;\n" +
+                "        }\n" +
+                "        .tab-content {\n" +
+                "            padding: 24px;\n" +
+                "        }\n" +
+                "        .tab-pane {\n" +
+                "            display: none;\n" +
+                "        }\n" +
+                "        .tab-pane.active {\n" +
+                "            display: block;\n" +
+                "        }\n" +
+                "        .theme-color-box {\n" +
+                "            display: inline-block;\n" +
+                "            width: 14px;\n" +
+                "            height: 14px;\n" +
+                "            border-radius: 3px;\n" +
+                "            vertical-align: middle;\n" +
+                "            margin-right: 6px;\n" +
+                "            border: 1px solid rgba(0,0,0,0.1);\n" +
+                "        }\n" +
                 "        body {\n" +
                 "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n" +
                 "            padding: 30px;\n" +
@@ -1433,6 +1562,7 @@ public class ManualController {
                 TOC_CSS +
                 "    </style>\n" +
                 targetBlankScript +
+                 tabScript +
                 TOC_SCRIPT +
                 "</head>\n" +
                 "<body>\n" +

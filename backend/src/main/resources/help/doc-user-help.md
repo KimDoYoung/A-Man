@@ -101,4 +101,220 @@ A-Man 에디터는 마크다운 문법을 신속하고 정확하게 작성할 �
   ![테이블 예시](./sample-table.png)
 
 ---
+
+## 6. 고급 기능 가이드 (인터랙티브 안내)
+
+<div class="tabs">
+<div class="tab-header">
+<button class="tab-btn active" onclick="switchTab(event, 'tab-editor')">이미지 편집기 가이드</button>
+<button class="tab-btn" onclick="switchTab(event, 'tab-assets')">아이콘 & 색상</button>
+</div>
+<div class="tab-content">
+
+<!-- 탭 1: 이미지 편집기 -->
+<div id="tab-editor" class="tab-pane active">
+<h4>🎨 이미지 편집기 주요 단축키 및 레이어 정렬 가이드</h4>
+<p>A-Man 이미지 에디터는 마크다운 본문에 삽입된 이미지를 클릭하여 직접 그리기, 텍스트 삽입, 화살표 추가 및 도형 오버레이 등의 주석 작업을 수행할 수 있습니다.</p>
+<ul>
+<li><strong>레이어 앞으로 한 단계 조정</strong>: <kbd>Ctrl</kbd> + <kbd>]</kbd></li>
+<li><strong>레이어 뒤로 한 단계 조정</strong>: <kbd>Ctrl</kbd> + <kbd>[</kbd></li>
+<li><strong>레이어 맨 앞으로 가져오기</strong>: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd></li>
+<li><strong>레이어 맨 뒤로 내보내기</strong>: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd></li>
+</ul>
+</div>
+
+<!-- 탭 2: 아이콘 & 색상 통합 탭 -->
+<div id="tab-assets" class="tab-pane">
+
+<h4>🎨 AssetERP 사용 색상 목록</h4>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 25px;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #456EA6; margin-right: 0;"></span>
+    <span>blue :</span><code>456EA6</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('456EA6');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #17A2B8; margin-right: 0;"></span>
+    <span>mint :</span><code>17A2B8</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('17A2B8');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #DD5E5E; margin-right: 0;"></span>
+    <span>red :</span><code>DD5E5E</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('DD5E5E');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #E89646; margin-right: 0;"></span>
+    <span>orange :</span><code>E89646</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('E89646');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #646362; margin-right: 0;"></span>
+    <span>darkGray :</span><code>646362</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('646362');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #6AB6CF; margin-right: 0;"></span>
+    <span>lightBlue :</span><code>6AB6CF</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('6AB6CF');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #2EAC7E; margin-right: 0;"></span>
+    <span>green :</span><code>2EAC7E</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('2EAC7E');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #343A40; margin-right: 0;"></span>
+    <span>dark :</span><code>343A40</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('343A40');" title="Hex 복사"></i>
+  </div>
+</div>
+
+<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+
+<h4>🔍 AssetERP 사용 FontAwesome 아이콘 목록</h4>
+<p style="font-size: 13px; color: #666; margin-top: -10px; margin-bottom: 15px;">
+  💡 복사 아이콘(📋)을 클릭하면 파서가 인식할 수 있는 최적의 문자열이 클립보드에 자동 복사됩니다.<br/>
+  (단순 이름 복사 시 <code>fas fa-</code>가 자동 접두사로 붙으며, <code>far fa-</code>가 필요한 아이콘은 전체 이름이 복사됩니다.)
+</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-search"></i></span>
+    <span>:</span><code>search</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('search');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-plus"></i></span>
+    <span>:</span><code>plus</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('plus');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-user-times"></i></span>
+    <span>:</span><code>user-times</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('user-times');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-envelope"></i></span>
+    <span>:</span><code>envelope</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('envelope');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-calculator"></i></span>
+    <span>:</span><code>calculator</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('calculator');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-check"></i></span>
+    <span>:</span><code>check</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('check');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="far fa-plus-square"></i></span>
+    <span>:</span><code>far fa-plus-square</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('far fa-plus-square');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="far fa-minus-square"></i></span>
+    <span>:</span><code>far fa-minus-square</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('far fa-minus-square');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-bookmark"></i></span>
+    <span>:</span><code>bookmark</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('bookmark');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-minus"></i></span>
+    <span>:</span><code>minus</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('minus');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-trash"></i></span>
+    <span>:</span><code>trash</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('trash');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-ban"></i></span>
+    <span>:</span><code>ban</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('ban');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-exchange-alt"></i></span>
+    <span>:</span><code>exchange-alt</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('exchange-alt');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-upload"></i></span>
+    <span>:</span><code>upload</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('upload');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-download"></i></span>
+    <span>:</span><code>download</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('download');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-eye"></i></span>
+    <span>:</span><code>eye</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('eye');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-arrow-right"></i></span>
+    <span>:</span><code>arrow-right</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('arrow-right');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-users"></i></span>
+    <span>:</span><code>users</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('users');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-print"></i></span>
+    <span>:</span><code>print</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('print');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-folder-plus"></i></span>
+    <span>:</span><code>folder-plus</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('folder-plus');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-undo-alt"></i></span>
+    <span>:</span><code>undo-alt</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('undo-alt');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-edit"></i></span>
+    <span>:</span><code>edit</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('edit');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-bullseye"></i></span>
+    <span>:</span><code>bullseye</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('bullseye');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-arrow-alt-circle-left"></i></span>
+    <span>:</span><code>arrow-alt-circle-left</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('arrow-alt-circle-left');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-cog"></i></span>
+    <span>:</span><code>cog</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('cog');" title="이름 복사"></i>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 25px 0 10px 0;">
+  <a href="./help/icons" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2); transition: background-color 0.2s;">
+    🔍 FontAwesome 전체 아이콘 검색기 열기
+  </a>
+</div>
+
+</div>
+
+</div>
+</div>
+
+---
 *본 도움말 문서는 A-Man 시스템 v[version] 릴리즈에 맞춰 항상 최신 단축키 정보로 갱신됩니다.*

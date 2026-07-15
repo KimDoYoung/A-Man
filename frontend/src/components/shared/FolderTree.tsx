@@ -384,7 +384,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
         } else {
           // 일반 사용자의 경우에는 부모 노드가 비활성화되어 맵에 없는 경우
           // 자식 노드도 최상위(roots)로 유실 노출시키지 않고 제외시킵니다.
-          if (isDocUser) {
+          if (isDocUser || filterText.trim() !== '') {
             if (!roots.some(r => r.id === node.id)) {
               roots.push(node)
             }

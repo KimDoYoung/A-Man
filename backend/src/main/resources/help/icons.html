@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/aman/favicon.png">
+    <title>FontAwesome 5 아이콘 검색기</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        p.subtitle {
+            color: #475569;
+            font-size: 0.95rem;
+        }
+        .search-box {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e1;
+            background-color: #ffffff;
+            color: #0f172a;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-box input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .search-box i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
+            user-select: none;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        .card:active {
+            transform: scale(0.98);
+        }
+        .card i {
+            font-size: 2.2rem;
+            color: #475569;
+            margin-bottom: 12px;
+            display: inline-block;
+            transition: color 0.2s;
+        }
+        .card:hover i {
+            color: #3b82f6;
+        }
+        .card-name {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85rem;
+            color: #334155;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+        }
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+            opacity: 0;
+            z-index: 1000;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .no-results {
+            text-align: center;
+            color: #64748b;
+            font-size: 1.1rem;
+            margin-top: 40px;
+            grid-column: 1 / -1;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1><i class="fas fa-icons"></i> FontAwesome 5 아이콘 검색기</h1>
+        <p class="subtitle">아이콘을 클릭하면 마크다운 백틱에 사용할 명칭이 클립보드에 자동 복사됩니다.</p>
+    </header>
+
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="검색할 아이콘 이름을 입력하세요..." autocomplete="off">
+    </div>
+
+    <div class="grid" id="iconGrid">
+        <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+    </div>
+</div>
+
+<div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastText">복사되었습니다.</span>
+</div>
+
+<script>
+    const icons = [
+        // Actions
+        { name: 'search', class: 'fas fa-search' },
+        { name: 'plus', class: 'fas fa-plus' },
+        { name: 'minus', class: 'fas fa-minus' },
+        { name: 'check', class: 'fas fa-check' },
+        { name: 'times', class: 'fas fa-times' },
+        { name: 'trash', class: 'fas fa-trash' },
+        { name: 'ban', class: 'fas fa-ban' },
+        { name: 'cog', class: 'fas fa-cog' },
+        { name: 'cogs', class: 'fas fa-cogs' },
+        { name: 'undo-alt', class: 'fas fa-undo-alt' },
+        { name: 'redo-alt', class: 'fas fa-redo-alt' },
+        { name: 'sync', class: 'fas fa-sync' },
+        { name: 'upload', class: 'fas fa-upload' },
+        { name: 'download', class: 'fas fa-download' },
+        { name: 'edit', class: 'fas fa-edit' },
+        { name: 'pen', class: 'fas fa-pen' },
+        { name: 'copy', class: 'fas fa-copy' },
+        { name: 'paste', class: 'fas fa-paste' },
+        { name: 'link', class: 'fas fa-link' },
+        { name: 'unlink', class: 'fas fa-unlink' },
+        { name: 'share', class: 'fas fa-share' },
+        { name: 'external-link-alt', class: 'fas fa-external-link-alt' },
+        { name: 'info-circle', class: 'fas fa-info-circle' },
+        { name: 'question-circle', class: 'fas fa-question-circle' },
+        { name: 'exclamation-circle', class: 'fas fa-exclamation-circle' },
+        { name: 'exclamation-triangle', class: 'fas fa-exclamation-triangle' },
+        { name: 'check-circle', class: 'fas fa-check-circle' },
+        { name: 'times-circle', class: 'fas fa-times-circle' },
+        { name: 'lock', class: 'fas fa-lock' },
+        { name: 'unlock', class: 'fas fa-unlock' },
+        { name: 'eye', class: 'fas fa-eye' },
+        { name: 'eye-slash', class: 'fas fa-eye-slash' },
+        { name: 'calendar-alt', class: 'fas fa-calendar-alt' },
+        { name: 'clock', class: 'fas fa-clock' },
+        { name: 'history', class: 'fas fa-history' },
+        { name: 'print', class: 'fas fa-print' },
+        { name: 'book', class: 'fas fa-book' },
+        { name: 'bookmark', class: 'fas fa-bookmark' },
+        { name: 'folder', class: 'fas fa-folder' },
+        { name: 'folder-open', class: 'fas fa-folder-open' },
+        { name: 'folder-plus', class: 'fas fa-folder-plus' },
+        { name: 'file', class: 'fas fa-file' },
+        { name: 'file-alt', class: 'fas fa-file-alt' },
+        { name: 'file-pdf', class: 'fas fa-file-pdf' },
+        { name: 'file-excel', class: 'fas fa-file-excel' },
+        { name: 'file-word', class: 'fas fa-file-word' },
+        { name: 'file-image', class: 'fas fa-file-image' },
+        { name: 'file-archive', class: 'fas fa-file-archive' },
+        { name: 'file-code', class: 'fas fa-file-code' },
+
+        // Regular icons
+        { name: 'far fa-plus-square', class: 'far fa-plus-square' },
+        { name: 'far fa-minus-square', class: 'far fa-minus-square' },
+        { name: 'far fa-check-square', class: 'far fa-check-square' },
+        { name: 'far fa-square', class: 'far fa-square' },
+        { name: 'far fa-circle', class: 'far fa-circle' },
+        { name: 'far fa-dot-circle', class: 'far fa-dot-circle' },
+        { name: 'far fa-bookmark', class: 'far fa-bookmark' },
+        { name: 'far fa-calendar', class: 'far fa-calendar' },
+        { name: 'far fa-clock', class: 'far fa-clock' },
+        { name: 'far fa-comment', class: 'far fa-comment' },
+        { name: 'far fa-envelope', class: 'far fa-envelope' },
+        { name: 'far fa-eye', class: 'far fa-eye' },
+        { name: 'far fa-file', class: 'far fa-file' },
+        { name: 'far fa-folder', class: 'far fa-folder' },
+        { name: 'far fa-heart', class: 'far fa-heart' },
+        { name: 'far fa-paper-plane', class: 'far fa-paper-plane' },
+        { name: 'far fa-star', class: 'far fa-star' },
+        { name: 'far fa-user', class: 'far fa-user' },
+
+        // Users / Communication
+        { name: 'user', class: 'fas fa-user' },
+        { name: 'users', class: 'fas fa-users' },
+        { name: 'user-plus', class: 'fas fa-user-plus' },
+        { name: 'user-minus', class: 'fas fa-user-minus' },
+        { name: 'user-times', class: 'fas fa-user-times' },
+        { name: 'user-cog', class: 'fas fa-user-cog' },
+        { name: 'user-check', class: 'fas fa-user-check' },
+        { name: 'envelope', class: 'fas fa-envelope' },
+        { name: 'envelope-open', class: 'fas fa-envelope-open' },
+        { name: 'phone-alt', class: 'fas fa-phone-alt' },
+        { name: 'mobile-alt', class: 'fas fa-mobile-alt' },
+        { name: 'comments', class: 'fas fa-comments' },
+        { name: 'comment-alt', class: 'fas fa-comment-alt' },
+        { name: 'bell', class: 'fas fa-bell' },
+        { name: 'bell-slash', class: 'fas fa-bell-slash' },
+
+        // Finance / Commerce
+        { name: 'calculator', class: 'fas fa-calculator' },
+        { name: 'database', class: 'fas fa-database' },
+        { name: 'chart-bar', class: 'fas fa-chart-bar' },
+        { name: 'chart-line', class: 'fas fa-chart-line' },
+        { name: 'chart-pie', class: 'fas fa-chart-pie' },
+        { name: 'won-sign', class: 'fas fa-won-sign' },
+        { name: 'dollar-sign', class: 'fas fa-dollar-sign' },
+        { name: 'money-bill-wave', class: 'fas fa-money-bill-wave' },
+        { name: 'credit-card', class: 'fas fa-credit-card' },
+        { name: 'briefcase', class: 'fas fa-briefcase' },
+        { name: 'building', class: 'fas fa-building' },
+        { name: 'industry', class: 'fas fa-industry' },
+        { name: 'percent', class: 'fas fa-percent' },
+        { name: 'tag', class: 'fas fa-tag' },
+        { name: 'wallet', class: 'fas fa-wallet' },
+
+        // Arrows / Navigation
+        { name: 'arrow-up', class: 'fas fa-arrow-up' },
+        { name: 'arrow-down', class: 'fas fa-arrow-down' },
+        { name: 'arrow-left', class: 'fas fa-arrow-left' },
+        { name: 'arrow-right', class: 'fas fa-arrow-right' },
+        { name: 'arrow-circle-up', class: 'fas fa-arrow-circle-up' },
+        { name: 'arrow-circle-down', class: 'fas fa-arrow-circle-down' },
+        { name: 'arrow-circle-left', class: 'fas fa-arrow-circle-left' },
+        { name: 'arrow-circle-right', class: 'fas fa-arrow-circle-right' },
+        { name: 'chevron-up', class: 'fas fa-chevron-up' },
+        { name: 'chevron-down', class: 'fas fa-chevron-down' },
+        { name: 'chevron-left', class: 'fas fa-chevron-left' },
+        { name: 'chevron-right', class: 'fas fa-chevron-right' },
+        { name: 'angle-up', class: 'fas fa-angle-up' },
+        { name: 'angle-down', class: 'fas fa-angle-down' },
+        { name: 'angle-left', class: 'fas fa-angle-left' },
+        { name: 'angle-right', class: 'fas fa-angle-right' },
+        { name: 'angle-double-up', class: 'fas fa-angle-double-up' },
+        { name: 'angle-double-down', class: 'fas fa-angle-double-down' },
+        { name: 'angle-double-left', class: 'fas fa-angle-double-left' },
+        { name: 'angle-double-right', class: 'fas fa-angle-double-right' },
+        { name: 'caret-up', class: 'fas fa-caret-up' },
+        { name: 'caret-down', class: 'fas fa-caret-down' },
+        { name: 'caret-left', class: 'fas fa-caret-left' },
+        { name: 'caret-right', class: 'fas fa-caret-right' },
+        { name: 'exchange-alt', class: 'fas fa-exchange-alt' },
+        { name: 'arrow-alt-circle-left', class: 'fas fa-arrow-alt-circle-left' },
+
+        // Miscellaneous
+        { name: 'home', class: 'fas fa-home' },
+        { name: 'globe', class: 'fas fa-globe' },
+        { name: 'heart', class: 'fas fa-heart' },
+        { name: 'star', class: 'fas fa-star' },
+        { name: 'star-half-alt', class: 'fas fa-star-half-alt' },
+        { name: 'thumbs-up', class: 'fas fa-thumbs-up' },
+        { name: 'thumbs-down', class: 'fas fa-thumbs-down' },
+        { name: 'play', class: 'fas fa-play' },
+        { name: 'pause', class: 'fas fa-pause' },
+        { name: 'stop', class: 'fas fa-stop' },
+        { name: 'wifi', class: 'fas fa-wifi' },
+        { name: 'server', class: 'fas fa-server' },
+        { name: 'desktop', class: 'fas fa-desktop' },
+        { name: 'laptop', class: 'fas fa-laptop' },
+        { name: 'tablet-alt', class: 'fas fa-tablet-alt' },
+        { name: 'keyboard', class: 'fas fa-keyboard' },
+        { name: 'mouse', class: 'fas fa-mouse' },
+        { name: 'headphones', class: 'fas fa-headphones' },
+        { name: 'microphone', class: 'fas fa-microphone' },
+        { name: 'camera', class: 'fas fa-camera' },
+        { name: 'video', class: 'fas fa-video' },
+        { name: 'flag', class: 'fas fa-flag' },
+        { name: 'bullseye', class: 'fas fa-bullseye' }
+    ];
+
+    const grid = document.getElementById('iconGrid');
+    const search = document.getElementById('searchInput');
+    const noResults = document.getElementById('noResults');
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toastText');
+    let toastTimeout;
+
+    function renderIcons(list) {
+        // Clear previous cards (keeping the noResults div)
+        const cards = grid.querySelectorAll('.card');
+        cards.forEach(c => c.remove());
+
+        if (list.length === 0) {
+            noResults.style.display = 'block';
+            return;
+        }
+        noResults.style.display = 'none';
+
+        list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <i class="${item.class}"></i>
+                <div class="card-name">${item.name}</div>
+            `;
+            card.onclick = () => copyText(item.name);
+            grid.appendChild(card);
+        });
+    }
+
+    function copyText(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            toastText.textContent = `"${text}" 복사되었습니다.`;
+            toast.classList.add('show');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        });
+    }
+
+    search.oninput = (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const filtered = icons.filter(item => item.name.toLowerCase().includes(query));
+        renderIcons(filtered);
+    };
+
+    // Initial render
+    renderIcons(icons);
+</script>
+</body>
+</html>
