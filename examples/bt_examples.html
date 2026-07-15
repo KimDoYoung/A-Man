@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>백틱 확장 파싱 테스트 결과물 (bt_examples.html)</title>
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 40px;
+      line-height: 1.6;
+      background-color: #ffffff;
+      color: #333333;
+    }
+    
+    h1 {
+      border-bottom: 2px solid #eaecef;
+      padding-bottom: 10px;
+    }
+
+    ol {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 20px;
+    }
+
+    /* 일반 kbd 스타일 */
+    kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 0.85em;
+      font-family: 'SF Mono', Consolas, monospace;
+      color: #24292e;
+      background: #f6f8fa;
+      border: 1px solid #d1d5da;
+      border-radius: 4px;
+      box-shadow: inset 0 -2px 0 #d1d5da;
+      line-height: 1.4;
+      white-space: nowrap;
+      margin: 0 2px;
+      vertical-align: middle;
+    }
+
+    /* AssetERP 전용 kbd 버튼 스타일 */
+    kbd.asset-kbd-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.2;
+      vertical-align: middle;
+      cursor: default;
+      user-select: none;
+    }
+
+    kbd.asset-kbd-btn .kbd-fa-icon {
+      font-size: 10px;
+    }
+
+    kbd.asset-kbd-btn .kbd-text {
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>백틱 확장 파싱 테스트 결과물 (bt_examples.html)</h1>
+  <p>이 문서는 <code>bt_examples.md</code> 마크다운 소스가 최종적으로 웹 화면에 렌더링되어야 하는 모습을 담은 정적 목표 파일입니다.</p>
+
+  <ol>
+    <li>
+      <strong>풀 포맷 (색상 + 아이콘 + 텍스트)</strong><br>
+      노란색 배경에 편집 아이콘 등록 버튼:<br>
+      <kbd class="asset-kbd-btn" style="background-color: #ffff00; border-color: #e6e600; color: #000000;">
+        <i class="fa fa-edit kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">등록</span>
+      </kbd>
+    </li>
+
+    <li>
+      <strong>색상 생략 (기본 색상 + 아이콘 + 텍스트)</strong><br>
+      기본 배경(회색)에 플러스 아이콘 추가 버튼:<br>
+      <kbd class="asset-kbd-btn" style="background-color: #4D4D4D; border-color: #3b3b3b; color: #ffffff;">
+        <i class="fas fa-plus kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">추가</span>
+      </kbd>
+    </li>
+
+    <li>
+      <strong>아이콘 생략 (색상 + 텍스트)</strong><br>
+      붉은색 배경에 저장 텍스트:<br>
+      <kbd class="asset-kbd-btn" style="background-color: #ff0000; border-color: #e60000; color: #ffffff;">
+        <span class="kbd-text">저장</span>
+      </kbd>
+      <br><br>
+      노란색 배경에 인사정보 가져오기 텍스트:<br>
+      <kbd class="asset-kbd-btn" style="background-color: #ffff00; border-color: #e6e600; color: #000000;">
+        <span class="kbd-text">인사정보 가져오기</span>
+      </kbd>
+    </li>
+
+    <li>
+      <strong>색상, 아이콘 모두 생략 (사전 등록 단어 자동 룩업)</strong><br>
+      기등록 단어 "등록" (초록색 2EAC7E 배경 + edit 아이콘):<br>
+      <kbd class="asset-kbd-btn" style="background-color: #2EAC7E; border-color: #299b71; color: #ffffff;">
+        <i class="fas fa-edit kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">등록</span>
+      </kbd>
+      <br><br>
+      기등록 단어 "삭제" (붉은색 DD5E5E 배경 + trash 아이콘):<br>
+      <kbd class="asset-kbd-btn" style="background-color: #DD5E5E; border-color: #c75454; color: #ffffff;">
+        <i class="fas fa-trash kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">삭제</span>
+      </kbd>
+      <br><br>
+      기등록 단어 "조회" (파란색 456EA6 배경 + search 아이콘):<br>
+      <kbd class="asset-kbd-btn" style="background-color: #456EA6; border-color: #3e6295; color: #ffffff;">
+        <i class="fas fa-search kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">조회</span>
+      </kbd>
+    </li>
+
+    <li>
+      <strong>텍스트 생략 (색상 + 아이콘)</strong><br>
+      기밀 및 배경색만 표현:<br>
+      <kbd class="asset-kbd-btn" style="background-color: #4D4D4D; border-color: #3b3b3b; color: #ffffff; padding: 3px 5px;">
+        <i class="fa fa-plus kbd-fa-icon" aria-hidden="true" style="margin: 0;"></i>
+      </kbd>
+      <br><br>
+      노란색 배경과 편집 아이콘 단독 표현:<br>
+      <kbd class="asset-kbd-btn" style="background-color: #ffff00; border-color: #e6e600; color: #000000; padding: 3px 5px;">
+        <i class="fa fa-edit kbd-fa-icon" aria-hidden="true" style="margin: 0;"></i>
+      </kbd>
+    </li>
+
+    <li>
+      <strong>예외 및 미매칭 형식 처리</strong><br>
+      형식이 맞지 않음 (콜론 1개):<br>
+      <kbd>:abc</kbd>
+      <br><br>
+      미등록 단어 (일반 kbd 스타일):<br>
+      <kbd>임시저장</kbd>
+      <br><br>
+      일반 코드 내의 텍스트가 파싱되면 안 됨:<br>
+      <code>const val = 10;</code>
+    </li>
+
+    <li>
+      <strong>한 줄 내 여러 백틱 혼용</strong><br>
+      먼저 
+      <kbd class="asset-kbd-btn" style="background-color: #456EA6; border-color: #3e6295; color: #ffffff;">
+        <i class="fas fa-search kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">조회</span>
+      </kbd> 
+      버튼을 누르고, 
+      <kbd class="asset-kbd-btn" style="background-color: #2EAC7E; border-color: #299b71; color: #ffffff;">
+        <i class="fas fa-edit kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">등록</span>
+      </kbd>을 한 다음 최종적으로 
+      <kbd class="asset-kbd-btn" style="background-color: #17A2B8; border-color: #148e02; color: #ffffff;">
+        <i class="fas fa-check kbd-fa-icon" aria-hidden="true"></i>
+        <span class="kbd-text">저장</span>
+      </kbd>을 완료하십시오.
+    </li>
+  </ol>
+
+</body>
+</html>
