@@ -2479,7 +2479,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
 
       // 앞으로 보내기 (Ctrl + ]) / 맨 앞으로 보내기 (Ctrl + Shift + ])
-      if ((e.ctrlKey || e.metaKey) && e.key === ']') {
+      const isRightBracket = e.key === ']' || e.key === '}' || e.code === 'BracketRight'
+      if ((e.ctrlKey || e.metaKey) && isRightBracket) {
         if (selectedItemId) {
           e.preventDefault()
           const index = items.findIndex(item => item.id === selectedItemId)
@@ -2505,7 +2506,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
 
       // 뒤로 보내기 (Ctrl + [) / 맨 뒤로 보내기 (Ctrl + Shift + [)
-      if ((e.ctrlKey || e.metaKey) && e.key === '[') {
+      const isLeftBracket = e.key === '[' || e.key === '{' || e.code === 'BracketLeft'
+      if ((e.ctrlKey || e.metaKey) && isLeftBracket) {
         if (selectedItemId) {
           e.preventDefault()
           const index = items.findIndex(item => item.id === selectedItemId)

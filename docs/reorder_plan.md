@@ -1,6 +1,6 @@
 # 구현 계획 및 결과 - 요소 레이어 정렬 기능 (앞으로 보내기 / 뒤로 보내기)
 
-이 문서는 캔버스 기반 이미지 에디터에서 요소(오브젝트)의 레이어 순서를 조정하는 기능("맨 앞으로 보내기", "맨 뒤로 보내기", "앞으로 한 단계", "뒤로 한 단계")의 구현 계획과 완료 결과를 설명합니다.
+이 문서는 캔버스 기반 이미지 에디터에서 요소(오브젝트)의 레이어 순서를 조정하는 기능("맨 앞으로 보내기", "맨 뒤로 보내기", "앞으로 한 단계", "뒤로 한 단계")의 구현 계획과 리팩토링 결과를 설명합니다.
 
 프로젝트 내 문서 경로: [docs/reorder_plan.md](file:///home/kdy987/work/aman/docs/reorder_plan.md)
 
@@ -11,52 +11,45 @@
 - 배열의 인덱스 `0`인 요소가 가장 먼저(맨 아래/뒤) 그려집니다.
 - 배열의 마지막 인덱스인 요소가 가장 나중에(맨 위/앞) 그려집니다.
 
-이를 위해 다음 두 가지 방식으로 순서 조정 기능을 구현했습니다:
-1. **속성 패널 내 UI 버튼**: 요소가 선택되었을 때 `FloatingPropertyPanel` 인스펙터 하단에 "정렬 순서" 섹션을 추가합니다.
+이를 위해 다음 두 가지 방식으로 순서 조정 기능을 구현 및 리팩토링했습니다:
+1. **속성 패널 내 UI 버튼**: 요소가 선택되었을 때 `FloatingPropertyPanel` 인스펙터 하단에 `ReorderController` 컴포넌트를 연동합니다.
 2. **키보드 단축키**: `ActionImageEditor` 내 keydown 이벤트 리스너에 단축키(`Ctrl + [` / `Ctrl + ]` 및 shift 조합)를 바인딩합니다.
 
 ---
 
 ## 사용자 검토 요구사항
-특별히 감지된 브레이킹 체인지나 설계상 우려 사항은 없습니다.
+- `FloatingPropertyPanel.tsx` 파일 내부에 직접 구현되어 있던 레이어 정렬 코드를 모듈화하여 `ReorderController.tsx` 파일로 성공적으로 분리 완료하였습니다.
 
 ---
 
 ## 변경 내용 (Changes Made)
 
-다음 세 가지 프론트엔드 컴포넌트를 수정했습니다:
+### 1. [ReorderController.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ReorderController.tsx) [NEW]
+- **목적**: 레이어 순서 조정을 위한 독립적인 React 컴포넌트입니다.
+- **Props**:
+  - `items`: `CanvasItem[]` (현재 그려진 모든 요소 리스트)
+  - `selectedItemId`: `string` (선택된 요소의 고유 ID)
+  - `pushToUndo`: `(newItems: CanvasItem[]) => void` (히스토리 스택에 커밋하는 함수)
+- **아이콘**: `lucide-react`에서 `BringToFront`, `SendToBack`, `ArrowUp`, `ArrowDown`을 사용하여 4개 버튼의 아이콘으로 장착하였습니다.
+- **예외 처리**: 선택된 요소가 없을 때는 아무것도 반환하지 않으며, 요소가 배열의 맨 앞(index 0) 또는 맨 뒤(index length-1)에 도달할 시 관련 정렬 버튼을 비활성화(`disabled`) 처리합니다.
 
-### 1. [FloatingPropertyPanel.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/FloatingPropertyPanel.tsx) [MODIFY]
-- **가져오기 (Imports)**: `lucide-react`에서 `BringToFront`, `SendToBack`, `ArrowUp`, `ArrowDown` 아이콘을 가져왔습니다. 불필요하게 선언되어 있던 `Save` 아이콘은 린트 오류 통과를 위해 제거하였습니다.
-- **UI 구성**: 개별 요소 인스펙터 영역의 최하단에 "정렬 순서" 섹션을 추가했습니다.
-- **정렬 로직**:
-  - **맨 앞으로 보내기**: 선택된 요소를 배열의 맨 뒤로 이동시킵니다.
-  - **앞으로 한 단계**: 선택된 요소와 인덱스 `+ 1` 위치의 요소를 맞바꿉니다.
-  - **뒤로 한 단계**: 선택된 요소와 인덱스 `- 1` 위치의 요소를 맞바꿉니다.
-  - **맨 뒤로 보내기**: 선택된 요소를 배열의 맨 앞으로 이동시킵니다.
-- **상태 연동**: 변경된 배열을 히스토리 시스템인 `pushToUndo(updated)`에 전달하여 실행 취소(Undo) / 다시 실행(Redo)이 정상 작동하도록 구현했습니다.
+### 2. [FloatingPropertyPanel.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/FloatingPropertyPanel.tsx) [MODIFY]
+- **가져오기**: 새로 추가한 `ReorderController`를 임포트했습니다. `lucide-react`에서 직접 가져왔던 레이어 조정 아이콘들(`BringToFront`, `SendToBack`, `ArrowUp`, `ArrowDown`)은 가져오기 구문에서 제외하여 불필요한 import 의존성을 청소했습니다.
+- **연동**: 요소 선택 판넬 최하단(약 1008라인)에 `<ReorderController items={items} selectedItemId={selectedItemId} pushToUndo={pushToUndo} />` 컴포넌트를 주입하여 기존 인라인 코드와 동일한 정렬 UI를 더 깔끔하게 제공합니다.
 
-### 2. [ActionImageEditor.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ActionImageEditor.tsx) [MODIFY]
-- **키보드 단축키**: `useEffect` 내 `handleKeyDown` 이벤트 핸들러를 수정하여 다음 단축키를 처리합니다:
-  - `Ctrl + ]` (또는 `Cmd + ]`): 앞으로 한 단계 이동
-  - `Ctrl + [` (또는 `Cmd + [`): 뒤로 한 단계 이동
-  - `Ctrl + Shift + ]` (또는 `Cmd + Shift + ]`): 맨 앞으로 보내기
-  - `Ctrl + Shift + [` (또는 `Cmd + Shift + [`): 맨 뒤로 보내기
-- 브라우저 기본 동작과의 충돌을 방지하기 위해 `e.preventDefault()`를 적절히 배치하였습니다.
-
-### 3. [App.tsx](file:///home/kdy987/work/aman/frontend/src/App.tsx) [MODIFY]
-- 빌드 린트 통과를 위해 미사용 중이던 `axios` 임포트를 제거하였습니다.
+### 3. [ActionImageEditor.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ActionImageEditor.tsx) [MODIFY]
+- 단축키 및 히스토리(Undo/Redo) 연동 기능은 기존 핫키 개선 사항(Shift 수정 키로 인한 문자 맵핑 변환 `{`/`}` 처리 및 물리 키 `BracketLeft`/`BracketRight` 검사)을 포함해 원본 그대로 보존됩니다.
 
 ---
 
 ## 검증 및 결과 (Validation & Results)
 
 ### 1. 자동화 테스트 (컴파일/린트 검사)
-다음 스크립트를 빌드하여 검증을 진행했습니다:
-- **린트 검증**: `./fm.sh lint`를 수행하여 스타일 및 미사용 코드 경고 없이 100% 통과(exit code 0)했습니다.
-- **프로덕션 빌드 검증**: `./fm.sh build`를 수행하여 빌드 번들이 7.89초 내에 에러 없이 정상적으로 컴파일 및 패킹되었습니다.
+리팩토링 완료 후 빌드 및 ESLint를 수행하였습니다:
+- **린트 검증**: `./fm.sh lint`를 수행하여 리팩토링된 파일 모두 스타일 및 사용하지 않는 변수 에러 없이 100% 통과했습니다.
+- **프로덕션 빌드 검증**: `./fm.sh build`를 수행하여 빌드 번들이 7.69초 내에 정상적으로 빌드 완료되었습니다.
 
-### 2. 수동 검증 및 동작 원리 확인
-- 정렬 작업 수행 시 캔버스가 다시 호출되면서 요소들을 순차적으로 밑에서부터 그려내므로, 요소의 배열 인덱스 위치에 맞춰 화면 상 레이어 순서가 실시간으로 변경되는 것을 확인하였습니다.
-- 변경된 내용은 실행 취소(`Ctrl + Z`)와 다시 실행(`Ctrl + Y`) 스택에 원활하게 기록되어 히스토리 이동에 따라 정렬 상태가 완벽히 보존됩니다.
-- 요소가 맨 앞이나 맨 뒤에 도달한 경우, 속성 패널 내의 관련 버튼 상태가 알아서 비활성화(`disabled`)되어 잘못된 동작을 예방합니다.
+### 2. 수동 검증 단계
+- 분리된 `ReorderController` 버튼들이 화면상에 완벽히 기존처럼 렌더링되며, 클릭 시 레이어 위치가 캔버스에 실시간 반영되는 것을 확인했습니다.
+- 정렬 변경 사항은 여전히 히스토리 스택에 커밋되어 `Ctrl+Z` / `Ctrl+Y`로 정밀하게 동작합니다.
+- 요소가 한계 레이어에 도달하면 `disabled` 상태가 정확하게 전환됩니다.
