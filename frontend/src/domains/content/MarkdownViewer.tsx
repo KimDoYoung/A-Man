@@ -9,6 +9,7 @@ import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
 
 import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
+import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
 
 const extractText = (node: any): string => {
   if (!node) return ''
@@ -291,14 +292,7 @@ const MarkdownViewer: React.FC = () => {
           code: ({ className, children, ...props }) => {
             const isInline = !className
             if (isInline) {
-              return (
-                <code
-                  className="bg-slate-100 dark:bg-slate-950 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200 dark:border-slate-850 select-none"
-                  {...props}
-                >
-                  {children}
-                </code>
-              )
+              return <AssetKbdRenderer>{children}</AssetKbdRenderer>
             }
             return (
               <code className={`${className} select-none`} {...props}>

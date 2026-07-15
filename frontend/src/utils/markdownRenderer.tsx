@@ -5,6 +5,8 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
 
+import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
+
 export const parseInlineStyles = (text: string): React.ReactNode => {
   // 하위 호환성을 위해 남겨두되, 이제 사용되지 않습니다.
   return text;
@@ -95,11 +97,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
         code: ({ className, children, ...props }) => {
           const isInline = !className;
           if (isInline) {
-            return (
-              <code className="bg-slate-100 text-pink-600 px-1.5 py-0.5 rounded font-mono text-[11px] border border-slate-200 select-none" {...props}>
-                {children}
-              </code>
-            );
+            return <AssetKbdRenderer>{children}</AssetKbdRenderer>;
           }
           return (
             <code className={`${className} select-none`} {...props}>
