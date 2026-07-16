@@ -23,6 +23,13 @@
    * 텍스트를 드래그하거나 슬라이더를 통해 각도를 맞출 때 0도로 초기화하거나 임의의 특정 수치(예: `45°`)를 직접 타이핑하여 입력하기를 원할 수 있습니다.
    * **좌측 초기화 아이콘**: 슬라이더의 라벨 옆에 회전 화살표 모양의 초기화 아이콘(`RotateCcw`)을 배치하여, 클릭 시 기본값(0도)으로 즉시 리셋되도록 합니다.
    * **우측 수동 입력 토글 및 슬라이더 교체**: 수치 표시 영역 옆에 편집 아이콘(`Edit3`)을 배치하여, 클릭 시 슬라이더 대신 숫자 입력창(`input[type=number]`) 혹은 선택 상자(`select`)가 표시되도록 교체 렌더링을 지원합니다.
+5. **잘라내기(Crop) 시 이전 상태 보호 및 실행취소(Undo) 미지원 보완**:
+   * 사용자가 열심히 편집 중일 때 임시 저장(Ctrl+S) 없이 잘라내기를 실행할 경우, 캔버스가 잘라낸 크기와 이미지로 즉시 변경되어 이전 상태의 원본 편집물을 유실할 위험이 있습니다.
+   * 이를 개선하기 위해 **잘라내기 실행 직전, 현재 상태를 로컬 Undo 스택에 안전하게 보관**하고, **수정사항이 존재할 때 백엔드 임시저장(`handleSaveToHistory`)을 동기적으로 강제 유도**하여 이중으로 작업 유실을 원천 차단합니다.
+   * **실행 취소(Undo) 기능의 배경 이미지 동기화**: `undoStack` 및 `redoStack`이 도형(`items`) 정보 뿐만 아니라 당시의 **배경 이미지 정보(`bgImageSrc`)**도 스냅샷 형태로 저장하도록 자료구조를 고도화하여, 잘라내기 작업 이후 `Ctrl+Z` 클릭 시 잘라내기 이전의 uncropped 원본 이미지 상태로 완벽히 복원되도록 설계합니다.
+6. **잘라내기 영역 선택 시 러버밴드(선택 상자) 내부 투명화**:
+   * 잘라낼 범위를 드래그할 때 선택 상자 내부가 불투명하게 표현(또는 기존에 그린 요소가 지워지고 배경만 복구되어 흰색/부자연스러운 모습으로 노출)되어 시각적으로 불편합니다.
+   * 이를 투명하게(`transparent`) 처리하기 위해, 잘라내기 영역을 `clearRect` 후 다시 그리는 대신 **선택된 영역의 상/하/좌/우 4방향에만 반투명 검은색 레이어(Dim)를 채워 넣는 방식**으로 개선하여 선택된 안쪽 영역은 기존 배경과 그린 요소들이 원본 그대로 투명하게 노출되도록 렌더링을 교체합니다.
 
 ---
 
@@ -31,125 +38,68 @@
 ### 2.1 타입(Type) 및 기본값 추가
 
 #### [MODIFY] [image_editor_types.ts](file:///home/kdy987/work/aman/frontend/src/components/imageditor/image_editor_types.ts)
-```diff
- export interface CanvasItem {
-   id: string
-   type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'image' | 'block-arrow-stamp'
-   x: number
-   y: number
-   width?: number
-   height?: number
-   text?: string
-   imageSrc?: string
-   style: {
-     borderColor?: string
-     borderWidth?: number
-     backgroundColor?: string
-     textColor?: string
-     fontSize?: number
-     lineStyle?: 'solid' | 'dashed'
-     opacity?: number
-     borderRadius?: number
-     midX?: number
-     hasBorder?: boolean
-     hasCaption?: boolean
-     fontStyle?: 'normal' | 'italic'
-     textDecoration?: 'none' | 'underline' | 'line-through'
-     stampDirection?: string
-+    rotation?: number
-   }
- }
-```
-
-#### [MODIFY] [image_items_defaults.ts](file:///home/kdy987/work/aman/frontend/src/components/imageditor/image_items_defaults.ts)
-```diff
-   // 4. 일반 텍스트 (text) 전용 속성
-   textTextColor: '#0f172a',
-   textFontSize: 16,
-   textBgColor: 'transparent',
-   textFontStyle: 'normal' as 'normal' | 'italic',
-   textTextDecoration: 'none' as 'none' | 'underline' | 'line-through',
-+  textRotation: 0,
-```
+- `CanvasItem.style.rotation` 속성 추가.
 
 ---
 
 ### 2.2 슬라이더 컴포넌트 개선 (`RangeSlider.tsx`)
 
-수동 입력(텍스트 상자 혹은 콤보 드롭다운 select) 기능을 유연하고 확장 가능하도록 Props 설계합니다.
-
 #### [MODIFY] [RangeSlider.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/RangeSlider.tsx)
-- Props에 다음 속성들을 새로 추가합니다:
-  * `defaultValue?: number`: 지정 시 라벨 옆에 `RotateCcw` 초기화 아이콘 노출 및 리셋 기능 제공.
-  * `manual_input_enable?: boolean`: 지정 시 우측 상단 수치 옆에 `Edit3` 수동 입력 연필 아이콘 노출.
-  * `manual_input_type?: 'number' | 'select'`: 수동 입력 UI 유형 결정 (기본값 `'number'`).
-  * `manual_input_options?: number[]`: `'select'` 타입일 때 선택할 수 있는 드롭다운 옵션 배열.
+- 수동 입력 및 초기화 버튼 UI 구성 및 레이아웃 한 줄 배치로 재배치.
+
+---
+
+### 2.3 실행취소(Undo) 스택 구조 고도화 (`ActionImageEditor.tsx`)
+
+#### [MODIFY] [ActionImageEditor.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ActionImageEditor.tsx)
+- `undoStack` 및 `redoStack`을 `{ items: CanvasItem[]; bgImageSrc: string }[]` 타입으로 선언하여 각 시점의 배경 이미지 URL(Base64)을 보존합니다.
+- `pushToUndo`, `handleUndo`, `handleRedo` 함수에서 `bgImageSrc`가 달라졌을 때 이미지를 로드하여 캔버스 크기를 재설정하고 반영하는 로직을 결합합니다.
+- 잘라내기 수행 함수(`cropImage`)의 완료 콜백 시점에 잘라내기 이전의 items 및 bgImageSrc를 수동으로 `undoStack`에 먼저 푸시하여 Ctrl+Z 복원성을 확보합니다.
 
 ```typescript
-import React, { useState } from 'react'
-import { RotateCcw, Edit3 } from 'lucide-react'
+// 변경된 스택 선언
+const [undoStack, setUndoStack] = useState<{ items: CanvasItem[]; bgImageSrc: string }[]>([])
+const [redoStack, setRedoStack] = useState<{ items: CanvasItem[]; bgImageSrc: string }[]>([])
 
-interface RangeSliderProps {
-  label: string
-  value: number
-  min: number
-  max: number
-  onChangeValue: (val: number) => void
-  unit?: string
-  button_inc_dev_enable?: boolean
-  button_inc_dev_step?: number
-  defaultValue?: number
-  manual_input_enable?: boolean       // 수동 입력 사용 여부 (기본값 false)
-  manual_input_type?: 'number' | 'select' // 수동 입력 UI 타입 (number 또는 select)
-  manual_input_options?: number[]     // select 타입일 때의 선택 옵션
+// pushToUndo 구현체 수정
+const pushToUndo = (newItems: CanvasItem[], baseItems: CanvasItem[] = items) => {
+  setUndoStack((prev) => [...prev, { items: baseItems, bgImageSrc: bgImageSrc }])
+  setRedoStack([])
+  setItems(newItems)
 }
 ```
 
-- 렌더링 구현:
-  * `manual_input_enable`이 활성화되어 있고, 사용자가 연필 아이콘을 클릭하여 수동 입력 모드로 진입하면 슬라이더 대신 입력란을 노출합니다.
-  * `manual_input_type === 'number'`인 경우 `<input type="number" ... />`를 띄워 직접 타이핑을 받고, `onBlur` 및 `Enter` 시 값을 클램핑하여 확정합니다.
-  * `manual_input_type === 'select'`인 경우 `<select ... />` 드롭다운을 띄워 `manual_input_options`에 포함된 목록 중 하나를 선택하도록 지원합니다.
-
 ---
 
-### 2.3 속성 설정 패널 구성 (`FloatingPropertyPanel.tsx`)
-
-#### [MODIFY] [FloatingPropertyPanel.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/FloatingPropertyPanel.tsx)
-- 회전 각도 슬라이더 렌더링 영역(선택 인스펙터 및 글로벌 설정)에 `defaultValue={0}` 및 `manual_input_enable={true}`, `manual_input_type="number"` 속성을 전달합니다.
-```diff
-                   {/* 회전 각도 */}
-                   <RangeSlider
-                     label="회전 각도"
-                     value={selectedItem.style.rotation !== undefined ? selectedItem.style.rotation : 0}
-                     min={-180}
-                     max={180}
-                     unit="°"
-                     button_inc_dev_enable={true}
-                     button_inc_dev_step={5}
-+                    defaultValue={0}
-+                    manual_input_enable={true}
-+                    manual_input_type="number"
-                     onChangeValue={(val) => { ... }}
-                   />
-```
-
----
-
-### 2.4 텍스트 입력창 수정 (`TextItemInput.tsx`)
-
-#### [MODIFY] [TextItemInput.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/TextItemInput.tsx)
-- Props 타입에 `rotation` 추가 및 CSS `transform: scale(${zoom}) rotate(${rotation}deg)` 적용.
-
----
-
-### 2.5 에디터 캔버스 렌더링 및 드래그 동작 (`ActionImageEditor.tsx`)
+### 2.4 잘라내기 러버밴드 렌더링 투명화 (`ActionImageEditor.tsx`)
 
 #### [MODIFY] [ActionImageEditor.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ActionImageEditor.tsx)
-- `textRotation` 상태 관리 및 `lastSavedState`, `isDirty`, `buildStyleConfig`, `applyStyleConfig` 연동.
-- 멀티라인 바운딩 박스 계산을 위한 `getTextBounds` 헬퍼 적용.
-- 캔버스 원점 이동(translate) 후 텍스트 그리기 및 다중 행 분할 렌더링.
-- 로컬 스페이스 좌표 역회전을 통한 클릭/더블클릭 감지 및 마우스 드래그 회전/Shift 15도 스냅 처리.
-- 텍스트 생성 좌표의 zoom 보정.
+- `activeTool === 'crop'` 일 때 캔버스 그리기(`ctx`) 부분을 수정하여, 선택 영역의 바깥쪽 4개 외곽 면에 사각형(`fillRect`) 반투명 어두운 마스크를 그리고 선택 영역 내부는 지우거나 덮어쓰지 않고 투명하게 보존합니다.
+```typescript
+      } else if (activeTool === 'crop') {
+        const sX = Math.min(dragStart.x, dragCurrent.x)
+        const sY = Math.min(dragStart.y, dragCurrent.y)
+        const sW = Math.abs(dragCurrent.x - dragStart.x)
+        const sH = Math.abs(dragCurrent.y - dragStart.y)
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)' // 반투명 딤 처리
+
+        // 1. 위쪽
+        ctx.fillRect(0, 0, canvas.width, sY)
+        // 2. 아래쪽
+        ctx.fillRect(0, sY + sH, canvas.width, canvas.height - (sY + sH))
+        // 3. 왼쪽
+        ctx.fillRect(0, sY, sX, sH)
+        // 4. 오른쪽
+        ctx.fillRect(sX + sW, sY, canvas.width - (sX + sW), sH)
+
+        // 선택 영역 점선 테두리 그리기
+        ctx.strokeStyle = '#6366f1'
+        ctx.lineWidth = 1.5
+        ctx.setLineDash([4, 4])
+        ctx.strokeRect(sX, sY, sW, sH)
+      }
+```
 
 ---
 
@@ -162,25 +112,9 @@ npm run build
 ```
 
 ### 3.2 수동 기능 테스트 (사용자 직접 확인 시나리오)
-1. 우측 속성 창의 "회전 각도" 슬라이더 영역에서 라벨("회전 각도") 옆의 **동그란 화살표 초기화 아이콘(↺)**을 클릭했을 때, 각도가 `0°`로 초기화되는지 점검합니다.
-2. 각도 표시 영역 우측의 **연필 모양 편집 아이콘(✏️)**을 클릭했을 때, 아래의 슬라이더 영역이 사라지고 **숫자 입력란**이 채워져 나타나는지 확인합니다.
-3. 숫자 입력란에 `45`를 입력하고 엔터(Enter) 키를 누르거나 확인 버튼을 클릭 시, 텍스트가 정확히 `45°`로 기울어지며 슬라이더 모드로 돌아가는지 확인합니다.
-
-
-```tsx
-        <button
-          type="button"
-          onClick={handleConfirm}
-          className="text-xs px-2 py-0.5 bg-gray-300 hover:bg-indigo-500 text-white rounded cursor-pointer font-bold h-6 flex items-center justify-center transition-colors"
-        >
-          확인
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={handleCancel}
-        className="text-xs px-2 py-0.5 bg-gray-300  hover:bg-gray-500  text-white  rounded cursor-pointer font-bold h-6 flex items-center justify-center transition-colors"
-      >
-        취소
-      </button>
-```          
+1. 텍스트나 사각형 요소를 적절히 그려넣어 임시 편집을 진행합니다.
+2. `잘라내기(Crop)` 모드로 변경한 뒤 이미지의 일부 영역을 드래그하여 잘라냅니다.
+3. **잘라내기 드래그 도중**, 선택 상자 내부는 어두워지지 않고 원본 캔버스 상태(이미지 및 그 위에 그려진 강조 상자, 텍스트 등)가 **지워짐 없이 투명하고 선명하게 보이는지** 점검합니다.
+4. 잘라내기 완료 후, 이미지 편집 보관함(좌측 이력)에 잘라내기 직전의 온전한 uncropped 상태가 자동으로 저장되었는지 확인합니다.
+5. **실행취소(Ctrl+Z)**를 누르거나 상단 Undo 버튼을 클릭했을 때, 잘라내기가 취소되면서 **원본 사이즈의 배경 이미지와 기존에 그렸던 모든 요소들이 이전 위치로 완벽하게 되돌아오는지** 확인합니다.
+6. **다시실행(Ctrl+Y)**을 누르거나 Redo 버튼을 클릭했을 때, 다시 잘라내기한 영역으로 갱신되는지 최종 확인합니다.

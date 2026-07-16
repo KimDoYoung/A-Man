@@ -557,8 +557,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
 
   // Undo / Redo 작업 스택
-  const [undoStack, setUndoStack] = useState<CanvasItem[][]>([])
-  const [redoStack, setRedoStack] = useState<CanvasItem[][]>([])
+  const [undoStack, setUndoStack] = useState<{ items: CanvasItem[]; bgImageSrc: string }[]>([])
+  const [redoStack, setRedoStack] = useState<{ items: CanvasItem[]; bgImageSrc: string }[]>([])
 
 
 
@@ -692,7 +692,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // 캔버스 변경 히스토리 푸시 (Undo용)
   const pushToUndo = (newItems: CanvasItem[], baseItems: CanvasItem[] = items) => {
-    setUndoStack((prev) => [...prev, baseItems])
+    setUndoStack((prev) => [...prev, { items: baseItems, bgImageSrc: bgImageSrc }])
     setRedoStack([]) // 새로운 액션이 생기면 redo 스택 초기화
     setItems(newItems)
   }
@@ -702,8 +702,23 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (undoStack.length === 0) return
     const prev = undoStack[undoStack.length - 1]
     setUndoStack((old) => old.slice(0, -1))
-    setRedoStack((old) => [...old, items])
-    setItems(prev)
+    setRedoStack((old) => [...old, { items: items, bgImageSrc: bgImageSrc }])
+    setItems(prev.items)
+    
+    if (prev.bgImageSrc !== bgImageSrc) {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = canvasRef.current
+        if (canvas) {
+          canvas.width = img.width
+          canvas.height = img.height + (hasCaption ? captionHeight : 0)
+        }
+        setBgImage(img)
+        setBgImageSrc(prev.bgImageSrc)
+      }
+      img.src = prev.bgImageSrc
+    }
+    
     setSelectedItemId(null)
   }
 
@@ -712,8 +727,23 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (redoStack.length === 0) return
     const next = redoStack[redoStack.length - 1]
     setRedoStack((old) => old.slice(0, -1))
-    setUndoStack((old) => [...old, items])
-    setItems(next)
+    setUndoStack((old) => [...old, { items: items, bgImageSrc: bgImageSrc }])
+    setItems(next.items)
+    
+    if (next.bgImageSrc !== bgImageSrc) {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = canvasRef.current
+        if (canvas) {
+          canvas.width = img.width
+          canvas.height = img.height + (hasCaption ? captionHeight : 0)
+        }
+        setBgImage(img)
+        setBgImageSrc(next.bgImageSrc)
+      }
+      img.src = next.bgImageSrc
+    }
+    
     setSelectedItemId(null)
   }
 
@@ -1197,25 +1227,27 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           arrowHeadSize
         )
       } else if (activeTool === 'crop') {
+        const sX = Math.min(dragStart.x, dragCurrent.x)
+        const sY = Math.min(dragStart.y, dragCurrent.y)
+        const sW = Math.abs(dragCurrent.x - dragStart.x)
+        const sH = Math.abs(dragCurrent.y - dragStart.y)
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)' // 반투명 어두운 마스크
+
+        // 1. 위쪽 영역
+        ctx.fillRect(0, 0, canvas.width, sY)
+        // 2. 아래쪽 영역
+        ctx.fillRect(0, sY + sH, canvas.width, canvas.height - (sY + sH))
+        // 3. 왼쪽 영역
+        ctx.fillRect(0, sY, sX, sH)
+        // 4. 오른쪽 영역
+        ctx.fillRect(sX + sW, sY, canvas.width - (sX + sW), sH)
+
+        // 선택 영역 테두리 그리기
         ctx.strokeStyle = '#6366f1'
         ctx.lineWidth = 1.5
         ctx.setLineDash([4, 4])
-        // 반투명 딤 처리
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-        // 선택 영역 클리어
-        ctx.clearRect(dragStart.x, dragStart.y, dragCurrent.x - dragStart.x, dragCurrent.y - dragStart.y)
-        // 선택 영역의 배경 이미지만 다시 그리기
-        if (bgImage) {
-          const sX = Math.min(dragStart.x, dragCurrent.x)
-          const sY = Math.min(dragStart.y, dragCurrent.y)
-          const sW = Math.abs(dragCurrent.x - dragStart.x)
-          const sH = Math.abs(dragCurrent.y - dragStart.y)
-          if (sW > 0 && sH > 0) {
-            ctx.drawImage(bgImage, sX, sY, sW, sH, sX, sY, sW, sH)
-          }
-        }
-        ctx.strokeRect(dragStart.x, dragStart.y, dragCurrent.x - dragStart.x, dragCurrent.y - dragStart.y)
+        ctx.strokeRect(sX, sY, sW, sH)
       }
       ctx.restore()
     }
@@ -2399,6 +2431,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     tempCtx.drawImage(bgImage, cX, cY, cW, cH, 0, 0, cW, cH)
 
+    const croppedDataUrl = tempCanvas.toDataURL('image/png')
     const croppedImg = new Image()
     croppedImg.onload = () => {
       canvas.width = cW
@@ -2442,12 +2475,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           return true
         })
 
+      // 크롭 직전 상태(uncropped bgImageSrc & items)를 undoStack에 보관
+      setUndoStack((prev) => [...prev, { items: items, bgImageSrc: bgImageSrc }])
+      setRedoStack([])
+      setItems(updatedItems)
       setBgImage(croppedImg)
-      setBgImageSrc(tempCanvas.toDataURL('image/png'))
-      pushToUndo(updatedItems)
+      setBgImageSrc(croppedDataUrl)
       setSelectedItemId(null)
     }
-    croppedImg.src = tempCanvas.toDataURL('image/png')
+    croppedImg.src = croppedDataUrl
     setActiveTool('pointer')
   }
 
