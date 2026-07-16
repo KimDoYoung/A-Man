@@ -55,10 +55,14 @@ export const SYSTEM_ITEM_DEFAULTS = {
 // 아이템별 스타일 속성 25필드 shape (SYSTEM_ITEM_DEFAULTS와 동일)
 export type StyleConfig = typeof SYSTEM_ITEM_DEFAULTS
 
-// StyleConfig + 캔버스 테두리/캡션 6필드 (작업(Work) 저장/복원 시 사용하는 확장 shape)
+// StyleConfig + 캔버스 테두리/캡션/바탕확장 필드 (작업(Work) 저장/복원 시 사용하는 확장 shape)
 export type WorkStyleConfig = StyleConfig & {
   hasCaption: boolean
   captionText: string
+  canvasExpandBottom: number
+  canvasExpandRight: number
+  canvasExpandTop: number
+  canvasExpandLeft: number
 }
 
 // FloatingPropertyPanel 색상/이모지 팔레트 (인스펙터/글로벌 탭 공용)

@@ -374,6 +374,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
+  const [canvasExpandBottom, setCanvasExpandBottom] = useState<number>(0)
+  const [canvasExpandRight, setCanvasExpandRight] = useState<number>(0)
+  const [canvasExpandTop, setCanvasExpandTop] = useState<number>(0)
+  const [canvasExpandLeft, setCanvasExpandLeft] = useState<number>(0)
+  // 바탕 확장 툴바에서 선택된 방향 (라디오 선택 + 공용 +100/-100 버튼용)
+  const [expandDirection, setExpandDirection] = useState<'top' | 'bottom' | 'left' | 'right'>('bottom')
   const [zoom, setZoom] = useState<number>(1.0)
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
@@ -447,6 +453,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     title: string
     bgImageSrc: string
     items: CanvasItem[]
+    canvasExpandBottom: number
+    canvasExpandRight: number
+    canvasExpandTop: number
+    canvasExpandLeft: number
     hasBorder: boolean
     borderColor: string
     borderWidth: number
@@ -488,6 +498,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     title: '',
     bgImageSrc: '',
     items: [],
+    canvasExpandBottom: 0,
+    canvasExpandRight: 0,
+    canvasExpandTop: 0,
+    canvasExpandLeft: 0,
     hasBorder: false,
     borderColor: '#cbd5e1',
     borderWidth: 2,
@@ -557,8 +571,22 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
 
   // Undo / Redo 작업 스택
-  const [undoStack, setUndoStack] = useState<{ items: CanvasItem[]; bgImageSrc: string }[]>([])
-  const [redoStack, setRedoStack] = useState<{ items: CanvasItem[]; bgImageSrc: string }[]>([])
+  const [undoStack, setUndoStack] = useState<{
+    items: CanvasItem[]
+    bgImageSrc: string
+    canvasExpandBottom?: number
+    canvasExpandRight?: number
+    canvasExpandTop?: number
+    canvasExpandLeft?: number
+  }[]>([])
+  const [redoStack, setRedoStack] = useState<{
+    items: CanvasItem[]
+    bgImageSrc: string
+    canvasExpandBottom?: number
+    canvasExpandRight?: number
+    canvasExpandTop?: number
+    canvasExpandLeft?: number
+  }[]>([])
 
 
 
@@ -618,6 +646,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     editorTitle.trim() !== lastSavedState.title.trim() ||
     bgImageSrc !== lastSavedState.bgImageSrc ||
     JSON.stringify(items) !== JSON.stringify(lastSavedState.items) ||
+    canvasExpandBottom !== lastSavedState.canvasExpandBottom ||
+    canvasExpandRight !== lastSavedState.canvasExpandRight ||
+    canvasExpandTop !== lastSavedState.canvasExpandTop ||
+    canvasExpandLeft !== lastSavedState.canvasExpandLeft ||
     hasBorder !== lastSavedState.hasBorder ||
     borderColor !== lastSavedState.borderColor ||
     borderWidth !== lastSavedState.borderWidth ||
@@ -692,7 +724,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // 캔버스 변경 히스토리 푸시 (Undo용)
   const pushToUndo = (newItems: CanvasItem[], baseItems: CanvasItem[] = items) => {
-    setUndoStack((prev) => [...prev, { items: baseItems, bgImageSrc: bgImageSrc }])
+    setUndoStack((prev) => [...prev, { 
+      items: baseItems, 
+      bgImageSrc: bgImageSrc,
+      canvasExpandBottom: canvasExpandBottom,
+      canvasExpandRight: canvasExpandRight,
+      canvasExpandTop: canvasExpandTop,
+      canvasExpandLeft: canvasExpandLeft
+    }])
     setRedoStack([]) // 새로운 액션이 생기면 redo 스택 초기화
     setItems(newItems)
   }
@@ -702,16 +741,27 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (undoStack.length === 0) return
     const prev = undoStack[undoStack.length - 1]
     setUndoStack((old) => old.slice(0, -1))
-    setRedoStack((old) => [...old, { items: items, bgImageSrc: bgImageSrc }])
+    setRedoStack((old) => [...old, { 
+      items: items, 
+      bgImageSrc: bgImageSrc,
+      canvasExpandBottom: canvasExpandBottom,
+      canvasExpandRight: canvasExpandRight,
+      canvasExpandTop: canvasExpandTop,
+      canvasExpandLeft: canvasExpandLeft
+    }])
     setItems(prev.items)
+    setCanvasExpandBottom(prev.canvasExpandBottom ?? 0)
+    setCanvasExpandRight(prev.canvasExpandRight ?? 0)
+    setCanvasExpandTop(prev.canvasExpandTop ?? 0)
+    setCanvasExpandLeft(prev.canvasExpandLeft ?? 0)
     
     if (prev.bgImageSrc !== bgImageSrc) {
       const img = new Image()
       img.onload = () => {
         const canvas = canvasRef.current
         if (canvas) {
-          canvas.width = img.width
-          canvas.height = img.height + (hasCaption ? captionHeight : 0)
+          canvas.width = img.width + (prev.canvasExpandLeft ?? 0) + (prev.canvasExpandRight ?? 0)
+          canvas.height = img.height + (prev.canvasExpandTop ?? 0) + (hasCaption ? captionHeight : 0) + (prev.canvasExpandBottom ?? 0)
         }
         setBgImage(img)
         setBgImageSrc(prev.bgImageSrc)
@@ -727,16 +777,27 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (redoStack.length === 0) return
     const next = redoStack[redoStack.length - 1]
     setRedoStack((old) => old.slice(0, -1))
-    setUndoStack((old) => [...old, { items: items, bgImageSrc: bgImageSrc }])
+    setUndoStack((old) => [...old, { 
+      items: items, 
+      bgImageSrc: bgImageSrc,
+      canvasExpandBottom: canvasExpandBottom,
+      canvasExpandRight: canvasExpandRight,
+      canvasExpandTop: canvasExpandTop,
+      canvasExpandLeft: canvasExpandLeft
+    }])
     setItems(next.items)
+    setCanvasExpandBottom(next.canvasExpandBottom ?? 0)
+    setCanvasExpandRight(next.canvasExpandRight ?? 0)
+    setCanvasExpandTop(next.canvasExpandTop ?? 0)
+    setCanvasExpandLeft(next.canvasExpandLeft ?? 0)
     
     if (next.bgImageSrc !== bgImageSrc) {
       const img = new Image()
       img.onload = () => {
         const canvas = canvasRef.current
         if (canvas) {
-          canvas.width = img.width
-          canvas.height = img.height + (hasCaption ? captionHeight : 0)
+          canvas.width = img.width + (next.canvasExpandLeft ?? 0) + (next.canvasExpandRight ?? 0)
+          canvas.height = img.height + (next.canvasExpandTop ?? 0) + (hasCaption ? captionHeight : 0) + (next.canvasExpandBottom ?? 0)
         }
         setBgImage(img)
         setBgImageSrc(next.bgImageSrc)
@@ -776,9 +837,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     // bgImage가 존재하는 경우, 캔버스의 실제 해상도가 이미지 크기와 일치하도록 보정
     if (bgImage) {
-      const targetHeight = bgImage.height + (hasCaption ? captionHeight : 0)
-      if (canvas.width !== bgImage.width || canvas.height !== targetHeight) {
-        canvas.width = bgImage.width
+      const targetWidth = bgImage.width + canvasExpandLeft + canvasExpandRight
+      const targetHeight = bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth
         canvas.height = targetHeight
       }
     } else {
@@ -799,6 +861,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (bgImage) {
       ctx.save()
       
+      // 전체 바탕을 흰색으로 먼저 채움 (확장 여백용)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
       // 만약 둥근 모서리 테두리가 적용되어 있다면 클리핑 처리
       if (hasBorder && borderStyle === 'rounded') {
         createRoundedRectPath(ctx, 0, 0, canvas.width, canvas.height, 8)
@@ -806,11 +872,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
 
       // 이미지 그리기
-      ctx.drawImage(bgImage, 0, 0)
+      ctx.drawImage(bgImage, canvasExpandLeft, canvasExpandTop)
 
       // 캡션 그리기
       if (hasCaption) {
-        const captionY = bgImage.height
+        const captionY = bgImage.height + canvasExpandTop + canvasExpandBottom
         // 캡션 배경색 (옅은 회색)
         ctx.fillStyle = '#f8fafc'
         ctx.fillRect(0, captionY, canvas.width, captionHeight)
@@ -1282,7 +1348,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
-    cacheTrigger
+    cacheTrigger, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft
   ])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
@@ -1391,11 +1457,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderStyle
   })
 
-  // buildStyleConfig() + 캔버스 캡션 2필드 (작업(Work) 저장/복원용 확장 shape)
+  // buildStyleConfig() + 캔버스 캡션/바탕확장 필드 (작업(Work) 저장/복원용 확장 shape)
   const buildWorkStyleConfig = (): WorkStyleConfig => ({
     ...buildStyleConfig(),
     hasCaption,
-    captionText
+    captionText,
+    canvasExpandBottom,
+    canvasExpandRight,
+    canvasExpandTop,
+    canvasExpandLeft
   })
 
   // 25필드 스타일 상태를 일괄 적용
@@ -1477,7 +1547,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     borderWidth: data.borderWidth ?? SYSTEM_ITEM_DEFAULTS.borderWidth,
     borderStyle: data.borderStyle ?? SYSTEM_ITEM_DEFAULTS.borderStyle,
     hasCaption: data.hasCaption ?? false,
-    captionText: data.captionText ?? ''
+    captionText: data.captionText ?? '',
+    canvasExpandBottom: data.canvasExpandBottom ?? 0,
+    canvasExpandRight: data.canvasExpandRight ?? 0,
+    canvasExpandTop: data.canvasExpandTop ?? 0,
+    canvasExpandLeft: data.canvasExpandLeft ?? 0
   })
 
   // 이미지 작업 저장 payload 구성 및 POST 공용 함수 (handleSaveToHistory/handleGenerateUrl 공용)
@@ -1703,6 +1777,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setItems([])
     setBgImage(null)
     setBgImageSrc('')
+    setCanvasExpandBottom(0)
+    setCanvasExpandRight(0)
+    setCanvasExpandTop(0)
+    setCanvasExpandLeft(0)
     setZoom(1.0)
     setSelectedItemId(null)
     setCircleCounter(1)
@@ -1731,6 +1809,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       title: getDefaultEditorTitle(),
       bgImageSrc: '',
       items: [],
+      canvasExpandBottom: 0,
+      canvasExpandRight: 0,
+      canvasExpandTop: 0,
+      canvasExpandLeft: 0,
       hasBorder: false,
       borderColor: '#cbd5e1',
       borderWidth: 2,
@@ -1789,6 +1871,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const applyLoadedImage = (img: HTMLImageElement, dataUrl: string) => {
     setBgImage(img)
     setBgImageSrc(dataUrl)
+    setCanvasExpandBottom(0)
+    setCanvasExpandRight(0)
+    setCanvasExpandTop(0)
+    setCanvasExpandLeft(0)
     setZoom(1.0)
     setItems([])
     setCircleCounter(1)
@@ -1801,6 +1887,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       title: getDefaultEditorTitle(),
       bgImageSrc: dataUrl,
       items: [],
+      canvasExpandBottom: 0,
+      canvasExpandRight: 0,
+      canvasExpandTop: 0,
+      canvasExpandLeft: 0,
       hasBorder: false,
       borderColor: '#cbd5e1',
       borderWidth: 2,
@@ -2947,13 +3037,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       const img = new Image()
       img.onload = () => {
         const canvas = canvasRef.current
-        if (canvas) {
-          canvas.width = img.width
-          canvas.height = img.height
-        }
         
         // 새로운 설정 값들 로드 및 적용 (하위 호환성 Fallback 적용)
         const resolved = resolveWorkStyleConfigFromLegacyData(data)
+        
+        if (canvas) {
+          canvas.width = img.width + (resolved.canvasExpandLeft ?? 0) + (resolved.canvasExpandRight ?? 0)
+          canvas.height = img.height + (resolved.canvasExpandTop ?? 0) + (resolved.hasCaption ? captionHeight : 0) + (resolved.canvasExpandBottom ?? 0)
+        }
+        
         applyStyleConfig(resolved)
         setHasBorder(resolved.hasBorder)
         setBorderColor(resolved.borderColor)
@@ -2961,6 +3053,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         setBorderStyle(resolved.borderStyle)
         setHasCaption(resolved.hasCaption)
         setCaptionText(resolved.captionText)
+        setCanvasExpandBottom(resolved.canvasExpandBottom ?? 0)
+        setCanvasExpandRight(resolved.canvasExpandRight ?? 0)
+        setCanvasExpandTop(resolved.canvasExpandTop ?? 0)
+        setCanvasExpandLeft(resolved.canvasExpandLeft ?? 0)
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
@@ -3008,6 +3104,184 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
 
 
+  // 여백 위에 배치된 도형들을 보호하기 위한 최소 여백 값 계산
+  const minBottomMargin = React.useMemo(() => {
+    if (!bgImage) return 0
+    let maxEdge = 0
+    items.forEach((item) => {
+      let itemBottom = item.y
+      if (item.type === 'circle-number') {
+        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
+        itemBottom = item.y + r
+      } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
+        itemBottom = item.y + (item.height || 0)
+      } else if (item.type === 'text') {
+        itemBottom = item.y + (item.style.fontSize || textFontSize) * 1.2
+      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
+        itemBottom = Math.max(item.y, item.y + (item.height || 0))
+      } else if (item.type === 'symbol') {
+        const radius = (item.style.fontSize || 48) / 2
+        itemBottom = item.y + radius
+      }
+      const imageBottom = bgImage.height + canvasExpandTop
+      if (itemBottom > imageBottom) {
+        const edge = itemBottom - imageBottom
+        if (edge > maxEdge) {
+          maxEdge = edge
+        }
+      }
+    })
+    return Math.ceil(maxEdge)
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandTop])
+
+  const minRightMargin = React.useMemo(() => {
+    if (!bgImage) return 0
+    let maxEdge = 0
+    items.forEach((item) => {
+      let itemRight = item.x
+      if (item.type === 'circle-number') {
+        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
+        itemRight = item.x + r
+      } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
+        itemRight = item.x + (item.width || 0)
+      } else if (item.type === 'text') {
+        itemRight = item.x + 100 // approximate text width
+      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
+        itemRight = Math.max(item.x, item.x + (item.width || 0))
+      } else if (item.type === 'symbol') {
+        const radius = (item.style.fontSize || 48) / 2
+        itemRight = item.x + radius
+      }
+      const imageRight = bgImage.width + canvasExpandLeft
+      if (itemRight > imageRight) {
+        const edge = itemRight - imageRight
+        if (edge > maxEdge) {
+          maxEdge = edge
+        }
+      }
+    })
+    return Math.ceil(maxEdge)
+  }, [items, bgImage, circleNumberFontSize, canvasExpandLeft])
+
+  // 상단 및 좌측 축소 가능 여부 계산
+  const canShrinkTop = React.useMemo(() => {
+    if (canvasExpandTop < 100) return false
+    let safe = true
+    items.forEach(item => {
+      let itemTop = item.y
+      if (item.type === 'circle-number') {
+        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
+        itemTop = item.y - r
+      } else if (item.type === 'symbol') {
+        const radius = (item.style.fontSize || 48) / 2
+        itemTop = item.y - radius
+      }
+      if (itemTop < 100) safe = false
+    })
+    return safe
+  }, [items, canvasExpandTop, circleNumberFontSize])
+
+  const canShrinkLeft = React.useMemo(() => {
+    if (canvasExpandLeft < 100) return false
+    let safe = true
+    items.forEach(item => {
+      let itemLeft = item.x
+      if (item.type === 'circle-number') {
+        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
+        itemLeft = item.x - r
+      } else if (item.type === 'symbol') {
+        const radius = (item.style.fontSize || 48) / 2
+        itemLeft = item.x - radius
+      }
+      if (itemLeft < 100) safe = false
+    })
+    return safe
+  }, [items, canvasExpandLeft, circleNumberFontSize])
+
+  // 4방향 확장/축소 실행 함수
+  const handleExpandTop = () => {
+    setCanvasExpandTop(prev => prev + 100)
+    const shifted = items.map(item => ({ ...item, y: item.y + 100 }))
+    pushToUndo(shifted)
+  }
+
+  const handleShrinkTop = () => {
+    if (!canShrinkTop) return
+    setCanvasExpandTop(prev => prev - 100)
+    const shifted = items.map(item => ({ ...item, y: item.y - 100 }))
+    pushToUndo(shifted)
+  }
+
+  const handleExpandBottom = () => {
+    setCanvasExpandBottom(prev => prev + 100)
+    pushToUndo(items)
+  }
+
+  const handleShrinkBottom = () => {
+    const val = Math.max(minBottomMargin, canvasExpandBottom - 100)
+    setCanvasExpandBottom(val)
+    pushToUndo(items)
+  }
+
+  const handleExpandLeft = () => {
+    setCanvasExpandLeft(prev => prev + 100)
+    const shifted = items.map(item => {
+      if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+        return {
+          ...item,
+          x: item.x + 100,
+          style: { ...item.style, midX: item.style.midX + 100 }
+        }
+      }
+      return { ...item, x: item.x + 100 }
+    })
+    pushToUndo(shifted)
+  }
+
+  const handleShrinkLeft = () => {
+    if (!canShrinkLeft) return
+    setCanvasExpandLeft(prev => prev - 100)
+    const shifted = items.map(item => {
+      if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+        return {
+          ...item,
+          x: item.x - 100,
+          style: { ...item.style, midX: item.style.midX - 100 }
+        }
+      }
+      return { ...item, x: item.x - 100 }
+    })
+    pushToUndo(shifted)
+  }
+
+  const handleExpandRight = () => {
+    setCanvasExpandRight(prev => prev + 100)
+    pushToUndo(items)
+  }
+
+  const handleShrinkRight = () => {
+    const val = Math.max(minRightMargin, canvasExpandRight - 100)
+    setCanvasExpandRight(val)
+    pushToUndo(items)
+  }
+
+  // 바탕 확장 라디오에서 선택된 방향에 맞는 핸들러/축소가능여부/문구 조회용 맵
+  const EXPAND_DIRECTION_LABELS: Record<typeof expandDirection, string> = {
+    top: '상단', bottom: '하단', left: '좌측', right: '우측'
+  }
+  const expandDirectionActions: Record<typeof expandDirection, {
+    expand: () => void
+    shrink: () => void
+    canShrink: boolean
+    shrinkBlockedTitle: string
+  }> = {
+    top: { expand: handleExpandTop, shrink: handleShrinkTop, canShrink: canShrinkTop, shrinkBlockedTitle: '상단에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
+    bottom: { expand: handleExpandBottom, shrink: handleShrinkBottom, canShrink: canvasExpandBottom > minBottomMargin, shrinkBlockedTitle: '하단에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
+    left: { expand: handleExpandLeft, shrink: handleShrinkLeft, canShrink: canShrinkLeft, shrinkBlockedTitle: '좌측에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
+    right: { expand: handleExpandRight, shrink: handleShrinkRight, canShrink: canvasExpandRight > minRightMargin, shrinkBlockedTitle: '우측에 도형이 있거나 여백이 없어 축소할 수 없습니다' }
+  }
+  const activeExpandAction = expandDirectionActions[expandDirection]
+
   if (!isOpen) return null
 
   return (
@@ -3041,23 +3315,74 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             )}
           </div>
 
-          {/* 보기 배율 컨트롤 (헤더 우측 배치) */}
+          {/* 우측 상단 컨트롤 그룹 (바탕 확장 + 보기 배율 나란히 배치) */}
           {bgImage && (
-            <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs mr-2">
-              <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">보기 배율:</span>
-              {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
+            <div className="flex items-center space-x-2 mr-2">
+              {/* 바탕 확장 컨트롤 (방향 라디오 + 공용 증감 버튼) */}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
+                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">바탕 확장:</span>
+
+                {/* 방향 라디오 (단일 선택) */}
+                <div role="radiogroup" aria-label="바탕 확장 방향" className="flex items-center space-x-1">
+                  {(['top', 'bottom', 'left', 'right'] as const).map((dir) => (
+                    <button
+                      key={dir}
+                      type="button"
+                      role="radio"
+                      aria-checked={expandDirection === dir}
+                      onClick={() => setExpandDirection(dir)}
+                      className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer border ${
+                        expandDirection === dir
+                          ? 'bg-indigo-650 text-gray-700 shadow-xs border-indigo-650'
+                          : 'bg-transparent text-gray-550 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 border-transparent'
+                      }`}
+                      title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 선택`}
+                    >
+                      {expandDirection === dir && <Check className="w-2.5 h-2.5" />}
+                      {EXPAND_DIRECTION_LABELS[dir]}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="border-r border-gray-150 dark:border-slate-800 h-3.5 mx-1 shrink-0" />
+
+                {/* 선택된 방향에 적용되는 공용 증감 버튼 */}
                 <button
-                  key={z}
-                  onClick={() => setZoom(z)}
-                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                    zoom === z
-                      ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                      : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                  }`}
+                  type="button"
+                  onClick={activeExpandAction.expand}
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-550 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-150 dark:border-slate-880 cursor-pointer transition-all shrink-0"
+                  title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
                 >
-                  {Math.round(z * 100)}%
+                  +100
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={activeExpandAction.shrink}
+                  disabled={!activeExpandAction.canShrink}
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-550 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-150 dark:border-slate-880 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
+                  title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
+                >
+                  -100
+                </button>
+              </div>
+
+              {/* 보기 배율 컨트롤 */}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
+                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">보기 배율:</span>
+                {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
+                  <button
+                    key={z}
+                    onClick={() => setZoom(z)}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                      zoom === z
+                        ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                        : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {Math.round(z * 100)}%
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -3156,11 +3481,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 onDoubleClick={handleDoubleClick}
                 className={`block ${activeTool === 'pointer' ? 'cursor-default' : 'cursor-crosshair'}`}
                 style={{
-                  width: bgImage ? `${bgImage.width * zoom}px` : 'auto',
-                  height: bgImage ? `${(bgImage.height + (hasCaption ? captionHeight : 0)) * zoom}px` : 'auto',
+                  width: bgImage ? `${(bgImage.width + canvasExpandLeft + canvasExpandRight) * zoom}px` : 'auto',
+                  height: bgImage ? `${(bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom) * zoom}px` : 'auto',
                 }}
-                width={bgImage ? bgImage.width : 800}
-                height={bgImage ? bgImage.height + (hasCaption ? captionHeight : 0) : 500}
+                width={bgImage ? bgImage.width + canvasExpandLeft + canvasExpandRight : 800}
+                height={bgImage ? bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom : 500}
               />
 
               {/* 텍스트 실시간 캔버스 오버레이 인풋 창 */}
