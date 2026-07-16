@@ -10,6 +10,7 @@ import EditorActionBar from './components/EditorActionBar'
 import MarkdownSplitEditor from './components/MarkdownSplitEditor'
 import { useRecentPagesStore } from '@/store/useRecentPagesStore'
 import ActionImageEditor from '@/components/imageditor/ActionImageEditor'
+import { measureLineTops } from '@/utils/textareaLinePositions'
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   if (navigator.clipboard && window.isSecureContext) {
@@ -254,23 +255,109 @@ const DocUserMain: React.FC = () => {
   }, [])
 
   // 스크롤 동기화 (Scroll Sync) 효과
+  // 미리보기는 markdownRenderer.tsx가 각 블록에 심어둔 data-source-line(원문 줄번호)을 앵커로 쓰고,
+  // 에디터 쪽은 같은 줄번호의 실제 픽셀 위치를 measureLineTops(줄바꿈 반영, textarea-caret과 동일 원리의
+  // mirror div 측정)로 재서 앵커로 쓴다. textarea는 긴 줄이 자동 줄바꿈되므로 scrollTop/lineHeight 같은
+  // 어림 계산은 그 줄바꿈만큼 항상 어긋난다 — 양쪽 다 실측 픽셀 위치를 같은 줄번호 기준으로 매칭해야
+  // 문단이 여러 줄로 꺾이거나 이미지가 껴 있어도 정확히 맞는다.
   useEffect(() => {
     const textarea = textareaRef.current
     const preview = previewContainerRef.current
     if (!textarea || !preview) return
 
     let activeElement: 'editor' | 'preview' | null = null
+    let rafId: number | null = null
+
+    // 원문 줄번호(1-indexed) → char offset 변환용 누적 표. pageContent가 바뀔 때만 다시 만든다.
+    const lineStartOffsets: number[] = [0]
+    for (let i = 0; i < pageContent.length; i++) {
+      if (pageContent.charCodeAt(i) === 10) lineStartOffsets.push(i + 1)
+    }
+    const offsetOfLine = (line: number): number => {
+      const idx = Math.max(0, Math.min(line - 1, lineStartOffsets.length - 1))
+      return lineStartOffsets[idx]
+    }
+
+    // 미리보기 내 data-source-line 태그된 블록들을 (원문 줄번호, 콘텐츠 내 세로 위치) 쌍으로 수집.
+    // 이미지 로딩 등으로 레이아웃이 바뀔 수 있어 캐시하지 않고 매 스크롤마다 새로 계산한다.
+    const collectPreviewAnchors = (): { line: number; top: number }[] => {
+      const nodes = preview.querySelectorAll<HTMLElement>('[data-source-line]')
+      const previewRect = preview.getBoundingClientRect()
+      const anchors: { line: number; top: number }[] = []
+      nodes.forEach((el) => {
+        const line = Number(el.getAttribute('data-source-line'))
+        if (!Number.isFinite(line)) return
+        const top = el.getBoundingClientRect().top - previewRect.top + preview.scrollTop
+        anchors.push({ line, top })
+      })
+      anchors.sort((a, b) => a.line - b.line)
+      return anchors
+    }
+
+    // 미리보기 앵커와 같은 줄번호에 대응하는 에디터 쪽 실측 픽셀 top 배열 (줄바꿈 반영됨,
+    // textarea.scrollTop과 같은 좌표계라 별도 변환 없이 바로 비교 가능하다)
+    const measureEditorTops = (lines: number[]): number[] =>
+      measureLineTops(textarea, lines.map(offsetOfLine))
 
     const handleEditorScroll = () => {
       if (activeElement === 'preview') return
-      const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight)
-      preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight)
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        const previewAnchors = collectPreviewAnchors()
+        if (previewAnchors.length < 2) return
+        const editorTops = measureEditorTops(previewAnchors.map((a) => a.line))
+
+        const scrollTop = textarea.scrollTop
+        const lastIdx = editorTops.length - 1
+
+        if (scrollTop <= editorTops[0]) {
+          preview.scrollTop = 0
+          return
+        }
+        if (scrollTop >= editorTops[lastIdx]) {
+          preview.scrollTop = preview.scrollHeight - preview.clientHeight
+          return
+        }
+
+        // 현재 스크롤 위치를 감싸는 두 앵커 사이를 선형 보간해 매끄럽게 이동시킨다.
+        let i = 0
+        while (i < lastIdx && editorTops[i + 1] <= scrollTop) i++
+        const span = editorTops[i + 1] - editorTops[i]
+        const fraction = span > 0 ? (scrollTop - editorTops[i]) / span : 0
+        const previewA = previewAnchors[i].top
+        const previewB = previewAnchors[i + 1].top
+        preview.scrollTop = previewA + fraction * (previewB - previewA)
+      })
     }
 
     const handlePreviewScroll = () => {
       if (activeElement === 'editor') return
-      const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
-      textarea.scrollTop = percentage * (textarea.scrollHeight - textarea.clientHeight)
+      if (rafId !== null) return
+      rafId = requestAnimationFrame(() => {
+        rafId = null
+        const previewAnchors = collectPreviewAnchors()
+        if (previewAnchors.length < 2) return
+        const editorTops = measureEditorTops(previewAnchors.map((a) => a.line))
+
+        const scrollTop = preview.scrollTop
+        const lastIdx = previewAnchors.length - 1
+
+        if (scrollTop <= previewAnchors[0].top) {
+          textarea.scrollTop = 0
+          return
+        }
+        if (scrollTop >= previewAnchors[lastIdx].top) {
+          textarea.scrollTop = textarea.scrollHeight - textarea.clientHeight
+          return
+        }
+
+        let i = 0
+        while (i < lastIdx && previewAnchors[i + 1].top <= scrollTop) i++
+        const span = previewAnchors[i + 1].top - previewAnchors[i].top
+        const fraction = span > 0 ? (scrollTop - previewAnchors[i].top) / span : 0
+        textarea.scrollTop = editorTops[i] + fraction * (editorTops[i + 1] - editorTops[i])
+      })
     }
 
     const setEditorActive = () => { activeElement = 'editor' }
@@ -284,6 +371,7 @@ const DocUserMain: React.FC = () => {
     preview.addEventListener('scroll', handlePreviewScroll)
 
     return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId)
       textarea.removeEventListener('mouseenter', setEditorActive)
       textarea.removeEventListener('focus', setEditorActive)
       textarea.removeEventListener('scroll', handleEditorScroll)

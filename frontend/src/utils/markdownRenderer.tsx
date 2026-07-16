@@ -25,52 +25,53 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
       remarkPlugins={[remarkGfm, remarkBreaks]}
       rehypePlugins={[rehypeRaw]}
       components={{
-        h1: ({ children, ...props }) => (
-          <h1 className="text-lg font-bold text-slate-900 mt-6 mb-3 pb-1 border-b border-slate-200" {...props}>
+        h1: ({ children, node, ...props }) => (
+          <h1 data-source-line={node?.position?.start.line} className="text-lg font-bold text-slate-900 mt-6 mb-3 pb-1 border-b border-slate-200" {...props}>
             {children}
           </h1>
         ),
-        h2: ({ children, ...props }) => (
-          <h2 className="text-base font-bold text-slate-900 mt-5 mb-2" {...props}>
+        h2: ({ children, node, ...props }) => (
+          <h2 data-source-line={node?.position?.start.line} className="text-base font-bold text-slate-900 mt-5 mb-2" {...props}>
             {children}
           </h2>
         ),
-        h3: ({ children, ...props }) => (
-          <h3 className="text-sm font-semibold text-slate-800 mt-4 mb-2" {...props}>
+        h3: ({ children, node, ...props }) => (
+          <h3 data-source-line={node?.position?.start.line} className="text-sm font-semibold text-slate-800 mt-4 mb-2" {...props}>
             {children}
           </h3>
         ),
-        blockquote: ({ children, ...props }) => (
+        blockquote: ({ children, node, ...props }) => (
           <blockquote
+            data-source-line={node?.position?.start.line}
             className="border-l-[3px] border-l-[#c7dbf0] dark:border-l-[#3b5266] px-[18px] py-[12px] my-[14px] bg-[#f7f9fb] dark:bg-slate-900/40 rounded-[6px] text-[#455160] dark:text-slate-300 text-sm [&_p]:my-[4px] [&_p]:text-[14px] [&_p]:leading-relaxed"
             {...props}
           >
             {children}
           </blockquote>
         ),
-        hr: (props) => <hr className="my-4 border-t border-slate-200" {...props} />,
-        p: ({ children, ...props }) => (
-          <p className="text-slate-650 text-sm leading-relaxed mb-3" {...props}>
+        hr: ({ node, ...props }) => <hr data-source-line={node?.position?.start.line} className="my-4 border-t border-slate-200" {...props} />,
+        p: ({ children, node, ...props }) => (
+          <p data-source-line={node?.position?.start.line} className="text-slate-650 text-sm leading-relaxed mb-3" {...props}>
             {children}
           </p>
         ),
-        ul: ({ children, ...props }) => (
-          <ul className="my-2 list-disc pl-5" {...props}>
+        ul: ({ children, node, ...props }) => (
+          <ul data-source-line={node?.position?.start.line} className="my-2 list-disc pl-5" {...props}>
             {children}
           </ul>
         ),
-        ol: ({ children, ...props }) => (
-          <ol className="my-2 list-decimal pl-5" {...props}>
+        ol: ({ children, node, ...props }) => (
+          <ol data-source-line={node?.position?.start.line} className="my-2 list-decimal pl-5" {...props}>
             {children}
           </ol>
         ),
-        li: ({ children, ...props }) => (
-          <li className="text-slate-650 text-sm mb-1" {...props}>
+        li: ({ children, node, ...props }) => (
+          <li data-source-line={node?.position?.start.line} className="text-slate-650 text-sm mb-1" {...props}>
             {children}
           </li>
         ),
-        table: ({ children, ...props }) => (
-          <div className="overflow-x-auto my-4 border border-slate-200 rounded-lg shadow-xs">
+        table: ({ children, node, ...props }) => (
+          <div data-source-line={node?.position?.start.line} className="overflow-x-auto my-4 border border-slate-200 rounded-lg shadow-xs">
             <table className="min-w-full divide-y divide-slate-200 text-sm" {...props}>
               {children}
             </table>
@@ -89,8 +90,8 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
             {children}
           </td>
         ),
-        pre: ({ children, ...props }) => (
-          <pre className="bg-slate-100 text-slate-800 border border-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto leading-normal whitespace-pre my-4 select-none" {...props}>
+        pre: ({ children, node, ...props }) => (
+          <pre data-source-line={node?.position?.start.line} className="bg-slate-100 text-slate-800 border border-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto leading-normal whitespace-pre my-4 select-none" {...props}>
             {children}
           </pre>
         ),
@@ -105,8 +106,8 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
             </code>
           );
         },
-        img: ({ src, alt, ...props }) => (
-          <span className="my-4 flex justify-center">
+        img: ({ src, alt, node, ...props }) => (
+          <span data-source-line={node?.position?.start.line} className="my-4 flex justify-center">
             <img src={src} alt={alt} className="max-w-full h-auto border border-gray-200 shadow-sm" {...props} />
           </span>
         ),
