@@ -19,6 +19,10 @@
    * 회전된 상태에서도 정확히 클릭을 감지할 수 있도록 로컬 스페이스 기준의 마우스 좌표 역회전 변환이 필수적입니다.
 3. **텍스트 생성 좌표 zoom 오류**:
    * 신규 텍스트 생성 시 `textInput` 좌표가 CSS 기준 픽셀로 설정되어 zoom이 1.0이 아닐 때 텍스트가 어긋나서 배치되는 현상이 있습니다. 이를 캔버스 픽셀 기준으로 통일하여 수정합니다.
+4. **회전 각도 초기화 및 수동 입력 조작성 보완**:
+   * 텍스트를 드래그하거나 슬라이더를 통해 각도를 맞출 때 0도로 초기화하거나 임의의 특정 수치(예: `45°`)를 직접 타이핑하여 입력하기를 원할 수 있습니다.
+   * **좌측 초기화 아이콘**: 슬라이더의 라벨 옆에 회전 화살표 모양의 초기화 아이콘(`RotateCcw`)을 배치하여, 클릭 시 기본값(0도)으로 즉시 리셋되도록 합니다.
+   * **우측 수동 입력 토글 및 슬라이더 교체**: 수치 표시 영역 옆에 편집 아이콘(`Edit3`)을 배치하여, 클릭 시 슬라이더 대신 숫자 입력창(`input[type=number]`) 혹은 선택 상자(`select`)가 표시되도록 교체 렌더링을 지원합니다.
 
 ---
 
@@ -70,248 +74,82 @@
 
 ---
 
-### 2.2 속성 설정 패널 구성 (`FloatingPropertyPanel.tsx`)
+### 2.2 슬라이더 컴포넌트 개선 (`RangeSlider.tsx`)
 
-텍스트 선택 여부에 따라 2군데에 "회전 각도 슬라이더(-180° ~ 180°)"를 배치합니다:
-1. **텍스트 요소 선택 상태(인스펙터)**: 선택된 개별 텍스트의 각도 제어.
-2. **텍스트 도구 기본 설정**: 신규 생성할 텍스트에 적용될 디폴트 각도 제어.
+수동 입력(텍스트 상자 혹은 콤보 드롭다운 select) 기능을 유연하고 확장 가능하도록 Props 설계합니다.
 
-#### [MODIFY] [FloatingPropertyPanel.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/FloatingPropertyPanel.tsx)
-- Props 정의 추가:
+#### [MODIFY] [RangeSlider.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/RangeSlider.tsx)
+- Props에 다음 속성들을 새로 추가합니다:
+  * `defaultValue?: number`: 지정 시 라벨 옆에 `RotateCcw` 초기화 아이콘 노출 및 리셋 기능 제공.
+  * `manual_input_enable?: boolean`: 지정 시 우측 상단 수치 옆에 `Edit3` 수동 입력 연필 아이콘 노출.
+  * `manual_input_type?: 'number' | 'select'`: 수동 입력 UI 유형 결정 (기본값 `'number'`).
+  * `manual_input_options?: number[]`: `'select'` 타입일 때 선택할 수 있는 드롭다운 옵션 배열.
+
 ```typescript
-  textRotation: number
-  setTextRotation: (rotation: number) => void
-```
-- 개별 텍스트 인스펙터 추가 (`selectedItem.type === 'text'`):
-```typescript
-                  {/* 회전 각도 */}
-                  <RangeSlider
-                    label="회전 각도"
-                    value={selectedItem.style.rotation !== undefined ? selectedItem.style.rotation : 0}
-                    min={-180}
-                    max={180}
-                    unit="°"
-                    onChangeValue={(val) => {
-                      const updated = items.map(item => {
-                        if (item.id === selectedItemId) {
-                          return { ...item, style: { ...item.style, rotation: val } }
-                        }
-                        return item
-                      })
-                      pushToUndo(updated)
-                    }}
-                  />
-```
-- 텍스트 도구 전역 기본 설정 추가 (`activeTool === 'text'`):
-```typescript
-                        {/* 회전 각도 */}
-                        <RangeSlider
-                          label="회전 각도"
-                          value={textRotation}
-                          min={-180}
-                          max={180}
-                          unit="°"
-                          onChangeValue={setTextRotation}
-                        />
-```
+import React, { useState } from 'react'
+import { RotateCcw, Edit3 } from 'lucide-react'
 
----
-
-### 2.3 텍스트 입력창 수정 (`TextItemInput.tsx`)
-
-회전된 텍스트를 편집할 때, 편집용 textarea 상자 자체도 CSS transform 속성을 사용하여 동일하게 회전되도록 수정하여 입력 편의성을 극대화합니다.
-
-#### [MODIFY] [TextItemInput.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/TextItemInput.tsx)
-```diff
- interface TextItemInputProps {
-   x: number
-   y: number
-   zoom: number
-+  rotation: number
-   value: string
-   onChange: (val: string) => void
-   onSubmit: () => void
-   onCancel: () => void
- }
-```
-```diff
-       style={{
-         top: y * zoom,
-         left: x * zoom,
--        transform: `scale(${zoom})`,
-+        transform: `scale(${zoom}) rotate(${rotation}deg)`,
-         transformOrigin: 'top left'
-       }}
-```
-
----
-
-### 2.4 에디터 캔버스 렌더링 및 드래그 동작 (`ActionImageEditor.tsx`)
-
-#### State 및 설정 연동 추가
-- `textRotation` 상태 추가:
-```typescript
-  const [textRotation, setTextRotation] = useState<number>(SYSTEM_ITEM_DEFAULTS.textRotation)
-```
-- `lastSavedState`에 `textRotation: number` 추가 및 기본값 연동
-- `isDirty` 비교 연산에 `textRotation !== lastSavedState.textRotation` 추가
-- `applyStyleConfig`, `resolveWorkStyleConfigFromLegacyData`, `buildStyleConfig`, `handleDeleteUserSettings`, `handleTextSubmit`에 `textRotation` 관련 처리 적용
-
-#### 멀티라인 텍스트 가로/세로 바운딩 박스 크기 측정 헬퍼 추가
-텍스트에 줄바꿈이 있는 경우, **가장 긴 라인의 너비**를 전체 너비로 하고, **(줄 수 - 1) × 줄 높이 + 폰트 크기**를 전체 높이로 계산하여 텍스트 배경 상자 및 선택 점선 영역을 일관되게 맞춥니다.
-```typescript
-// 텍스트 아이템의 실제 너비와 높이를 계산하는 헬퍼 함수
-function getTextBounds(
-  ctx: CanvasRenderingContext2D | null,
-  text: string,
-  fontSize: number,
-  fontStyle: 'normal' | 'italic'
-) {
-  const lines = text.split('\n')
-  const lineHeight = fontSize * 1.2
-  let maxW = 0
-  if (ctx) {
-    ctx.save()
-    ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${fontSize}px sans-serif`
-    lines.forEach((line) => {
-      const w = ctx.measureText(line).width
-      if (w > maxW) maxW = w
-    })
-    ctx.restore()
-  } else {
-    maxW = text.length * fontSize * 0.65
-  }
-  const height = lines.length > 0 ? (lines.length - 1) * lineHeight + fontSize : 0
-  return {
-    width: maxW,
-    height,
-    lineHeight,
-    lines
-  }
+interface RangeSliderProps {
+  label: string
+  value: number
+  min: number
+  max: number
+  onChangeValue: (val: number) => void
+  unit?: string
+  button_inc_dev_enable?: boolean
+  button_inc_dev_step?: number
+  defaultValue?: number
+  manual_input_enable?: boolean       // 수동 입력 사용 여부 (기본값 false)
+  manual_input_type?: 'number' | 'select' // 수동 입력 UI 타입 (number 또는 select)
+  manual_input_options?: number[]     // select 타입일 때의 선택 옵션
 }
 ```
 
-#### 회전 상태 및 멀티라인 텍스트 렌더링 & 회전 핸들 드로잉
-캔버스 컨텍스트의 `translate`와 `rotate`를 활용해 원점 이동 후 회전시켜 글씨를 렌더링합니다. 선택되었을 때는 상단에 연결선과 조절 원형 핸들을 그려줍니다.
-```typescript
-      else if (item.type === 'text') {
-        const fontStyle = item.style.fontStyle || 'normal'
-        const textDecoration = item.style.textDecoration || 'none'
-        const rotation = item.style.rotation || 0
-        const fSize = item.style.fontSize || textFontSize
+- 렌더링 구현:
+  * `manual_input_enable`이 활성화되어 있고, 사용자가 연필 아이콘을 클릭하여 수동 입력 모드로 진입하면 슬라이더 대신 입력란을 노출합니다.
+  * `manual_input_type === 'number'`인 경우 `<input type="number" ... />`를 띄워 직접 타이핑을 받고, `onBlur` 및 `Enter` 시 값을 클램핑하여 확정합니다.
+  * `manual_input_type === 'select'`인 경우 `<select ... />` 드롭다운을 띄워 `manual_input_options`에 포함된 목록 중 하나를 선택하도록 지원합니다.
 
-        ctx.save()
-        // (item.x, item.y)로 원점 이동 후 회전 적용 (일관적인 로컬 좌표계 사용)
-        ctx.translate(item.x, item.y)
-        if (rotation !== 0) {
-          ctx.rotate((rotation * Math.PI) / 180)
-        }
+---
 
-        ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${fSize}px sans-serif`
-        ctx.textBaseline = 'top'
-        ctx.textAlign = 'left'
+### 2.3 속성 설정 패널 구성 (`FloatingPropertyPanel.tsx`)
 
-        // 멀티라인 크기 및 줄 정보 획득
-        const { width: boundsWidth, height: boundsHeight, lineHeight, lines } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
-
-        // 텍스트를 감싸는 배경 박스
-        const textBg = item.style.backgroundColor || 'transparent'
-        if (textBg && textBg !== 'transparent') {
-          const bgW = boundsWidth + 12
-          const bgH = boundsHeight + 10
-          ctx.fillStyle = textBg
-          ctx.fillRect(-6, -4, bgW, bgH)
-          ctx.strokeStyle = item.style.borderColor || '#cbd5e1'
-          ctx.lineWidth = 1
-          ctx.strokeRect(-6, -4, bgW, bgH)
-        }
-
-        ctx.fillStyle = item.style.textColor || textTextColor
-
-        // 줄 단위 텍스트 렌더링 및 밑줄/취소선 데코레이션 그리기
-        lines.forEach((line, index) => {
-          const lineY = index * lineHeight
-          ctx.fillText(line, 0, lineY)
-
-          if (textDecoration && textDecoration !== 'none') {
-            ctx.save()
-            const lineMetrics = ctx.measureText(line)
-            const lineW = lineMetrics.width
-            ctx.beginPath()
-            ctx.strokeStyle = item.style.textColor || textTextColor
-            ctx.lineWidth = Math.max(1.5, fSize / 12)
-            
-            if (textDecoration === 'underline') {
-              const underlineY = lineY + fSize + 2
-              ctx.moveTo(0, underlineY)
-              ctx.lineTo(lineW, underlineY)
-            } else if (textDecoration === 'line-through') {
-              const lineThroughY = lineY + fSize / 2 + 1
-              ctx.moveTo(0, lineThroughY)
-              ctx.lineTo(lineW, lineThroughY)
-            }
-            ctx.stroke()
-            ctx.restore()
-          }
-        })
-
-        // 선택 영역 하이라이트 & 회전 핸들 그리기
-        if (isSelected) {
-          ctx.strokeStyle = '#3b82f6'
-          ctx.lineWidth = 1.5
-          ctx.setLineDash([4, 4])
-          ctx.strokeRect(-8, -6, boundsWidth + 16, boundsHeight + 12)
-
-          // 텍스트 상단 중앙 26px 위에 회전 원형 핸들 표시 (실선)
-          ctx.save()
-          ctx.setLineDash([])
-          ctx.beginPath()
-          ctx.moveTo(boundsWidth / 2, -6)
-          ctx.lineTo(boundsWidth / 2, -26)
-          ctx.stroke()
-
-          ctx.beginPath()
-          ctx.arc(boundsWidth / 2, -26, 5, 0, 2 * Math.PI)
-          ctx.fillStyle = '#ffffff'
-          ctx.strokeStyle = '#3b82f6'
-          ctx.lineWidth = 1.5
-          ctx.fill()
-          ctx.stroke()
-          ctx.restore()
-        }
-
-        ctx.restore()
-      }
+#### [MODIFY] [FloatingPropertyPanel.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/FloatingPropertyPanel.tsx)
+- 회전 각도 슬라이더 렌더링 영역(선택 인스펙터 및 글로벌 설정)에 `defaultValue={0}` 및 `manual_input_enable={true}`, `manual_input_type="number"` 속성을 전달합니다.
+```diff
+                   {/* 회전 각도 */}
+                   <RangeSlider
+                     label="회전 각도"
+                     value={selectedItem.style.rotation !== undefined ? selectedItem.style.rotation : 0}
+                     min={-180}
+                     max={180}
+                     unit="°"
+                     button_inc_dev_enable={true}
+                     button_inc_dev_step={5}
++                    defaultValue={0}
++                    manual_input_enable={true}
++                    manual_input_type="number"
+                     onChangeValue={(val) => { ... }}
+                   />
 ```
 
-#### 회전된 영역 클릭 판정 (Selection & Double-click)
-텍스트가 회전된 상태이므로 마우스 좌표 `(x, y)`를 해당 텍스트의 원점 기준으로 역회전시켜 local 좌표로 변경한 후, 바운딩 박스 내부 충돌을 검사합니다.
-```typescript
-  const dx = x - item.x
-  const dy = y - item.y
-  const rad = -rotation * Math.PI / 180
-  const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
-  const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
-```
+---
 
-#### 마우스 드래그를 통한 자유 회전 (MouseMove)
-- `handleMouseDown`에서 선택된 텍스트 아이템이 존재할 때, 회전 핸들 위치 `(boundsWidth / 2, -26)`과 마우스 클릭 `(localX, localY)` 사이의 거리 측정:
-```typescript
-  const dist = Math.hypot(localX - boundsWidth / 2, localY - (-26))
-  if (dist <= 8) {
-    setResizeHandle('text-rotate')
-    setIsDrawing(true)
-    setDragStart({ x, y })
-    return
-  }
-```
-- 사용자가 회전용 핸들을 선택하고 드래그 시 `resizeHandle`을 `'text-rotate'`로 지정합니다.
-- `item.x`, `item.y` 기준 마우스의 각도 변화(`Math.atan2(dy, dx)`)를 계산하여 실시간으로 `item.style.rotation`을 업데이트합니다.
-  - 핸들의 local 기준 기본 각도 `baseAngle = Math.atan2(-26, boundsWidth / 2)`를 구하고, `currentAngle - baseAngle`을 회전 각도로 설정합니다.
-- **쉬프트 스냅(Shift snap)**: 사용자가 `Shift` 키를 누르고 회전하면 **15도 단위**(예: 0°, 15°, 30°, 45°, 90° 등)로 정밀하게 각도가 고정되도록 처리합니다.
+### 2.4 텍스트 입력창 수정 (`TextItemInput.tsx`)
 
-#### 텍스트 생성 좌표 zoom 오류 수정
-- `activeTool === 'text'` 일 때 `setTextInput` 좌표를 CSS 좌표(`clientX - rect.left`)가 아닌 캔버스 실제 픽셀 좌표 `(x, y)`로 설정하여 화면 zoom 스케일링 적용 시 위치가 어긋나지 않도록 수정합니다.
+#### [MODIFY] [TextItemInput.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/TextItemInput.tsx)
+- Props 타입에 `rotation` 추가 및 CSS `transform: scale(${zoom}) rotate(${rotation}deg)` 적용.
+
+---
+
+### 2.5 에디터 캔버스 렌더링 및 드래그 동작 (`ActionImageEditor.tsx`)
+
+#### [MODIFY] [ActionImageEditor.tsx](file:///home/kdy987/work/aman/frontend/src/components/imageditor/ActionImageEditor.tsx)
+- `textRotation` 상태 관리 및 `lastSavedState`, `isDirty`, `buildStyleConfig`, `applyStyleConfig` 연동.
+- 멀티라인 바운딩 박스 계산을 위한 `getTextBounds` 헬퍼 적용.
+- 캔버스 원점 이동(translate) 후 텍스트 그리기 및 다중 행 분할 렌더링.
+- 로컬 스페이스 좌표 역회전을 통한 클릭/더블클릭 감지 및 마우스 드래그 회전/Shift 15도 스냅 처리.
+- 텍스트 생성 좌표의 zoom 보정.
 
 ---
 
@@ -324,12 +162,25 @@ npm run build
 ```
 
 ### 3.2 수동 기능 테스트 (사용자 직접 확인 시나리오)
-1. 편집 모드에서 이미지를 업로드하거나 임시 이미지를 붙여넣습니다.
-2. 텍스트 도구를 선택하고 문구를 작성한 뒤 `Shift + Enter`로 줄바꿈을 입력하여 작성합니다.
-3. 캔버스상에서 줄바꿈이 정상적으로 표시되고 개별 줄마다 설정된 텍스트 데코레이션(밑줄/취소선)이 잘 들어가는지 확인합니다.
-4. 배치된 글씨를 클릭하면 글씨 박스 상단에 파란색 선과 원형의 **회전 핸들**이 표시되는지 확인합니다.
-5. 회전 핸들을 마우스로 드래그하여 글씨가 원본 좌표 기준으로 회전하는지 확인합니다.
-6. **Shift** 키를 누른 상태로 회전시킬 때 딱딱 맞물려 **15도 단위**(예: 45도)로 정교하게 맞추어지는지 확인합니다.
-7. 회전된 텍스트를 더블클릭하여 편집창이 열릴 때 편집창 자체도 같은 기울기로 회전하여 자연스럽게 글씨를 타이핑할 수 있는지 확인합니다.
-8. 우측 속성 창(`FloatingPropertyPanel`)의 "회전 각도" 슬라이더 조작 시에도 수치가 부드럽게 변하는지 확인합니다.
-9. 다운로드 혹은 복사 기능을 실행하여 결과물 이미지(PNG)에 텍스트가 회전된 형태로 깨짐 없이 완벽히 포함되는지 검사합니다.
+1. 우측 속성 창의 "회전 각도" 슬라이더 영역에서 라벨("회전 각도") 옆의 **동그란 화살표 초기화 아이콘(↺)**을 클릭했을 때, 각도가 `0°`로 초기화되는지 점검합니다.
+2. 각도 표시 영역 우측의 **연필 모양 편집 아이콘(✏️)**을 클릭했을 때, 아래의 슬라이더 영역이 사라지고 **숫자 입력란**이 채워져 나타나는지 확인합니다.
+3. 숫자 입력란에 `45`를 입력하고 엔터(Enter) 키를 누르거나 확인 버튼을 클릭 시, 텍스트가 정확히 `45°`로 기울어지며 슬라이더 모드로 돌아가는지 확인합니다.
+
+
+```tsx
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className="text-xs px-2 py-0.5 bg-gray-300 hover:bg-indigo-500 text-white rounded cursor-pointer font-bold h-6 flex items-center justify-center transition-colors"
+        >
+          확인
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={handleCancel}
+        className="text-xs px-2 py-0.5 bg-gray-300  hover:bg-gray-500  text-white  rounded cursor-pointer font-bold h-6 flex items-center justify-center transition-colors"
+      >
+        취소
+      </button>
+```          

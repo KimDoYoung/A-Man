@@ -30,7 +30,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
 
   return (
     <div className="space-y-2">
-      <span className="block font-bold text-gray-700 dark:text-slate-300 mb-2">{label}</span>
+      <span className="block font-bold text-gray-700 dark:text-slate-300 text-xs">{label}</span>
       <div className="flex items-center space-x-2">
         {colors.map((col) => (
           <button

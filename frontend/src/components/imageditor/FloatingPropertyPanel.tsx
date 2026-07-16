@@ -426,7 +426,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                   {/* 선 타입 (실선/점선) */}
                   <div className="space-y-1.5">
-                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 타입</span>
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">선 타입</span>
                     <SegmentedControl
                       options={[
                         { id: 'solid', label: '실선' },
@@ -475,7 +475,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 화살머리 크기 (화살표 계열일 때만) */}
                   {(selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow') && (
                     <div className="space-y-1.5">
-                      <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">화살머리 크기</span>
+                      <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">화살머리 크기</span>
                       <div className="flex space-x-1.5">
                         {[
                           { id: 1, label: '1. 기본' },
@@ -514,7 +514,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                 <div className="space-y-4 animate-in fade-in duration-150">
                   {/* 심볼 이모지 선택 */}
                   <div className="space-y-2">
-                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">심볼 이모지 선택</span>
                     <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
                       {SYMBOL_EMOJI_OPTIONS.map((emoji) => {
                         const isCurrent = selectedItem.text === emoji
@@ -546,7 +546,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                   {/* 크기 단계 선택 (1-5) */}
                   <div className="space-y-2">
-                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">크기 선택</span>
                     <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
                       {[1, 2, 3, 4, 5].map((scale) => {
                         const scaleMapping = [20, 32, 48, 64, 80]
@@ -605,7 +605,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                   {/* 스탬프 방향 */}
                   <div className="space-y-1.5">
-                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">스탬프 방향</span>
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 방향</span>
                     <div className="grid grid-cols-4 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
                       {[
                         { id: 'left', label: '←' },
@@ -646,7 +646,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                   {/* 크기 선택 */}
                   <div className="space-y-2">
-                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">크기 선택</span>
                     <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
                       {[1, 2, 3, 4, 5].map((scale) => {
                         const scaleMapping = [32, 48, 64, 80, 96]
@@ -761,7 +761,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                   {/* 원숫자 번호 */}
                   <div className="space-y-2">
-                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">
                       다음번호
                     </span>
                     <input
@@ -895,6 +895,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     min={-180}
                     max={180}
                     unit="°"
+                    button_inc_dev_enable={true}
+                    button_inc_dev_step={5}
+                    defaultValue={0}
+                    manual_input_enable={true}
+                    manual_input_type="number"
                     onChangeValue={(val) => {
                       const updated = items.map(item => {
                         if (item.id === selectedItemId) {
@@ -964,7 +969,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                       {/* 테두리 종류 */}
                       <div className="space-y-1.5">
-                        <span className="block font-bold text-gray-705 dark:text-slate-300 mb-1 text-[11px]">테두리 종류</span>
+                        <span className="block font-bold text-gray-705 dark:text-slate-300 mb-1 text-xs">테두리 종류</span>
                         <SegmentedControl
                           options={[
                             { id: 'solid', label: '실선' },
@@ -991,7 +996,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     className="pt-2 border-t border-gray-100 dark:border-slate-850"
                     checked={selectedItem.style.hasCaption || false}
                     onChange={(val) => {
-                      const updated = items.map(item => {
+                      const updated = i
+                      tems.map(item => {
                         if (item.id === selectedItemId) {
                           return { ...item, style: { ...item.style, hasCaption: val } }
                         }
@@ -1101,7 +1107,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           onChangeValue={setCircleNumberFontSize}
                         />
                         <div className="space-y-2">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">다음번호</span>
+                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">다음번호</span>
                           <input
                             type="number"
                             min="1"
@@ -1149,7 +1155,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         )}
                         {/* 선 종류 */}
                         <div className="space-y-1.5">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">선 종류</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">선 종류</span>
                           <SegmentedControl
                             options={[
                               { id: 'solid', label: '실선' },
@@ -1177,7 +1183,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         {/* 화살머리 크기 (화살표 계열일 때만) */}
                         {(activeTool === 'arrow' || activeTool === 'orthogonal-arrow') && (
                           <div className="space-y-1.5">
-                            <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">화살머리 크기</span>
+                            <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">화살머리 크기</span>
                             <div className="flex space-x-1.5">
                               {[
                                 { id: 1, label: '1단계 (기본)' },
@@ -1214,7 +1220,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                         {/* 2. 스탬프 방향 */}
                         <div className="space-y-1.5">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">스탬프 방향</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 방향</span>
                           <div className="grid grid-cols-4 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
                             {[
                               { id: 'left', label: '←' },
@@ -1246,7 +1252,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                         {/* 3. 크기 선택 */}
                         <div className="space-y-2">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">크기 선택</span>
                           <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
                             {[1, 2, 3, 4, 5].map((scale) => {
                               const isCurrent = stampScale === scale
@@ -1273,7 +1279,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       <>
                         {/* 심볼 이모지 선택 */}
                         <div className="space-y-2">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">심볼 이모지 선택</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">심볼 이모지 선택</span>
                           <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
                             {SYMBOL_EMOJI_OPTIONS.map((emoji) => {
                               const isCurrent = symbolEmoji === emoji
@@ -1296,7 +1302,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                         {/* 크기 단계 선택 (1-5) */}
                         <div className="space-y-2">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">크기 선택</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">크기 선택</span>
                           <div className="flex space-x-1 bg-gray-50 dark:bg-slate-850 p-1 rounded-lg border border-gray-150 dark:border-slate-800">
                             {[1, 2, 3, 4, 5].map((scale) => {
                               const isCurrent = symbolScale === scale
@@ -1379,6 +1385,11 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           min={-180}
                           max={180}
                           unit="°"
+                          button_inc_dev_enable={true}
+                          button_inc_dev_step={5}
+                          defaultValue={0}
+                          manual_input_enable={true}
+                          manual_input_type="number"
                           onChangeValue={setTextRotation}
                         />
                       </>
@@ -1399,7 +1410,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   <div className="space-y-4 animate-in fade-in duration-150">
                     <Toggle
                       label="외곽테두리 사용"
-                      labelClassName="font-bold text-gray-700 dark:text-slate-300"
+                      labelClassName="font-bold text-gray-700 dark:text-slate-300 text-xs"
                       checked={hasBorder}
                       onChange={setHasBorder}
                     />
@@ -1407,7 +1418,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     {hasBorder && (
                       <div className="space-y-4 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
                         <div className="space-y-1.5">
-                          <span className="font-bold text-gray-700 dark:text-slate-300">테두리 모서리 스타일</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">테두리 모서리 스타일</span>
                           <select
                             value={borderStyle}
                             onChange={(e) => setBorderStyle(e.target.value as any)}
@@ -1442,7 +1453,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   <div className="space-y-4 animate-in fade-in duration-150">
                     <Toggle
                       label="설명캡션 사용"
-                      labelClassName="font-bold text-gray-700 dark:text-slate-300"
+                      labelClassName="font-bold text-gray-700 dark:text-slate-300 text-xs"
                       checked={hasCaption}
                       onChange={setHasCaption}
                     />
@@ -1451,7 +1462,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       <div className="space-y-2.5 pt-2 border-t border-gray-100 dark:border-slate-850 animate-in slide-in-from-top-1 duration-200">
                         {/* 정렬 방식 선택 */}
                         <div className="space-y-1.5">
-                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1">정렬 방식</span>
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">정렬 방식</span>
                           <SegmentedControl
                             options={[
                               { id: 'center', label: '중앙 정렬 (Center)' },
@@ -1464,7 +1475,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           />
                         </div>
 
-                        <span className="font-bold text-gray-700 dark:text-slate-300 block mt-2">설명 캡션 문구 기입</span>
+                        <span className="font-bold text-gray-700 dark:text-slate-300 block mt-2 text-xs">설명 캡션 문구 기입</span>
                         <textarea
                           value={captionText}
                           onChange={(e) => setCaptionText(e.target.value)}

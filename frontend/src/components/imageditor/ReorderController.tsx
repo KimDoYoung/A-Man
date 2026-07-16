@@ -61,7 +61,7 @@ export default function ReorderController({
 
   return (
     <div className="pt-4 border-t border-gray-200 dark:border-slate-850 space-y-2 animate-in fade-in duration-200">
-      <span className="font-bold text-[11px] text-gray-700 dark:text-slate-350 block">정렬 순서</span>
+      <span className="font-bold text-xs text-gray-700 dark:text-slate-350 block">정렬 순서</span>
       <div className="grid grid-cols-4 gap-1">
         {/* 맨 앞으로 보내기 */}
         <button
