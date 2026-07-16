@@ -29,7 +29,7 @@ function traceSpeechRectPath(
 
   const cx = x + w / 2
   const cy = y + h / 2
-  let dx = tailX - cx
+  const dx = tailX - cx
   let dy = tailY - cy
   if (dx === 0 && dy === 0) dy = 1 // 중심과 완전히 겹치는 예외 케이스는 하단으로 고정
 
@@ -144,7 +144,7 @@ export function drawCallout(ctx: CanvasRenderingContext2D, item: CanvasItem) {
     const cy = y + h / 2
     const rx = w / 2
     const ry = h / 2
-    let dx = tailX - cx
+    const dx = tailX - cx
     let dy = tailY - cy
     if (dx === 0 && dy === 0) dy = 1
     const thetaMid = Math.atan2(dy / ry, dx / rx)

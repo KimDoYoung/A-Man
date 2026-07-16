@@ -2489,7 +2489,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             const dy = y - item.y
             const baseAngle = Math.atan2(-26, boundsWidth / 2)
             const currentAngle = Math.atan2(dy, dx)
-            let newRotationRad = currentAngle - baseAngle
+            const newRotationRad = currentAngle - baseAngle
             let newRotationDeg = (newRotationRad * 180) / Math.PI
 
             if (e.shiftKey) {
