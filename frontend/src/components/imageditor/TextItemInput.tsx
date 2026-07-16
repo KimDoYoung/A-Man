@@ -4,6 +4,7 @@ interface TextItemInputProps {
   x: number
   y: number
   zoom: number
+  rotation: number
   value: string
   onChange: (val: string) => void
   onSubmit: () => void
@@ -34,7 +35,7 @@ const TextItemInput: React.FC<TextItemInputProps> = ({
       style={{
         top: y * zoom,
         left: x * zoom,
-        transform: `scale(${zoom})`,
+        transform: `scale(${zoom}) rotate(${rotation}deg)`,
         transformOrigin: 'top left'
       }}
       onClick={(e) => e.stopPropagation()}

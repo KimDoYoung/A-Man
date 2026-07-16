@@ -26,6 +26,7 @@ export const SYSTEM_ITEM_DEFAULTS = {
   textBgColor: 'transparent',
   textFontStyle: 'normal' as 'normal' | 'italic',
   textTextDecoration: 'none' as 'none' | 'underline' | 'line-through',
+  textRotation: 0,
 
   // 5. 이모지 심볼 (symbol) 전용 속성
   symbolEmoji: '💡',

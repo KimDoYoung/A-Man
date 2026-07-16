@@ -27,6 +27,36 @@ function getDistanceToSegment(px: number, py: number, x1: number, y1: number, x2
   return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2)
 }
 
+// 텍스트 아이템의 실제 너비와 높이를 계산하는 헬퍼 함수
+function getTextBounds(
+  ctx: CanvasRenderingContext2D | null,
+  text: string,
+  fontSize: number,
+  fontStyle: 'normal' | 'italic'
+) {
+  const lines = text.split('\n')
+  const lineHeight = fontSize * 1.2
+  let maxW = 0
+  if (ctx) {
+    ctx.save()
+    ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${fontSize}px sans-serif`
+    lines.forEach((line) => {
+      const w = ctx.measureText(line).width
+      if (w > maxW) maxW = w
+    })
+    ctx.restore()
+  } else {
+    maxW = text.length * fontSize * 0.65
+  }
+  const height = lines.length > 0 ? (lines.length - 1) * lineHeight + fontSize : 0
+  return {
+    width: maxW,
+    height,
+    lineHeight,
+    lines
+  }
+}
+
 // 화살표 그리기 헬퍼 함수
 function drawArrow(
   ctx: CanvasRenderingContext2D,
@@ -377,6 +407,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textBgColor, setTextBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.textBgColor)
   const [textFontStyle, setTextFontStyle] = useState<'normal' | 'italic'>(SYSTEM_ITEM_DEFAULTS.textFontStyle)
   const [textTextDecoration, setTextTextDecoration] = useState<'none' | 'underline' | 'line-through'>(SYSTEM_ITEM_DEFAULTS.textTextDecoration)
+  const [textRotation, setTextRotation] = useState<number>(SYSTEM_ITEM_DEFAULTS.textRotation)
 
   // 5. 이모지 심볼 (symbol) 관련 속성
   const [symbolEmoji, setSymbolEmoji] = useState<string>(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
@@ -407,7 +438,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textInput, setTextInput] = useState<{ x: number; y: number; visible: boolean; id?: string }>({ x: 0, y: 0, visible: false })
   const [textInputValue, setTextInputValue] = useState('')
   const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
-  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | null>(null)
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | 'text-rotate' | null>(null)
   // 드래그 이동 시작 시점의 items 스냅샷 (undo 기록용)
   const dragMoveStartItemsRef = useRef<CanvasItem[] | null>(null)
 
@@ -444,6 +475,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textBgColor: string
     textFontStyle: 'normal' | 'italic'
     textTextDecoration: 'none' | 'underline' | 'line-through'
+    textRotation: number
     symbolEmoji: string
     symbolScale: number
     imageSrcBorderColor: string
@@ -483,6 +515,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textBgColor: SYSTEM_ITEM_DEFAULTS.textBgColor,
     textFontStyle: SYSTEM_ITEM_DEFAULTS.textFontStyle,
     textTextDecoration: SYSTEM_ITEM_DEFAULTS.textTextDecoration,
+    textRotation: SYSTEM_ITEM_DEFAULTS.textRotation,
     symbolEmoji: SYSTEM_ITEM_DEFAULTS.symbolEmoji,
     symbolScale: SYSTEM_ITEM_DEFAULTS.symbolScale,
     imageSrcBorderColor: SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
@@ -611,6 +644,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textBgColor !== lastSavedState.textBgColor ||
     textFontStyle !== lastSavedState.textFontStyle ||
     textTextDecoration !== lastSavedState.textTextDecoration ||
+    textRotation !== lastSavedState.textRotation ||
     symbolEmoji !== lastSavedState.symbolEmoji ||
     symbolScale !== lastSavedState.symbolScale ||
     imageSrcBorderColor !== lastSavedState.imageSrcBorderColor ||
@@ -628,7 +662,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
-    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, symbolEmoji, symbolScale,
+    arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
     imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption
   ])
 
@@ -1022,54 +1056,87 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         // 텍스트 박스
         const fontStyle = item.style.fontStyle || 'normal'
         const textDecoration = item.style.textDecoration || 'none'
+        const rotation = item.style.rotation || 0
+        const fSize = item.style.fontSize || textFontSize
 
-        ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${item.style.fontSize || textFontSize}px sans-serif`
+        ctx.save()
+        // (item.x, item.y)로 원점 이동 후 회전 적용 (일관적인 로컬 좌표계 사용)
+        ctx.translate(item.x, item.y)
+        if (rotation !== 0) {
+          ctx.rotate((rotation * Math.PI) / 180)
+        }
+
+        ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${fSize}px sans-serif`
         ctx.textBaseline = 'top'
         ctx.textAlign = 'left'
 
-        // 텍스트 감싸는 배경 박스
+        // 멀티라인 크기 및 줄 정보 획득
+        const { width: boundsWidth, height: boundsHeight, lineHeight, lines } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+        // 텍스트를 감싸는 배경 박스
         const textBg = item.style.backgroundColor || 'transparent'
         if (textBg && textBg !== 'transparent') {
-          const metrics = ctx.measureText(item.text || '')
-          const bgW = metrics.width + 12
-          const bgH = (item.style.fontSize || textFontSize) + 10
+          const bgW = boundsWidth + 12
+          const bgH = boundsHeight + 10
           ctx.fillStyle = textBg
-          ctx.fillRect(item.x - 6, item.y - 4, bgW, bgH)
+          ctx.fillRect(-6, -4, bgW, bgH)
           ctx.strokeStyle = item.style.borderColor || '#cbd5e1'
           ctx.lineWidth = 1
-          ctx.strokeRect(item.x - 6, item.y - 4, bgW, bgH)
+          ctx.strokeRect(-6, -4, bgW, bgH)
         }
 
         ctx.fillStyle = item.style.textColor || textTextColor
-        ctx.fillText(item.text || '', item.x, item.y)
 
-        // 밑줄 / 취소선 데코레이션 그리기
-        if (textDecoration && textDecoration !== 'none') {
-          const metrics = ctx.measureText(item.text || '')
-          const fSize = item.style.fontSize || textFontSize
-          ctx.beginPath()
-          ctx.strokeStyle = item.style.textColor || textTextColor
-          ctx.lineWidth = Math.max(1.5, fSize / 12)
-          
-          if (textDecoration === 'underline') {
-            const underlineY = item.y + fSize + 2
-            ctx.moveTo(item.x, underlineY)
-            ctx.lineTo(item.x + metrics.width, underlineY)
-          } else if (textDecoration === 'line-through') {
-            const lineThroughY = item.y + fSize / 2 + 1
-            ctx.moveTo(item.x, lineThroughY)
-            ctx.lineTo(item.x + metrics.width, lineThroughY)
+        // 줄 단위 텍스트 렌더링 및 밑줄/취소선 데코레이션 그리기
+        lines.forEach((line, index) => {
+          const lineY = index * lineHeight
+          ctx.fillText(line, 0, lineY)
+
+          if (textDecoration && textDecoration !== 'none') {
+            ctx.save()
+            const lineMetrics = ctx.measureText(line)
+            const lineW = lineMetrics.width
+            ctx.beginPath()
+            ctx.strokeStyle = item.style.textColor || textTextColor
+            ctx.lineWidth = Math.max(1.5, fSize / 12)
+            
+            if (textDecoration === 'underline') {
+              const underlineY = lineY + fSize + 2
+              ctx.moveTo(0, underlineY)
+              ctx.lineTo(lineW, underlineY)
+            } else if (textDecoration === 'line-through') {
+              const lineThroughY = lineY + fSize / 2 + 1
+              ctx.moveTo(0, lineThroughY)
+              ctx.lineTo(lineW, lineThroughY)
+            }
+            ctx.stroke()
+            ctx.restore()
           }
-          ctx.stroke()
-        }
+        })
 
-        // 선택 영역 하이라이트
+        // 선택 영역 하이라이트 & 회전 핸들 그리기
         if (isSelected) {
-          const metrics = ctx.measureText(item.text || '')
           ctx.strokeStyle = '#3b82f6'
           ctx.lineWidth = 1.5
           ctx.setLineDash([4, 4])
-          ctx.strokeRect(item.x - 8, item.y - 6, metrics.width + 16, (item.style.fontSize || textFontSize) + 12)
+          ctx.strokeRect(-8, -6, boundsWidth + 16, boundsHeight + 12)
+
+          // 텍스트 상단 중앙 26px 위에 회전 원형 핸들 표시 (실선)
+          ctx.save()
+          ctx.setLineDash([])
+          ctx.beginPath()
+          ctx.moveTo(boundsWidth / 2, -6)
+          ctx.lineTo(boundsWidth / 2, -26)
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.arc(boundsWidth / 2, -26, 5, 0, 2 * Math.PI)
+          ctx.fillStyle = '#ffffff'
+          ctx.strokeStyle = '#3b82f6'
+          ctx.lineWidth = 1.5
+          ctx.fill()
+          ctx.stroke()
+          ctx.restore()
         }
       }
 
@@ -1274,6 +1341,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textBgColor,
     textFontStyle,
     textTextDecoration,
+    textRotation,
     symbolEmoji,
     symbolScale,
     imageSrcBorderColor,
@@ -1319,6 +1387,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setTextBgColor(cfg.textBgColor || 'transparent')
     setTextFontStyle(cfg.textFontStyle || 'normal')
     setTextTextDecoration(cfg.textTextDecoration || 'none')
+    setTextRotation(cfg.textRotation !== undefined ? cfg.textRotation : SYSTEM_ITEM_DEFAULTS.textRotation)
     setSymbolEmoji(cfg.symbolEmoji)
     setSymbolScale(cfg.symbolScale)
     setImageSrcBorderColor(cfg.imageSrcBorderColor)
@@ -1359,6 +1428,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     textBgColor: data.textBgColor ?? SYSTEM_ITEM_DEFAULTS.textBgColor,
     textFontStyle: data.textFontStyle ?? SYSTEM_ITEM_DEFAULTS.textFontStyle,
     textTextDecoration: data.textTextDecoration ?? SYSTEM_ITEM_DEFAULTS.textTextDecoration,
+    textRotation: data.textRotation ?? SYSTEM_ITEM_DEFAULTS.textRotation,
     symbolEmoji: data.symbolEmoji ?? data.selectedEmoji ?? SYSTEM_ITEM_DEFAULTS.symbolEmoji,
     symbolScale: data.symbolScale ?? SYSTEM_ITEM_DEFAULTS.symbolScale,
     imageSrcBorderColor: data.imageSrcBorderColor ?? SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor,
@@ -1741,14 +1811,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     const clickedItem = [...items].reverse().find((item) => {
       if (item.type === 'text') {
-        const textLength = item.text?.length || 1
-        const boundsWidth = textLength * (item.style.fontSize || textFontSize) * 0.65
-        const boundsHeight = (item.style.fontSize || textFontSize) + 6
+        const rotation = item.style.rotation || 0
+        const fSize = item.style.fontSize || textFontSize
+        const fontStyle = item.style.fontStyle || 'normal'
+        const canvas = canvasRef.current
+        const ctx = canvas?.getContext('2d') || null
+        const { width: boundsWidth, height: boundsHeight } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+        const dx = x - item.x
+        const dy = y - item.y
+        const rad = -rotation * Math.PI / 180
+        const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
+        const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
+
         return (
-          x >= item.x - 4 &&
-          x <= item.x + boundsWidth &&
-          y >= item.y - 4 &&
-          y <= item.y + boundsHeight
+          localX >= -6 &&
+          localX <= boundsWidth + 6 &&
+          localY >= -4 &&
+          localY <= boundsHeight + 6
         )
       }
       return false
@@ -1846,6 +1926,28 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setDragStart({ x, y })
             return
           }
+        } else if (selectedItem && selectedItem.type === 'text') {
+          const rotation = selectedItem.style.rotation || 0
+          const fSize = selectedItem.style.fontSize || textFontSize
+          const fontStyle = selectedItem.style.fontStyle || 'normal'
+          const canvas = canvasRef.current
+          const ctx = canvas?.getContext('2d') || null
+          const { width: boundsWidth } = getTextBounds(ctx, selectedItem.text || '', fSize, fontStyle)
+
+          const dx = x - selectedItem.x
+          const dy = y - selectedItem.y
+          const rad = -rotation * Math.PI / 180
+          const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
+          const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
+
+          const clickRadius = 8
+          const dist = Math.hypot(localX - boundsWidth / 2, localY - (-26))
+          if (dist <= clickRadius) {
+            setResizeHandle('text-rotate')
+            setIsDrawing(true)
+            setDragStart({ x, y })
+            return
+          }
         }
       }
 
@@ -1916,11 +2018,20 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           }
         }
         else if (item.type === 'text') {
-          // 텍스트 대략적인 선택 감지 바운딩 박스
-          const textLength = item.text?.length || 1
-          const boundsWidth = textLength * (item.style.fontSize || textFontSize) * 0.65
-          const boundsHeight = (item.style.fontSize || textFontSize) + 6
-          if (x >= item.x - 4 && x <= item.x + boundsWidth && y >= item.y - 4 && y <= item.y + boundsHeight) {
+          const rotation = item.style.rotation || 0
+          const fSize = item.style.fontSize || textFontSize
+          const fontStyle = item.style.fontStyle || 'normal'
+          const canvas = canvasRef.current
+          const ctx = canvas?.getContext('2d') || null
+          const { width: boundsWidth, height: boundsHeight } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+          const dx = x - item.x
+          const dy = y - item.y
+          const rad = -rotation * Math.PI / 180
+          const localX = dx * Math.cos(rad) - dy * Math.sin(rad)
+          const localY = dx * Math.sin(rad) + dy * Math.cos(rad)
+
+          if (localX >= -6 && localX <= boundsWidth + 6 && localY >= -4 && localY <= boundsHeight + 6) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
             found = true
@@ -1994,16 +2105,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     } 
     else if (activeTool === 'text') {
       // 텍스트 인풋 띄우기
-      const canvas = canvasRef.current
-      if (canvas) {
-        const rect = canvas.getBoundingClientRect()
-        const clickX = e.clientX - rect.left
-        const clickY = e.clientY - rect.top
-        
-        setTextInputValue('')
-        setTextInput({ x: clickX, y: clickY, visible: true })
-        setDragStart({ x, y }) // 캔버스 실제 픽셀 좌표 저장
-      }
+      setTextInputValue('')
+      setTextInput({ x, y, visible: true })
+      setDragStart({ x, y }) // 캔버스 실제 픽셀 좌표 저장
     }
   }
 
@@ -2097,6 +2201,36 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               style: {
                 ...item.style,
                 midX: x
+              }
+            }
+          }
+        } else if (item.id === selectedItemId && item.type === 'text') {
+          if (resizeHandle === 'text-rotate') {
+            const canvas = canvasRef.current
+            const ctx = canvas?.getContext('2d') || null
+            const fSize = item.style.fontSize || textFontSize
+            const fontStyle = item.style.fontStyle || 'normal'
+            const { width: boundsWidth } = getTextBounds(ctx, item.text || '', fSize, fontStyle)
+
+            const dx = x - item.x
+            const dy = y - item.y
+            const baseAngle = Math.atan2(-26, boundsWidth / 2)
+            const currentAngle = Math.atan2(dy, dx)
+            let newRotationRad = currentAngle - baseAngle
+            let newRotationDeg = (newRotationRad * 180) / Math.PI
+
+            if (e.shiftKey) {
+              newRotationDeg = Math.round(newRotationDeg / 15) * 15
+            }
+
+            // Normalize to [-180, 180] range
+            newRotationDeg = ((newRotationDeg + 180) % 360 + 360) % 360 - 180
+
+            return {
+              ...item,
+              style: {
+                ...item.style,
+                rotation: Math.round(newRotationDeg)
               }
             }
           }
@@ -2999,6 +3133,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   x={textInput.x}
                   y={textInput.y}
                   zoom={zoom}
+                  rotation={
+                    textInput.id
+                      ? (items.find((item) => item.id === textInput.id)?.style.rotation || 0)
+                      : textRotation
+                  }
                   value={textInputValue}
                   onChange={setTextInputValue}
                   onSubmit={handleTextSubmit}
@@ -3052,6 +3191,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setTextFontStyle={setTextFontStyle}
                 textTextDecoration={textTextDecoration}
                 setTextTextDecoration={setTextTextDecoration}
+                textRotation={textRotation}
+                setTextRotation={setTextRotation}
                 symbolEmoji={symbolEmoji}
                 setSymbolEmoji={setSymbolEmoji}
                 symbolScale={symbolScale}

@@ -63,6 +63,8 @@ interface FloatingPropertyPanelProps {
   setTextFontStyle: (style: 'normal' | 'italic') => void
   textTextDecoration: 'none' | 'underline' | 'line-through'
   setTextTextDecoration: (deco: 'none' | 'underline' | 'line-through') => void
+  textRotation: number
+  setTextRotation: (rotation: number) => void
 
   // 5. 이모지 심볼 (symbol) 관련 속성
   symbolEmoji: string
@@ -158,6 +160,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setTextFontStyle,
   textTextDecoration,
   setTextTextDecoration,
+  textRotation,
+  setTextRotation,
   symbolEmoji,
   setSymbolEmoji,
   symbolScale,
@@ -883,6 +887,24 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     }}
                     colors={['transparent', '#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
                   />
+
+                  {/* 회전 각도 */}
+                  <RangeSlider
+                    label="회전 각도"
+                    value={selectedItem.style.rotation !== undefined ? selectedItem.style.rotation : 0}
+                    min={-180}
+                    max={180}
+                    unit="°"
+                    onChangeValue={(val) => {
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, rotation: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
                 </div>
               )}
 
@@ -1343,12 +1365,21 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                             }}
                           />
                         </div>
-                        {/* 배경색 */}
+                         {/* 배경색 */}
                         <ColorPicker
                           label="배경색"
                           selectedColor={textBgColor}
-                          onChangeColor={setTextBgColor}
+                          onChangeColor={textBgColor => setTextBgColor(textBgColor)}
                           colors={['transparent', '#ffffff', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#0f172a']}
+                        />
+                        {/* 회전 각도 */}
+                        <RangeSlider
+                          label="회전 각도"
+                          value={textRotation}
+                          min={-180}
+                          max={180}
+                          unit="°"
+                          onChangeValue={setTextRotation}
                         />
                       </>
                     )}
