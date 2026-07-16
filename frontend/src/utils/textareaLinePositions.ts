@@ -56,7 +56,8 @@ export function measureLineTops(textarea: HTMLTextAreaElement, offsets: number[]
 
   MIRROR_PROPERTIES.forEach((prop) => {
     // CSSStyleDeclaration 인덱스 시그니처 타입 제약 우회 (textarea-caret와 동일한 접근 방식)
-    ;(style as any)[prop] = (computed as any)[prop]
+    const styleAny = style as any
+    styleAny[prop] = (computed as any)[prop]
   })
 
   document.body.appendChild(div)
