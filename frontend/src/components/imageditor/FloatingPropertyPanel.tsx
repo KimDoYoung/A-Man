@@ -95,7 +95,7 @@ interface FloatingPropertyPanelProps {
   onSaveDefaults: () => Promise<void> | void
   onLoadDefaults: () => Promise<void> | void
   onDeleteDefaults: () => Promise<void> | void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp'
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 
@@ -119,6 +119,26 @@ interface FloatingPropertyPanelProps {
   setStampScale: (scale: number) => void
   stampDirection: string
   setStampDirection: (dir: string) => void
+
+  // 8. 말풍선/설명선 (callout) 관련 속성
+  calloutShape: 'speech-rect' | 'speech-oval' | 'line'
+  setCalloutShape: (shape: 'speech-rect' | 'speech-oval' | 'line') => void
+  calloutBgColor: string
+  setCalloutBgColor: (color: string) => void
+  calloutBorderColor: string
+  setCalloutBorderColor: (color: string) => void
+  calloutBorderWidth: number
+  setCalloutBorderWidth: (width: number) => void
+  calloutLineStyle: 'solid' | 'dashed'
+  setCalloutLineStyle: (style: 'solid' | 'dashed') => void
+  calloutOpacity: number
+  setCalloutOpacity: (val: number) => void
+  calloutBorderRadius: number
+  setCalloutBorderRadius: (val: number) => void
+  calloutTextColor: string
+  setCalloutTextColor: (color: string) => void
+  calloutFontSize: number
+  setCalloutFontSize: (size: number) => void
 }
 
 const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
@@ -195,7 +215,25 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   stampScale,
   setStampScale,
   stampDirection,
-  setStampDirection
+  setStampDirection,
+  calloutShape,
+  setCalloutShape,
+  calloutBgColor,
+  setCalloutBgColor,
+  calloutBorderColor,
+  setCalloutBorderColor,
+  calloutBorderWidth,
+  setCalloutBorderWidth,
+  calloutLineStyle,
+  setCalloutLineStyle,
+  calloutOpacity,
+  setCalloutOpacity,
+  calloutBorderRadius,
+  setCalloutBorderRadius,
+  calloutTextColor,
+  setCalloutTextColor,
+  calloutFontSize,
+  setCalloutFontSize
 }) => {
   // 초기 띄우는 위치 (부모 캔버스 위에 뜨도록 고정/절대 좌표 적용)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -913,6 +951,187 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                 </div>
               )}
 
+              {/* callout(말풍선/설명선) 타입 인스펙터 */}
+              {selectedItem.type === 'callout' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 모양 선택 */}
+                  <div className="space-y-1.5">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                    <SegmentedControl
+                      options={[
+                        { id: 'speech-rect', label: '말풍선-사각' },
+                        { id: 'speech-oval', label: '말풍선-타원' },
+                        { id: 'line', label: '설명선' }
+                      ]}
+                      value={selectedItem.style.calloutShape || calloutShape}
+                      onChange={(id) => {
+                        setCalloutShape(id as any)
+                        const updated = items.map(item => {
+                          if (item.id === selectedItemId) {
+                            return { ...item, style: { ...item.style, calloutShape: id as any } }
+                          }
+                          return item
+                        })
+                        pushToUndo(updated)
+                      }}
+                    />
+                  </div>
+
+                  {/* 배경색 */}
+                  <ColorPicker
+                    label="배경색"
+                    selectedColor={selectedItem.style.backgroundColor || calloutBgColor}
+                    onChangeColor={(col) => {
+                      setCalloutBgColor(col)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, backgroundColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                    colors={BOX_BG_COLORS}
+                  />
+
+                  {/* 테두리 색상 */}
+                  <ColorPicker
+                    label="테두리 색상"
+                    selectedColor={selectedItem.style.borderColor || calloutBorderColor}
+                    onChangeColor={(col) => {
+                      setCalloutBorderColor(col)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, borderColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                    colors={BOX_ARROW_BORDER_COLORS}
+                  />
+
+                  {/* 선 타입 (실선/점선) */}
+                  <div className="space-y-1.5">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">선 타입</span>
+                    <SegmentedControl
+                      options={[
+                        { id: 'solid', label: '실선' },
+                        { id: 'dashed', label: '점선' }
+                      ]}
+                      value={selectedItem.style.lineStyle || calloutLineStyle}
+                      onChange={(id) => {
+                        setCalloutLineStyle(id as any)
+                        const updated = items.map(item => {
+                          if (item.id === selectedItemId) {
+                            return { ...item, style: { ...item.style, lineStyle: id as any } }
+                          }
+                          return item
+                        })
+                        pushToUndo(updated)
+                      }}
+                    />
+                  </div>
+
+                  {/* 선 두께 */}
+                  <RangeSlider
+                    label="선 두께"
+                    value={selectedItem.style.borderWidth || calloutBorderWidth}
+                    min={1}
+                    max={8}
+                    onChangeValue={(val) => {
+                      setCalloutBorderWidth(val)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, borderWidth: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
+
+                  {/* 모서리 둥글기 (타원 모양이 아닐 때만 의미가 있음) */}
+                  {(selectedItem.style.calloutShape || calloutShape) !== 'speech-oval' && (
+                    <RangeSlider
+                      label="모서리 둥글기"
+                      value={selectedItem.style.borderRadius !== undefined ? selectedItem.style.borderRadius : calloutBorderRadius}
+                      min={0}
+                      max={40}
+                      unit="px"
+                      onChangeValue={(val) => {
+                        setCalloutBorderRadius(val)
+                        const updated = items.map(item => {
+                          if (item.id === selectedItemId) {
+                            return { ...item, style: { ...item.style, borderRadius: val } }
+                          }
+                          return item
+                        })
+                        pushToUndo(updated)
+                      }}
+                    />
+                  )}
+
+                  {/* 투명도 */}
+                  <RangeSlider
+                    label="투명도"
+                    value={selectedItem.style.opacity !== undefined ? Math.round(selectedItem.style.opacity * 100) : calloutOpacity}
+                    min={0}
+                    max={100}
+                    unit="%"
+                    onChangeValue={(val) => {
+                      setCalloutOpacity(val)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, opacity: val / 100 } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
+
+                  {/* 글자 색상 */}
+                  <ColorPicker
+                    label="글자 색상"
+                    selectedColor={selectedItem.style.textColor || calloutTextColor}
+                    onChangeColor={(col) => {
+                      setCalloutTextColor(col)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, textColor: col } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                    colors={TEXT_COLOR_PALETTE}
+                  />
+
+                  {/* 글자 크기 */}
+                  <RangeSlider
+                    label="글자 크기"
+                    value={selectedItem.style.fontSize || calloutFontSize}
+                    min={10}
+                    max={28}
+                    onChangeValue={(val) => {
+                      setCalloutFontSize(val)
+                      const updated = items.map(item => {
+                        if (item.id === selectedItemId) {
+                          return { ...item, style: { ...item.style, fontSize: val } }
+                        }
+                        return item
+                      })
+                      pushToUndo(updated)
+                    }}
+                  />
+
+                  <p className="text-[11px] text-gray-400 dark:text-slate-500 leading-relaxed">
+                    꼬리 끝점은 캔버스에서 파란 원 핸들을 직접 드래그해 위치를 조정하세요. 텍스트는 더블클릭으로 편집합니다.
+                  </p>
+                </div>
+              )}
+
               {/* image 타입 인스펙터 */}
               {selectedItem.type === 'image' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
@@ -1272,6 +1491,91 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                             })}
                           </div>
                         </div>
+                      </>
+                    )}
+
+                    {activeTool === 'callout' && (
+                      <>
+                        {/* 모양 선택 */}
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                          <SegmentedControl
+                            options={[
+                              { id: 'speech-rect', label: '말풍선-사각' },
+                              { id: 'speech-oval', label: '말풍선-타원' },
+                              { id: 'line', label: '설명선' }
+                            ]}
+                            value={calloutShape}
+                            onChange={(id) => setCalloutShape(id as any)}
+                          />
+                        </div>
+
+                        <ColorPicker
+                          label="배경색"
+                          selectedColor={calloutBgColor}
+                          onChangeColor={setCalloutBgColor}
+                          colors={BOX_BG_COLORS}
+                        />
+                        <ColorPicker
+                          label="테두리 색상"
+                          selectedColor={calloutBorderColor}
+                          onChangeColor={setCalloutBorderColor}
+                          colors={BOX_ARROW_BORDER_COLORS}
+                        />
+
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">선 타입</span>
+                          <SegmentedControl
+                            options={[
+                              { id: 'solid', label: '실선' },
+                              { id: 'dashed', label: '점선' }
+                            ]}
+                            value={calloutLineStyle}
+                            onChange={(id) => setCalloutLineStyle(id as any)}
+                          />
+                        </div>
+
+                        <RangeSlider
+                          label="선 두께"
+                          value={calloutBorderWidth}
+                          min={1}
+                          max={8}
+                          onChangeValue={setCalloutBorderWidth}
+                        />
+
+                        {calloutShape !== 'speech-oval' && (
+                          <RangeSlider
+                            label="모서리 둥글기"
+                            value={calloutBorderRadius}
+                            min={0}
+                            max={40}
+                            unit="px"
+                            onChangeValue={setCalloutBorderRadius}
+                          />
+                        )}
+
+                        <RangeSlider
+                          label="투명도"
+                          value={calloutOpacity}
+                          min={0}
+                          max={100}
+                          unit="%"
+                          onChangeValue={setCalloutOpacity}
+                        />
+
+                        <ColorPicker
+                          label="글자 색상"
+                          selectedColor={calloutTextColor}
+                          onChangeColor={setCalloutTextColor}
+                          colors={TEXT_COLOR_PALETTE}
+                        />
+                        <RangeSlider
+                          label="글자 크기"
+                          value={calloutFontSize}
+                          min={10}
+                          max={28}
+                          onChangeValue={setCalloutFontSize}
+                        />
                       </>
                     )}
 

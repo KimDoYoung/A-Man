@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp } from 'lucide-react'
+import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { drawBlockArrowStamp } from './arrowStamp'
+import { drawCallout, getCalloutTailPoint, CALLOUT_DEFAULT_WIDTH, CALLOUT_DEFAULT_HEIGHT } from './calloutStamp'
 import TextItemInput from './TextItemInput'
 
 
@@ -371,7 +372,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
   const [canvasExpandBottom, setCanvasExpandBottom] = useState<number>(0)
@@ -433,7 +434,18 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [imageSrcHasBorder, setImageSrcHasBorder] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
   const [imageSrcCaptionText, setImageSrcCaptionText] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
   const [imageSrcHasCaption, setImageSrcHasCaption] = useState<boolean>(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
-  
+
+  // 7. 말풍선/설명선 (callout) 관련 속성
+  const [calloutShape, setCalloutShape] = useState<'speech-rect' | 'speech-oval' | 'line'>(SYSTEM_ITEM_DEFAULTS.calloutShape)
+  const [calloutBgColor, setCalloutBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutBgColor)
+  const [calloutBorderColor, setCalloutBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
+  const [calloutBorderWidth, setCalloutBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutBorderWidth)
+  const [calloutLineStyle, setCalloutLineStyle] = useState<'solid' | 'dashed'>(SYSTEM_ITEM_DEFAULTS.calloutLineStyle)
+  const [calloutOpacity, setCalloutOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutOpacity)
+  const [calloutBorderRadius, setCalloutBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
+  const [calloutTextColor, setCalloutTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutTextColor)
+  const [calloutFontSize, setCalloutFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutFontSize)
+
   // 속성 패널 리셋 트리거 상태
   const [resetPanelTrigger, setResetPanelTrigger] = useState<number>(0)
   
@@ -444,7 +456,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [textInput, setTextInput] = useState<{ x: number; y: number; visible: boolean; id?: string }>({ x: 0, y: 0, visible: false })
   const [textInputValue, setTextInputValue] = useState('')
   const [draggedItemOffset, setDraggedItemOffset] = useState<{ x: number; y: number } | null>(null)
-  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | 'text-rotate' | null>(null)
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | 'arrow-start' | 'arrow-end' | 'orthogonal-mid' | 'text-rotate' | 'callout-tail' | null>(null)
   // 드래그 이동 시작 시점의 items 스냅샷 (undo 기록용)
   const dragMoveStartItemsRef = useRef<CanvasItem[] | null>(null)
 
@@ -494,6 +506,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcHasBorder: boolean
     imageSrcCaptionText: string
     imageSrcHasCaption: boolean
+    calloutShape: 'speech-rect' | 'speech-oval' | 'line'
+    calloutBgColor: string
+    calloutBorderColor: string
+    calloutBorderWidth: number
+    calloutLineStyle: 'solid' | 'dashed'
+    calloutOpacity: number
+    calloutBorderRadius: number
+    calloutTextColor: string
+    calloutFontSize: number
   }>({
     title: '',
     bgImageSrc: '',
@@ -537,7 +558,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcBorderStyle: SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle,
     imageSrcHasBorder: SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder,
     imageSrcCaptionText: SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText,
-    imageSrcHasCaption: SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption
+    imageSrcHasCaption: SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption,
+    calloutShape: SYSTEM_ITEM_DEFAULTS.calloutShape,
+    calloutBgColor: SYSTEM_ITEM_DEFAULTS.calloutBgColor,
+    calloutBorderColor: SYSTEM_ITEM_DEFAULTS.calloutBorderColor,
+    calloutBorderWidth: SYSTEM_ITEM_DEFAULTS.calloutBorderWidth,
+    calloutLineStyle: SYSTEM_ITEM_DEFAULTS.calloutLineStyle,
+    calloutOpacity: SYSTEM_ITEM_DEFAULTS.calloutOpacity,
+    calloutBorderRadius: SYSTEM_ITEM_DEFAULTS.calloutBorderRadius,
+    calloutTextColor: SYSTEM_ITEM_DEFAULTS.calloutTextColor,
+    calloutFontSize: SYSTEM_ITEM_DEFAULTS.calloutFontSize
   })
   
   // 헤더 3초 알림 메시지 상태
@@ -684,7 +714,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     imageSrcBorderStyle !== lastSavedState.imageSrcBorderStyle ||
     imageSrcHasBorder !== lastSavedState.imageSrcHasBorder ||
     imageSrcCaptionText !== lastSavedState.imageSrcCaptionText ||
-    imageSrcHasCaption !== lastSavedState.imageSrcHasCaption
+    imageSrcHasCaption !== lastSavedState.imageSrcHasCaption ||
+    calloutShape !== lastSavedState.calloutShape ||
+    calloutBgColor !== lastSavedState.calloutBgColor ||
+    calloutBorderColor !== lastSavedState.calloutBorderColor ||
+    calloutBorderWidth !== lastSavedState.calloutBorderWidth ||
+    calloutLineStyle !== lastSavedState.calloutLineStyle ||
+    calloutOpacity !== lastSavedState.calloutOpacity ||
+    calloutBorderRadius !== lastSavedState.calloutBorderRadius ||
+    calloutTextColor !== lastSavedState.calloutTextColor ||
+    calloutFontSize !== lastSavedState.calloutFontSize
   )
 
   // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
@@ -695,7 +734,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
-    imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption
+    imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption,
+    calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize
   ])
 
   // 3초간 헤더에 메시지 표시 헬퍼
@@ -924,6 +964,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           ctx.lineWidth = 1.5
           ctx.setLineDash([4, 4])
           ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
+          ctx.restore()
+        }
+      }
+      else if (item.type === 'callout') {
+        drawCallout(ctx, item)
+        if (isSelected) {
+          // 박스는 box와 동일한 모서리 리사이즈 핸들 재사용
+          drawSelectionHandles(ctx, item)
+          // 꼬리 끝점 드래그 핸들 (arrow 끝점 앵커와 동일한 스타일)
+          const tail = getCalloutTailPoint(item)
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(tail.x, tail.y, 6, 0, 2 * Math.PI)
+          ctx.fillStyle = '#3b82f6'
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 1.5
+          ctx.fill()
+          ctx.stroke()
           ctx.restore()
         }
       }
@@ -1404,6 +1462,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.imageSrcCaptionText !== undefined) setImageSrcCaptionText(config.imageSrcCaptionText)
         if (config.imageSrcHasCaption !== undefined) setImageSrcHasCaption(config.imageSrcHasCaption)
 
+        // 7. 말풍선/설명선
+        if (config.calloutShape !== undefined) setCalloutShape(config.calloutShape)
+        if (config.calloutBgColor !== undefined) setCalloutBgColor(config.calloutBgColor)
+        if (config.calloutBorderColor !== undefined) setCalloutBorderColor(config.calloutBorderColor)
+        if (config.calloutBorderWidth !== undefined) setCalloutBorderWidth(config.calloutBorderWidth)
+        if (config.calloutLineStyle !== undefined) setCalloutLineStyle(config.calloutLineStyle)
+        if (config.calloutOpacity !== undefined) setCalloutOpacity(config.calloutOpacity)
+        if (config.calloutBorderRadius !== undefined) setCalloutBorderRadius(config.calloutBorderRadius)
+        if (config.calloutTextColor !== undefined) setCalloutTextColor(config.calloutTextColor)
+        if (config.calloutFontSize !== undefined) setCalloutFontSize(config.calloutFontSize)
+
         if (config.captionAlign !== undefined) setCaptionAlign(config.captionAlign)
         if (config.stampScale !== undefined) setStampScale(config.stampScale)
         if (config.stampDirection !== undefined) setStampDirection(config.stampDirection)
@@ -1451,6 +1520,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     captionAlign,
     stampScale,
     stampDirection,
+    calloutShape,
+    calloutBgColor,
+    calloutBorderColor,
+    calloutBorderWidth,
+    calloutLineStyle,
+    calloutOpacity,
+    calloutBorderRadius,
+    calloutTextColor,
+    calloutFontSize,
     hasBorder,
     borderColor,
     borderWidth,
@@ -1501,6 +1579,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setCaptionAlign(cfg.captionAlign)
     setStampScale(cfg.stampScale !== undefined ? cfg.stampScale : SYSTEM_ITEM_DEFAULTS.stampScale)
     setStampDirection(cfg.stampDirection || SYSTEM_ITEM_DEFAULTS.stampDirection)
+    setCalloutShape(cfg.calloutShape || SYSTEM_ITEM_DEFAULTS.calloutShape)
+    setCalloutBgColor(cfg.calloutBgColor || SYSTEM_ITEM_DEFAULTS.calloutBgColor)
+    setCalloutBorderColor(cfg.calloutBorderColor || SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
+    setCalloutBorderWidth(cfg.calloutBorderWidth !== undefined ? cfg.calloutBorderWidth : SYSTEM_ITEM_DEFAULTS.calloutBorderWidth)
+    setCalloutLineStyle(cfg.calloutLineStyle || SYSTEM_ITEM_DEFAULTS.calloutLineStyle)
+    setCalloutOpacity(cfg.calloutOpacity !== undefined ? cfg.calloutOpacity : SYSTEM_ITEM_DEFAULTS.calloutOpacity)
+    setCalloutBorderRadius(cfg.calloutBorderRadius !== undefined ? cfg.calloutBorderRadius : SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
+    setCalloutTextColor(cfg.calloutTextColor || SYSTEM_ITEM_DEFAULTS.calloutTextColor)
+    setCalloutFontSize(cfg.calloutFontSize !== undefined ? cfg.calloutFontSize : SYSTEM_ITEM_DEFAULTS.calloutFontSize)
     setHasBorder(cfg.hasBorder)
     setBorderColor(cfg.borderColor)
     setBorderWidth(cfg.borderWidth)
@@ -1542,6 +1629,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     captionAlign: data.captionAlign ?? SYSTEM_ITEM_DEFAULTS.captionAlign,
     stampScale: data.stampScale ?? SYSTEM_ITEM_DEFAULTS.stampScale,
     stampDirection: data.stampDirection ?? SYSTEM_ITEM_DEFAULTS.stampDirection,
+    calloutShape: data.calloutShape ?? SYSTEM_ITEM_DEFAULTS.calloutShape,
+    calloutBgColor: data.calloutBgColor ?? SYSTEM_ITEM_DEFAULTS.calloutBgColor,
+    calloutBorderColor: data.calloutBorderColor ?? SYSTEM_ITEM_DEFAULTS.calloutBorderColor,
+    calloutBorderWidth: data.calloutBorderWidth ?? SYSTEM_ITEM_DEFAULTS.calloutBorderWidth,
+    calloutLineStyle: data.calloutLineStyle ?? SYSTEM_ITEM_DEFAULTS.calloutLineStyle,
+    calloutOpacity: data.calloutOpacity ?? SYSTEM_ITEM_DEFAULTS.calloutOpacity,
+    calloutBorderRadius: data.calloutBorderRadius ?? SYSTEM_ITEM_DEFAULTS.calloutBorderRadius,
+    calloutTextColor: data.calloutTextColor ?? SYSTEM_ITEM_DEFAULTS.calloutTextColor,
+    calloutFontSize: data.calloutFontSize ?? SYSTEM_ITEM_DEFAULTS.calloutFontSize,
     hasBorder: data.hasBorder ?? SYSTEM_ITEM_DEFAULTS.hasBorder,
     borderColor: data.borderColor ?? SYSTEM_ITEM_DEFAULTS.borderColor,
     borderWidth: data.borderWidth ?? SYSTEM_ITEM_DEFAULTS.borderWidth,
@@ -1658,6 +1754,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setImageSrcHasBorder(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
       setImageSrcCaptionText(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
       setImageSrcHasCaption(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
+
+      setCalloutShape(SYSTEM_ITEM_DEFAULTS.calloutShape)
+      setCalloutBgColor(SYSTEM_ITEM_DEFAULTS.calloutBgColor)
+      setCalloutBorderColor(SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
+      setCalloutBorderWidth(SYSTEM_ITEM_DEFAULTS.calloutBorderWidth)
+      setCalloutLineStyle(SYSTEM_ITEM_DEFAULTS.calloutLineStyle)
+      setCalloutOpacity(SYSTEM_ITEM_DEFAULTS.calloutOpacity)
+      setCalloutBorderRadius(SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
+      setCalloutTextColor(SYSTEM_ITEM_DEFAULTS.calloutTextColor)
+      setCalloutFontSize(SYSTEM_ITEM_DEFAULTS.calloutFontSize)
 
       setCaptionAlign(SYSTEM_ITEM_DEFAULTS.captionAlign)
       setStampScale(SYSTEM_ITEM_DEFAULTS.stampScale)
@@ -1953,6 +2059,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           localY <= boundsHeight + 6
         )
       }
+      if (item.type === 'callout') {
+        return (
+          x >= item.x && x <= item.x + (item.width || 0) &&
+          y >= item.y && y <= item.y + (item.height || 0)
+        )
+      }
       return false
     })
 
@@ -1977,7 +2089,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 1순위: 선택된 사각형이 존재할 때 네 꼭지점 리사이즈 핸들 클릭 여부를 우선 판정!
       if (selectedItemId) {
         const selectedItem = items.find(item => item.id === selectedItemId)
-        if (selectedItem && (selectedItem.type === 'box' || selectedItem.type === 'image')) {
+        if (selectedItem && (selectedItem.type === 'box' || selectedItem.type === 'image' || selectedItem.type === 'callout')) {
           const tl = { x: selectedItem.x, y: selectedItem.y }
           const tr = { x: selectedItem.x + (selectedItem.width || 0), y: selectedItem.y }
           const bl = { x: selectedItem.x, y: selectedItem.y + (selectedItem.height || 0) }
@@ -2004,6 +2116,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setIsDrawing(true)
             setDragStart({ x, y })
             return
+          } else if (selectedItem.type === 'callout') {
+            const tail = getCalloutTailPoint(selectedItem)
+            if (Math.hypot(tail.x - x, tail.y - y) <= clickRadius) {
+              setResizeHandle('callout-tail')
+              setIsDrawing(true)
+              setDragStart({ x, y })
+              return
+            }
           }
         } else if (selectedItem && selectedItem.type === 'arrow') {
           const fromX = selectedItem.x
@@ -2089,20 +2209,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             break
           }
         } 
-        else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
+        else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'callout') {
           const x2 = item.x + (item.width || 0)
           const y2 = item.y + (item.height || 0)
           const minX = Math.min(item.x, x2)
           const maxX = Math.max(item.x, x2)
           const minY = Math.min(item.y, y2)
           const maxY = Math.max(item.y, y2)
-          if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+          const insideBox = x >= minX && x <= maxX && y >= minY && y <= maxY
+          const onCalloutTail = item.type === 'callout' && (() => {
+            const tail = getCalloutTailPoint(item)
+            return Math.hypot(tail.x - x, tail.y - y) <= 10
+          })()
+          if (insideBox || onCalloutTail) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
             found = true
             break
           }
-        } 
+        }
         else if (item.type === 'arrow') {
           const x2 = item.x + (item.width || 0)
           const y2 = item.y + (item.height || 0)
@@ -2185,6 +2310,30 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       pushToUndo([...items, newItem])
       setSelectedItemId(newItem.id)
     }
+    else if (activeTool === 'callout') {
+      const newItem: CanvasItem = {
+        id: `item-${Date.now()}`,
+        type: 'callout',
+        x: x - CALLOUT_DEFAULT_WIDTH / 2,
+        y: y - CALLOUT_DEFAULT_HEIGHT / 2,
+        width: CALLOUT_DEFAULT_WIDTH,
+        height: CALLOUT_DEFAULT_HEIGHT,
+        text: '더블클릭으로 변경',
+        style: {
+          calloutShape,
+          backgroundColor: calloutBgColor,
+          borderColor: calloutBorderColor,
+          borderWidth: calloutBorderWidth,
+          lineStyle: calloutLineStyle,
+          opacity: calloutOpacity / 100,
+          borderRadius: calloutBorderRadius,
+          textColor: calloutTextColor,
+          fontSize: calloutFontSize
+        }
+      }
+      pushToUndo([...items, newItem])
+      setSelectedItemId(newItem.id)
+    }
     else if (activeTool === 'circle-number') {
       const newItem: CanvasItem = {
         id: `item-${Date.now()}`,
@@ -2245,7 +2394,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     // 포인터 모드 리사이징 처리
     if (activeTool === 'pointer' && selectedItemId && resizeHandle) {
       const updated = items.map((item) => {
-        if (item.id === selectedItemId && (item.type === 'box' || item.type === 'image')) {
+        if (item.id === selectedItemId && item.type === 'callout' && resizeHandle === 'callout-tail') {
+          return { ...item, style: { ...item.style, calloutTailX: x, calloutTailY: y } }
+        } else if (item.id === selectedItemId && (item.type === 'box' || item.type === 'image' || item.type === 'callout')) {
           const originalX = item.x
           const originalY = item.y
           const originalW = item.width || 0
@@ -2541,6 +2692,19 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               }
             }
           }
+          if (item.type === 'callout') {
+            const tail = getCalloutTailPoint(item)
+            return {
+              ...item,
+              x: item.x - cX,
+              y: item.y - cY,
+              style: {
+                ...item.style,
+                calloutTailX: tail.x - cX,
+                calloutTailY: tail.y - cY
+              }
+            }
+          }
           return { ...item, x: item.x - cX, y: item.y - cY }
         })
         .filter((item) => {
@@ -2548,7 +2712,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           if (item.type === 'circle-number') {
             const r = (item.style.fontSize || 13) * 1.05
             return item.x >= -r && item.x <= cW + r && item.y >= -r && item.y <= cH + r
-          } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
+          } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'callout') {
             return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
           } else if (item.type === 'text') {
             return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
@@ -3115,6 +3279,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         itemBottom = item.y + r
       } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
         itemBottom = item.y + (item.height || 0)
+      } else if (item.type === 'callout') {
+        itemBottom = Math.max(item.y + (item.height || 0), getCalloutTailPoint(item).y)
       } else if (item.type === 'text') {
         itemBottom = item.y + (item.style.fontSize || textFontSize) * 1.2
       } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
@@ -3144,6 +3310,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         itemRight = item.x + r
       } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
         itemRight = item.x + (item.width || 0)
+      } else if (item.type === 'callout') {
+        itemRight = Math.max(item.x + (item.width || 0), getCalloutTailPoint(item).x)
       } else if (item.type === 'text') {
         itemRight = item.x + 100 // approximate text width
       } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
@@ -3175,6 +3343,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       } else if (item.type === 'symbol') {
         const radius = (item.style.fontSize || 48) / 2
         itemTop = item.y - radius
+      } else if (item.type === 'callout') {
+        itemTop = Math.min(item.y, getCalloutTailPoint(item).y)
       }
       if (itemTop < 100) safe = false
     })
@@ -3192,23 +3362,46 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       } else if (item.type === 'symbol') {
         const radius = (item.style.fontSize || 48) / 2
         itemLeft = item.x - radius
+      } else if (item.type === 'callout') {
+        itemLeft = Math.min(item.x, getCalloutTailPoint(item).x)
       }
       if (itemLeft < 100) safe = false
     })
     return safe
   }, [items, canvasExpandLeft, circleNumberFontSize])
 
+  // callout 아이템의 y좌표 이동 시 꼬리 끝점(calloutTailY)도 함께 이동시키는 헬퍼
+  const shiftItemY = (item: CanvasItem, delta: number): CanvasItem => {
+    if (item.type === 'callout') {
+      const tail = getCalloutTailPoint(item)
+      return { ...item, y: item.y + delta, style: { ...item.style, calloutTailY: tail.y + delta } }
+    }
+    return { ...item, y: item.y + delta }
+  }
+
+  // callout 아이템의 x좌표 이동 시 꼬리 끝점(calloutTailX)도 함께 이동시키는 헬퍼
+  const shiftItemX = (item: CanvasItem, delta: number): CanvasItem => {
+    if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+      return { ...item, x: item.x + delta, style: { ...item.style, midX: item.style.midX + delta } }
+    }
+    if (item.type === 'callout') {
+      const tail = getCalloutTailPoint(item)
+      return { ...item, x: item.x + delta, style: { ...item.style, calloutTailX: tail.x + delta } }
+    }
+    return { ...item, x: item.x + delta }
+  }
+
   // 4방향 확장/축소 실행 함수
   const handleExpandTop = () => {
     setCanvasExpandTop(prev => prev + 100)
-    const shifted = items.map(item => ({ ...item, y: item.y + 100 }))
+    const shifted = items.map(item => shiftItemY(item, 100))
     pushToUndo(shifted)
   }
 
   const handleShrinkTop = () => {
     if (!canShrinkTop) return
     setCanvasExpandTop(prev => prev - 100)
-    const shifted = items.map(item => ({ ...item, y: item.y - 100 }))
+    const shifted = items.map(item => shiftItemY(item, -100))
     pushToUndo(shifted)
   }
 
@@ -3225,32 +3418,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   const handleExpandLeft = () => {
     setCanvasExpandLeft(prev => prev + 100)
-    const shifted = items.map(item => {
-      if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
-        return {
-          ...item,
-          x: item.x + 100,
-          style: { ...item.style, midX: item.style.midX + 100 }
-        }
-      }
-      return { ...item, x: item.x + 100 }
-    })
+    const shifted = items.map(item => shiftItemX(item, 100))
     pushToUndo(shifted)
   }
 
   const handleShrinkLeft = () => {
     if (!canShrinkLeft) return
     setCanvasExpandLeft(prev => prev - 100)
-    const shifted = items.map(item => {
-      if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
-        return {
-          ...item,
-          x: item.x - 100,
-          style: { ...item.style, midX: item.style.midX - 100 }
-        }
-      }
-      return { ...item, x: item.x - 100 }
-    })
+    const shifted = items.map(item => shiftItemX(item, -100))
     pushToUndo(shifted)
   }
 
@@ -3331,10 +3506,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                       role="radio"
                       aria-checked={expandDirection === dir}
                       onClick={() => setExpandDirection(dir)}
-                      className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer border ${
+                      className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
                         expandDirection === dir
-                          ? 'bg-indigo-650 text-gray-700 shadow-xs border-indigo-650'
-                          : 'bg-transparent text-gray-550 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 border-transparent'
+                          ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                          : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
                       }`}
                       title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 선택`}
                     >
@@ -3350,7 +3525,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 <button
                   type="button"
                   onClick={activeExpandAction.expand}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-550 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-150 dark:border-slate-880 cursor-pointer transition-all shrink-0"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
                   title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
                 >
                   +100
@@ -3359,7 +3534,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   type="button"
                   onClick={activeExpandAction.shrink}
                   disabled={!activeExpandAction.canShrink}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-550 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-150 dark:border-slate-880 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
                   title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
                 >
                   -100
@@ -3399,6 +3574,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'arrow', label: '화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
               { id: 'orthogonal-arrow', label: '꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
               { id: 'block-arrow-stamp', label: '스탬프', icon: <Stamp className="w-4 h-4 text-orange-500 -rotate-45" /> },
+              { id: 'callout', label: '말풍선 / 설명선', icon: <MessageSquare className="w-4 h-4 text-sky-500" /> },
               { id: 'symbol', label: '이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
               { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
               { id: 'crop', label: '잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> }
@@ -3600,6 +3776,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setStampScale={setStampScale}
                 stampDirection={stampDirection}
                 setStampDirection={setStampDirection}
+                calloutShape={calloutShape}
+                setCalloutShape={setCalloutShape}
+                calloutBgColor={calloutBgColor}
+                setCalloutBgColor={setCalloutBgColor}
+                calloutBorderColor={calloutBorderColor}
+                setCalloutBorderColor={setCalloutBorderColor}
+                calloutBorderWidth={calloutBorderWidth}
+                setCalloutBorderWidth={setCalloutBorderWidth}
+                calloutLineStyle={calloutLineStyle}
+                setCalloutLineStyle={setCalloutLineStyle}
+                calloutOpacity={calloutOpacity}
+                setCalloutOpacity={setCalloutOpacity}
+                calloutBorderRadius={calloutBorderRadius}
+                setCalloutBorderRadius={setCalloutBorderRadius}
+                calloutTextColor={calloutTextColor}
+                setCalloutTextColor={setCalloutTextColor}
+                calloutFontSize={calloutFontSize}
+                setCalloutFontSize={setCalloutFontSize}
               />
             )}
           </main>

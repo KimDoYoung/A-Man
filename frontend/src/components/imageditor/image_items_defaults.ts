@@ -21,7 +21,7 @@ export const SYSTEM_ITEM_DEFAULTS = {
   arrowHeadSize: 2,
 
   // 4. 일반 텍스트 (text) 전용 속성
-  textTextColor: '#0f172a',
+  textTextColor: '#3b82f6',
   textFontSize: 16,
   textBgColor: 'transparent',
   textFontStyle: 'normal' as 'normal' | 'italic',
@@ -44,13 +44,24 @@ export const SYSTEM_ITEM_DEFAULTS = {
   stampScale: 3,
   stampDirection: 'right',
 
-  // 7. 기타 공통 레이아웃 속성
+  // 8. 말풍선/설명선 (callout) 전용 속성
+  calloutShape: 'speech-rect' as 'speech-rect' | 'speech-oval' | 'line',
+  calloutBgColor: '#eff6ff',
+  calloutBorderColor: '#3b82f6',
+  calloutBorderWidth: 2,
+  calloutLineStyle: 'solid' as 'solid' | 'dashed',
+  calloutOpacity: 100,
+  calloutBorderRadius: 8,
+  calloutTextColor: '#3b82f6',
+  calloutFontSize: 14,
+
+  // 9. 기타 공통 레이아웃 속성
   captionAlign: 'center' as 'left' | 'center',
   hasBorder: true,
   borderColor: '#808080',
   borderWidth: 1,
   borderStyle: 'rounded' as 'basic' | 'rounded'
-} as const
+}
 
 // 아이템별 스타일 속성 25필드 shape (SYSTEM_ITEM_DEFAULTS와 동일)
 export type StyleConfig = typeof SYSTEM_ITEM_DEFAULTS
