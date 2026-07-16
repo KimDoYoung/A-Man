@@ -15,6 +15,7 @@ const TextItemInput: React.FC<TextItemInputProps> = ({
   x,
   y,
   zoom,
+  rotation,
   value,
   onChange,
   onSubmit,
