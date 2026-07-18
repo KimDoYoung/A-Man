@@ -1846,21 +1846,43 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     const handlePaste = (e: ClipboardEvent) => {
       if (!isOpen) return
       const clipboardItems = e.clipboardData?.items
-      if (!clipboardItems) return
-      
-      for (let i = 0; i < clipboardItems.length; i++) {
-        if (clipboardItems[i].type.indexOf('image') !== -1) {
-          const blob = clipboardItems[i].getAsFile()
-          if (blob) {
-            if (bgImage) {
-              addSubImage(blob)
-            } else {
-              loadImage(blob)
+
+      // 1순위: 시스템 클립보드에 이미지가 있으면 이미지 붙여넣기
+      if (clipboardItems) {
+        for (let i = 0; i < clipboardItems.length; i++) {
+          if (clipboardItems[i].type.indexOf('image') !== -1) {
+            const blob = clipboardItems[i].getAsFile()
+            if (blob) {
+              if (bgImage) {
+                addSubImage(blob)
+              } else {
+                loadImage(blob)
+              }
+              e.preventDefault()
+              return
             }
-            e.preventDefault()
-            break
           }
         }
+      }
+
+      // 2순위: 이미지 없으면 복사된 아이템 붙여넣기 (Ctrl+C로 저장된 것)
+      if (!bgImage) return
+      const copiedStr = localStorage.getItem('aman_copied_item')
+      if (!copiedStr) return
+      try {
+        const copiedItem: CanvasItem = JSON.parse(copiedStr)
+        const newItem: CanvasItem = {
+          ...copiedItem,
+          id: `item-${Date.now()}`,
+          x: copiedItem.x + 20,
+          y: copiedItem.y + 20,
+          style: { ...copiedItem.style }
+        }
+        pushToUndo([...items, newItem])
+        setSelectedItemId(newItem.id)
+        e.preventDefault()
+      } catch (err) {
+        console.warn('아이템 붙여넣기 파싱 실패:', err)
       }
     }
 
@@ -2909,6 +2931,22 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         handleRedo()
+        return
+      }
+
+      // Ctrl + C / Cmd + C (아이템 복사 → localStorage)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        if (selectedItemId) {
+          const targetItem = items.find(item => item.id === selectedItemId)
+          if (targetItem) {
+            localStorage.setItem('aman_copied_item', JSON.stringify(targetItem))
+            // 시스템 클립보드를 텍스트 마커로 교체: 다음 Ctrl+V에서 이미지 판별을 막고
+            // paste 핸들러가 localStorage item 경로로 진입하도록 유도
+            copyTextToClipboard('__aman_item__').catch(() => {})
+            e.preventDefault()
+            showSaveMessage('아이템이 복사되었습니다. 다른 이미지에서 Ctrl+V로 붙여넣기 가능합니다.', 'success')
+          }
+        }
         return
       }
 
