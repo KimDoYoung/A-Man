@@ -953,7 +953,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     // 3. 아이템들 그리기 (원숫자, 사각형, 텍스트)
     items.forEach((item) => {
-      const isSelected = item.id === selectedItemId && activeTool === 'pointer'
+      const isSelected = item.id === selectedItemId
       ctx.save()
 
       if (item.type === 'block-arrow-stamp') {
@@ -1300,7 +1300,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     // 4. 임시 드로잉 가이드 피드백 (사각형 그리기 도중 또는 크롭 점선)
     if (isDrawing && dragStart && dragCurrent) {
       ctx.save()
-      if (activeTool === 'box') {
+      if (activeTool === 'callout') {
+        ctx.strokeStyle = calloutBorderColor
+        ctx.lineWidth = calloutBorderWidth
+        ctx.setLineDash([4, 4])
+        const w = dragCurrent.x - dragStart.x
+        const h = dragCurrent.y - dragStart.y
+        ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+      } else if (activeTool === 'box') {
         ctx.strokeStyle = boxBorderColor
         ctx.lineWidth = boxLineWidth
         ctx.setLineDash([4, 4])
@@ -2311,28 +2318,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setSelectedItemId(newItem.id)
     }
     else if (activeTool === 'callout') {
-      const newItem: CanvasItem = {
-        id: `item-${Date.now()}`,
-        type: 'callout',
-        x: x - CALLOUT_DEFAULT_WIDTH / 2,
-        y: y - CALLOUT_DEFAULT_HEIGHT / 2,
-        width: CALLOUT_DEFAULT_WIDTH,
-        height: CALLOUT_DEFAULT_HEIGHT,
-        text: '더블클릭으로 변경',
-        style: {
-          calloutShape,
-          backgroundColor: calloutBgColor,
-          borderColor: calloutBorderColor,
-          borderWidth: calloutBorderWidth,
-          lineStyle: calloutLineStyle,
-          opacity: calloutOpacity / 100,
-          borderRadius: calloutBorderRadius,
-          textColor: calloutTextColor,
-          fontSize: calloutFontSize
-        }
-      }
-      pushToUndo([...items, newItem])
-      setSelectedItemId(newItem.id)
+      setIsDrawing(true)
+      setDragStart({ x, y })
+      setDragCurrent({ x, y })
     }
     else if (activeTool === 'circle-number') {
       const newItem: CanvasItem = {
@@ -2550,7 +2538,33 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       const w = x - dragStart.x
       const h = y - dragStart.y
 
-      if (activeTool === 'box') {
+      if (activeTool === 'callout') {
+        if (Math.abs(w) > 10 && Math.abs(h) > 10) {
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'callout',
+            x: Math.min(dragStart.x, x),
+            y: Math.min(dragStart.y, y),
+            width: Math.abs(w),
+            height: Math.abs(h),
+            text: '더블클릭으로 변경',
+            style: {
+              calloutShape,
+              backgroundColor: calloutBgColor,
+              borderColor: calloutBorderColor,
+              borderWidth: calloutBorderWidth,
+              lineStyle: calloutLineStyle,
+              opacity: calloutOpacity / 100,
+              borderRadius: calloutBorderRadius,
+              textColor: calloutTextColor,
+              fontSize: calloutFontSize
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
+      else if (activeTool === 'box') {
         // 의미 있는 크기만 등록
         if (Math.abs(w) > 5 && Math.abs(h) > 5) {
           const newItem: CanvasItem = {
@@ -2626,6 +2640,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             if (isDirty) {
               try {
                 await handleSaveToHistory()
+                fetchHistory()
               } catch (err) {
                 console.error('크롭 전 자동 저장 실패:', err)
               }
@@ -2671,6 +2686,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (!tempCtx) return
 
     tempCtx.drawImage(bgImage, cX, cY, cW, cH, 0, 0, cW, cH)
+
+    // 크롭 이미지를 클립보드에 복사: bgImage 대신 main canvas에서 캡처해야
+    // items(원숫자·박스·화살표 등) 포함 + canvasExpand 오프셋 문제 없음
+    if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== 'undefined') {
+      const clipCanvas = document.createElement('canvas')
+      clipCanvas.width = cW
+      clipCanvas.height = cH
+      const clipCtx = clipCanvas.getContext('2d')
+      if (clipCtx) {
+        clipCtx.drawImage(canvas, cX, cY, cW, cH, 0, 0, cW, cH)
+        clipCanvas.toBlob((blob) => {
+          if (blob) {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+              .catch((err) => console.warn('크롭 이미지 클립보드 복사 실패:', err))
+          }
+        }, 'image/png')
+      }
+    }
 
     const croppedDataUrl = tempCanvas.toDataURL('image/png')
     const croppedImg = new Image()
