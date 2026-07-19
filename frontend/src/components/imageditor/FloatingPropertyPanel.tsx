@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '@/lib/apiClient'
 import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ReorderController from './ReorderController'
@@ -236,6 +238,22 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setCalloutFontSize
 }) => {
   // 초기 띄우는 위치 (부모 캔버스 위에 뜨도록 고정/절대 좌표 적용)
+  const { data: dbEmojis } = useQuery<string[]>({
+    queryKey: ['emoji-palette'],
+    queryFn: () => apiClient.get<string[]>('/assets/emoji-palette'),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const emojiPalette = (() => {
+    const base = dbEmojis ?? []
+    const merged = [...base]
+    for (const e of SYMBOL_EMOJI_OPTIONS) {
+      if (merged.length >= 20) break
+      if (!merged.includes(e)) merged.push(e)
+    }
+    return merged
+  })()
+
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -554,7 +572,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   <div className="space-y-2">
                     <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">심볼 이모지 선택</span>
                     <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
-                      {SYMBOL_EMOJI_OPTIONS.map((emoji) => {
+                      {emojiPalette.map((emoji) => {
                         const isCurrent = selectedItem.text === emoji
                         return (
                           <button
@@ -1585,7 +1603,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         <div className="space-y-2">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">심볼 이모지 선택</span>
                           <div className="grid grid-cols-6 gap-2 bg-gray-50 dark:bg-slate-850 p-2.5 rounded-lg border border-gray-150 dark:border-slate-800">
-                            {SYMBOL_EMOJI_OPTIONS.map((emoji) => {
+                            {emojiPalette.map((emoji) => {
                               const isCurrent = symbolEmoji === emoji
                               return (
                                 <button

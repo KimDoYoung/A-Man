@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface AssetRepository extends JpaRepository<Asset, Long> {
     List<Asset> findByAtype(String atype);
+    List<Asset> findByAtypeOrderByIdAsc(String atype);
     List<Asset> findByAtypeAndNameContaining(String atype, String name);
     List<Asset> findByNameContaining(String name);
 }

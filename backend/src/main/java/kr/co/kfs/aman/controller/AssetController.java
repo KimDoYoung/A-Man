@@ -49,6 +49,21 @@ public class AssetController {
         return ResponseEntity.ok(list);
     }
 
+    @GetMapping("/emoji-palette")
+    public ResponseEntity<?> getEmojiPalette() {
+        java.util.List<Asset> list = assetRepository.findByAtypeOrderByIdAsc("EMOJI");
+        if (list.isEmpty()) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+        String[] parts = list.get(0).getValue().split(",");
+        java.util.List<String> emojis = new java.util.ArrayList<>();
+        for (String p : parts) {
+            String t = p.trim();
+            if (!t.isEmpty()) emojis.add(t);
+        }
+        return ResponseEntity.ok(emojis);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getAssetById(@PathVariable("id") Long id) {
         Optional<Asset> assetOpt = assetRepository.findById(id);
