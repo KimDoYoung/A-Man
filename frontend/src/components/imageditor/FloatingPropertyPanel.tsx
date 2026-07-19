@@ -95,7 +95,7 @@ interface FloatingPropertyPanelProps {
   onSaveDefaults: () => Promise<void> | void
   onLoadDefaults: () => Promise<void> | void
   onDeleteDefaults: () => Promise<void> | void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 
@@ -379,7 +379,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
               
               {/* box 또는 arrow 타입 인스펙터 */}
-              {(selectedItem.type === 'box' || selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow') && (
+              {(selectedItem.type === 'box' || selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow' || selectedItem.type === 'bracket-arrow') && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   {/* 강조선 색상 */}
                   <ColorPicker
@@ -511,7 +511,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   />
 
                   {/* 화살머리 크기 (화살표 계열일 때만) */}
-                  {(selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow') && (
+                  {(selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow' || selectedItem.type === 'bracket-arrow') && (
                     <div className="space-y-1.5">
                       <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">화살머리 크기</span>
                       <div className="flex space-x-1.5">
@@ -1338,7 +1338,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       </>
                     )}
 
-                    {(activeTool === 'box' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow') && (
+                    {(activeTool === 'box' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow' || activeTool === 'bracket-arrow') && (
                       <>
                         <ColorPicker
                           label="강조선 색상"
@@ -1400,7 +1400,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         />
 
                         {/* 화살머리 크기 (화살표 계열일 때만) */}
-                        {(activeTool === 'arrow' || activeTool === 'orthogonal-arrow') && (
+                        {(activeTool === 'arrow' || activeTool === 'orthogonal-arrow' || activeTool === 'bracket-arrow') && (
                           <div className="space-y-1.5">
                             <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">화살머리 크기</span>
                             <div className="flex space-x-1.5">

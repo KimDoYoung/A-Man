@@ -274,6 +274,106 @@ function drawOrthogonalArrow(
   ctx.restore()
 }
 
+// bracket-arrow 전용 드로잉 함수 — midX/midY 둘 다 저장, 어느 축이 더 "바깥"인지로 경로 자동 결정
+// xOutside >= yOutside → ㄷ 경로: from→(midX,fromY)→(midX,toY)→to
+// xOutside  < yOutside → 冖 경로: from→(fromX,midY)→(toX,midY)→to
+function drawBracketArrow(
+  ctx: CanvasRenderingContext2D,
+  fromX: number, fromY: number,
+  toX: number, toY: number,
+  midX: number, midY: number,
+  color: string,
+  width: number,
+  lineStyle: 'solid' | 'dashed',
+  isSelected: boolean,
+  headSizeLevel: number = 1
+) {
+  const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
+  const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
+  const xOutside = Math.max(0, minX - midX, midX - maxX)
+  const yOutside = Math.max(0, minY - midY, midY - maxY)
+  const useHorizontal = xOutside >= yOutside
+
+  // 경로 꼭지점 2개 (from과 to 사이 꺾임점)
+  const p1x = useHorizontal ? midX : fromX
+  const p1y = useHorizontal ? fromY : midY
+  const p2x = useHorizontal ? midX : toX
+  const p2y = useHorizontal ? toY : midY
+
+  // 화살촉 방향: 마지막 세그먼트 (p2 → to)
+  let angle: number
+  if (useHorizontal) {
+    angle = Math.abs(toX - midX) > 0.5 ? Math.atan2(0, toX - midX) : Math.atan2(toY - fromY, 0)
+  } else {
+    angle = Math.abs(toY - midY) > 0.5 ? Math.atan2(toY - midY, 0) : Math.atan2(0, toX - fromX)
+  }
+
+  const scale = headSizeLevel === 2 ? 1.5 : headSizeLevel === 3 ? 2.0 : 1.0
+  const headLength = Math.max(12, width * 3) * scale
+  const lastSegLen = useHorizontal
+    ? (Math.abs(toX - midX) > 0.5 ? Math.abs(toX - midX) : Math.abs(toY - fromY))
+    : (Math.abs(toY - midY) > 0.5 ? Math.abs(toY - midY) : Math.abs(toX - fromX))
+  const offset = Math.min(lastSegLen * 0.8, headLength * 0.8)
+  const lineToX = toX - offset * Math.cos(angle)
+  const lineToY = toY - offset * Math.sin(angle)
+
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = width
+  ctx.setLineDash(lineStyle === 'dashed' ? [4, 4] : [])
+
+  if (isSelected) {
+    ctx.save()
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'
+    ctx.lineWidth = width + 6
+    ctx.setLineDash([])
+    ctx.beginPath()
+    ctx.moveTo(fromX, fromY)
+    ctx.lineTo(p1x, p1y)
+    ctx.lineTo(p2x, p2y)
+    ctx.lineTo(lineToX, lineToY)
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  ctx.beginPath()
+  ctx.moveTo(fromX, fromY)
+  ctx.lineTo(p1x, p1y)
+  ctx.lineTo(p2x, p2y)
+  ctx.lineTo(lineToX, lineToY)
+  ctx.stroke()
+
+  const arrowAngle = Math.PI / 6
+  ctx.beginPath()
+  ctx.moveTo(toX, toY)
+  ctx.lineTo(toX - headLength * Math.cos(angle - arrowAngle), toY - headLength * Math.sin(angle - arrowAngle))
+  ctx.lineTo(toX - headLength * Math.cos(angle + arrowAngle), toY - headLength * Math.sin(angle + arrowAngle))
+  ctx.closePath()
+  ctx.fillStyle = color
+  ctx.fill()
+
+  if (isSelected) {
+    const drawHandle = (hx: number, hy: number, fill: string) => {
+      ctx.beginPath()
+      ctx.arc(hx, hy, 6, 0, 2 * Math.PI)
+      ctx.fillStyle = fill
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([])
+      ctx.fill()
+      ctx.stroke()
+    }
+    drawHandle(fromX, fromY, '#3b82f6')
+    drawHandle(toX, toY, '#3b82f6')
+    // 핸들 위치: arm 위 중앙 (ㄷ=수직 arm 중앙, 冖=수평 arm 중앙)
+    const hx = useHorizontal ? midX : (fromX + toX) / 2
+    const hy = useHorizontal ? (fromY + toY) / 2 : midY
+    drawHandle(hx, hy, '#10b981')
+  }
+
+  ctx.restore()
+}
+
 // box/image 타입 공용: 선택 영역 하이라이트 및 4꼭지점 조절 핸들 그리기
 function drawSelectionHandles(
   ctx: CanvasRenderingContext2D,
@@ -372,7 +472,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
   const [canvasExpandBottom, setCanvasExpandBottom] = useState<number>(0)
@@ -1182,6 +1282,27 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           item.style.headSize || arrowHeadSize
         )
       }
+      else if (item.type === 'bracket-arrow') {
+        const toX = item.x + (item.width || 0)
+        const toY = item.y + (item.height || 0)
+        const defaultMidX = Math.max(item.x, toX) + 80
+        const midX = item.style.midX !== undefined ? item.style.midX : defaultMidX
+        const midY = item.style.midY !== undefined ? item.style.midY : (item.y + toY) / 2
+        drawBracketArrow(
+          ctx,
+          item.x,
+          item.y,
+          toX,
+          toY,
+          midX,
+          midY,
+          item.style.borderColor || arrowColor,
+          item.style.borderWidth || arrowLineWidth,
+          item.style.lineStyle || arrowLineStyle,
+          isSelected,
+          item.style.headSize || arrowHeadSize
+        )
+      }
       else if (item.type === 'symbol') {
         // 이모지 심볼 그리기 (중앙 정렬)
         const emojiSize = item.style.fontSize || 48
@@ -1351,6 +1472,25 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           dragCurrent.x,
           dragCurrent.y,
           dragCurrent.x,
+          arrowColor,
+          arrowLineWidth,
+          arrowLineStyle,
+          false,
+          arrowHeadSize
+        )
+      } else if (activeTool === 'bracket-arrow') {
+        const previewMidX = dragCurrent.x >= dragStart.x
+          ? Math.max(dragStart.x, dragCurrent.x) + 80
+          : Math.min(dragStart.x, dragCurrent.x) - 80
+        const previewMidY = (dragStart.y + dragCurrent.y) / 2
+        drawBracketArrow(
+          ctx,
+          dragStart.x,
+          dragStart.y,
+          dragCurrent.x,
+          dragCurrent.y,
+          previewMidX,
+          previewMidY,
           arrowColor,
           arrowLineWidth,
           arrowLineStyle,
@@ -2172,14 +2312,31 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setDragStart({ x, y })
             return
           }
-        } else if (selectedItem && selectedItem.type === 'orthogonal-arrow') {
+        } else if (selectedItem && (selectedItem.type === 'orthogonal-arrow' || selectedItem.type === 'bracket-arrow')) {
           const fromX = selectedItem.x
           const fromY = selectedItem.y
           const toX = selectedItem.x + (selectedItem.width || 0)
           const toY = selectedItem.y + (selectedItem.height || 0)
           const midX = selectedItem.style.midX !== undefined ? selectedItem.style.midX : toX
-          const midY = (fromY + toY) / 2
+          const rawMidY = selectedItem.style.midY !== undefined ? selectedItem.style.midY : (fromY + toY) / 2
           const clickRadius = 8
+
+          // bracket-arrow: 핸들 위치를 실제 arm 위 중앙으로 계산
+          let handleMidX = midX
+          let handleMidY = rawMidY
+          if (selectedItem.type === 'bracket-arrow') {
+            const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
+            const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
+            const xOut = Math.max(0, minX - midX, midX - maxX)
+            const yOut = Math.max(0, minY - rawMidY, rawMidY - maxY)
+            if (xOut >= yOut) {
+              handleMidX = midX
+              handleMidY = (fromY + toY) / 2
+            } else {
+              handleMidX = (fromX + toX) / 2
+              handleMidY = rawMidY
+            }
+          }
 
           if (Math.hypot(fromX - x, fromY - y) <= clickRadius) {
             setResizeHandle('arrow-start')
@@ -2191,7 +2348,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             setIsDrawing(true)
             setDragStart({ x, y })
             return
-          } else if (Math.hypot(midX - x, midY - y) <= clickRadius) {
+          } else if (Math.hypot(handleMidX - x, handleMidY - y) <= clickRadius) {
             setResizeHandle('orthogonal-mid')
             setIsDrawing(true)
             setDragStart({ x, y })
@@ -2268,13 +2425,35 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             break
           }
         }
-        else if (item.type === 'orthogonal-arrow') {
+        else if (item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') {
           const x2 = item.x + (item.width || 0)
           const y2 = item.y + (item.height || 0)
-          const midX = item.style.midX !== undefined ? item.style.midX : x2
-          const dist1 = getDistanceToSegment(x, y, item.x, item.y, midX, item.y)
-          const dist2 = getDistanceToSegment(x, y, midX, item.y, midX, y2)
-          const dist3 = getDistanceToSegment(x, y, midX, y2, x2, y2)
+          let dist1: number, dist2: number, dist3: number
+          if (item.type === 'bracket-arrow') {
+            const defaultMidX = Math.max(item.x, x2) + 80
+            const midX = item.style.midX !== undefined ? item.style.midX : defaultMidX
+            const midY = item.style.midY !== undefined ? item.style.midY : (item.y + y2) / 2
+            const minX = Math.min(item.x, x2), maxX = Math.max(item.x, x2)
+            const minY = Math.min(item.y, y2), maxY = Math.max(item.y, y2)
+            const xOutside = Math.max(0, minX - midX, midX - maxX)
+            const yOutside = Math.max(0, minY - midY, midY - maxY)
+            if (xOutside >= yOutside) {
+              // ㄷ 경로
+              dist1 = getDistanceToSegment(x, y, item.x, item.y, midX, item.y)
+              dist2 = getDistanceToSegment(x, y, midX, item.y, midX, y2)
+              dist3 = getDistanceToSegment(x, y, midX, y2, x2, y2)
+            } else {
+              // 冖 경로
+              dist1 = getDistanceToSegment(x, y, item.x, item.y, item.x, midY)
+              dist2 = getDistanceToSegment(x, y, item.x, midY, x2, midY)
+              dist3 = getDistanceToSegment(x, y, x2, midY, x2, y2)
+            }
+          } else {
+            const midX = item.style.midX !== undefined ? item.style.midX : x2
+            dist1 = getDistanceToSegment(x, y, item.x, item.y, midX, item.y)
+            dist2 = getDistanceToSegment(x, y, midX, item.y, midX, y2)
+            dist3 = getDistanceToSegment(x, y, midX, y2, x2, y2)
+          }
           const minDist = Math.min(dist1, dist2, dist3)
           if (minDist <= 8) {
             setSelectedItemId(item.id)
@@ -2379,7 +2558,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       pushToUndo([...items, newItem])
       setSelectedItemId(newItem.id)
     }
-    else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow') {
+    else if (activeTool === 'box' || activeTool === 'crop' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow' || activeTool === 'bracket-arrow') {
       setIsDrawing(true)
       setDragStart({ x, y })
       setDragCurrent({ x, y })
@@ -2459,7 +2638,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             const newH = y - item.y
             return { ...item, width: newW, height: newH }
           }
-        } else if (item.id === selectedItemId && item.type === 'orthogonal-arrow') {
+        } else if (item.id === selectedItemId && (item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow')) {
           if (resizeHandle === 'arrow-start') {
             const originalEndX = item.x + (item.width || 0)
             const originalEndY = item.y + (item.height || 0)
@@ -2467,25 +2646,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             const newY = y
             const newW = originalEndX - newX
             const newH = originalEndY - newY
-            return {
-              ...item,
-              x: newX,
-              y: newY,
-              width: newW,
-              height: newH
-            }
+            return { ...item, x: newX, y: newY, width: newW, height: newH }
           } else if (resizeHandle === 'arrow-end') {
             const newW = x - item.x
             const newH = y - item.y
             return { ...item, width: newW, height: newH }
           } else if (resizeHandle === 'orthogonal-mid') {
-            return {
-              ...item,
-              style: {
-                ...item.style,
-                midX: x
-              }
+            if (item.type === 'bracket-arrow') {
+              return { ...item, style: { ...item.style, midX: x, midY: y } }
             }
+            return { ...item, style: { ...item.style, midX: x } }
           }
         } else if (item.id === selectedItemId && item.type === 'text') {
           if (resizeHandle === 'text-rotate') {
@@ -2531,7 +2701,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           const newY = y - draggedItemOffset.y
           const deltaX = newX - item.x
           
-          if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+          if ((item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') && item.style.midX !== undefined) {
             return {
               ...item,
               x: newX,
@@ -2651,6 +2821,32 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           setSelectedItemId(newItem.id)
         }
       }
+      else if (activeTool === 'bracket-arrow') {
+        if (Math.hypot(w, h) > 8) {
+          const endX = dragStart.x + w
+          const defaultMidX = x >= dragStart.x
+            ? Math.max(dragStart.x, endX) + 80
+            : Math.min(dragStart.x, endX) - 80
+          const newItem: CanvasItem = {
+            id: `item-${Date.now()}`,
+            type: 'bracket-arrow',
+            x: dragStart.x,
+            y: dragStart.y,
+            width: w,
+            height: h,
+            style: {
+              borderColor: arrowColor,
+              borderWidth: arrowLineWidth,
+              lineStyle: arrowLineStyle,
+              midX: defaultMidX,
+              midY: (dragStart.y + (dragStart.y + h)) / 2,
+              headSize: arrowHeadSize
+            }
+          }
+          pushToUndo([...items, newItem])
+          setSelectedItemId(newItem.id)
+        }
+      }
       else if (activeTool === 'crop') {
         const cX = Math.min(dragStart.x, x)
         const cY = Math.min(dragStart.y, y)
@@ -2736,7 +2932,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 크롭 영역 바깥의 아이템 필터링 및 오프셋 조정
       const updatedItems = items
         .map((item) => {
-          if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+          if ((item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') && item.style.midX !== undefined) {
             return {
               ...item,
               x: item.x - cX,
@@ -2771,7 +2967,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
           } else if (item.type === 'text') {
             return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
-          } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
+          } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') {
             const x2 = item.x + (item.width || 0)
             const y2 = item.y + (item.height || 0)
             const startIn = item.x >= 0 && item.x <= cW && item.y >= 0 && item.y <= cH
@@ -3354,7 +3550,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         itemBottom = Math.max(item.y + (item.height || 0), getCalloutTailPoint(item).y)
       } else if (item.type === 'text') {
         itemBottom = item.y + (item.style.fontSize || textFontSize) * 1.2
-      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
+      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') {
         itemBottom = Math.max(item.y, item.y + (item.height || 0))
       } else if (item.type === 'symbol') {
         const radius = (item.style.fontSize || 48) / 2
@@ -3385,7 +3581,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         itemRight = Math.max(item.x + (item.width || 0), getCalloutTailPoint(item).x)
       } else if (item.type === 'text') {
         itemRight = item.x + 100 // approximate text width
-      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
+      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') {
         itemRight = Math.max(item.x, item.x + (item.width || 0))
       } else if (item.type === 'symbol') {
         const radius = (item.style.fontSize || 48) / 2
@@ -3443,6 +3639,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // callout 아이템의 y좌표 이동 시 꼬리 끝점(calloutTailY)도 함께 이동시키는 헬퍼
   const shiftItemY = (item: CanvasItem, delta: number): CanvasItem => {
+    if (item.type === 'bracket-arrow' && item.style.midY !== undefined) {
+      return { ...item, y: item.y + delta, style: { ...item.style, midY: item.style.midY + delta } }
+    }
     if (item.type === 'callout') {
       const tail = getCalloutTailPoint(item)
       return { ...item, y: item.y + delta, style: { ...item.style, calloutTailY: tail.y + delta } }
@@ -3452,7 +3651,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
   // callout 아이템의 x좌표 이동 시 꼬리 끝점(calloutTailX)도 함께 이동시키는 헬퍼
   const shiftItemX = (item: CanvasItem, delta: number): CanvasItem => {
-    if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
+    if ((item.type === 'orthogonal-arrow' || item.type === 'bracket-arrow') && item.style.midX !== undefined) {
       return { ...item, x: item.x + delta, style: { ...item.style, midX: item.style.midX + delta } }
     }
     if (item.type === 'callout') {
@@ -3644,6 +3843,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'arrow', label: '화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
               { id: 'orthogonal-arrow', label: '꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
+              { id: 'bracket-arrow', label: 'ㄷ형 화살표선', icon: <svg viewBox="0 0 16 16" className="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4 L3 12"/><path d="M3 4 L13 4"/><path d="M3 12 L13 12"/><path d="M11 10 L13 12 L11 14"/></svg> },
               { id: 'block-arrow-stamp', label: '스탬프', icon: <Stamp className="w-4 h-4 text-orange-500 -rotate-45" /> },
               { id: 'callout', label: '말풍선 / 설명선', icon: <MessageSquare className="w-4 h-4 text-sky-500" /> },
               { id: 'symbol', label: '이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
