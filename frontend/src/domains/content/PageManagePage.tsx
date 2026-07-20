@@ -29,14 +29,45 @@ const PageManagePage: React.FC = () => {
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED'>('ALL')
   const [lockFilter, setLockFilter] = useState<'ALL' | 'LOCKED' | 'UNLOCKED'>('ALL')
+  const [folderMap, setFolderMap] = useState<Map<number, any>>(new Map())
   const gridRef = useRef<AgGridReact>(null)
+
+  // 폴더 목록 조회 및 Map 캐싱
+  useEffect(() => {
+    apiClient.get<any[]>('/docs/folders')
+      .then(folders => {
+        if (Array.isArray(folders)) {
+          const map = new Map()
+          
+          const flattenAndCache = (items: any[], parentId: number | null = null) => {
+            if (!items) return
+            items.forEach(item => {
+              const pid = parentId !== null ? parentId : (item.parentId !== undefined ? item.parentId : (item.parent ? item.parent.id : null))
+              map.set(item.id, {
+                id: item.id,
+                name: item.name,
+                parentId: pid,
+                nums: item.nums
+              })
+              if (item.children && item.children.length > 0) {
+                flattenAndCache(item.children, item.id)
+              }
+            })
+          }
+          
+          flattenAndCache(folders)
+          setFolderMap(map)
+        }
+      })
+      .catch(err => console.error('폴더 목록 조회 실패:', err))
+  }, [])
 
   const fetchPages = async () => {
     setLoading(true)
     try {
       const statusParam = statusFilter === 'ALL' ? '' : statusFilter
       const lockParam = lockFilter === 'ALL' ? '' : lockFilter
-      const pages = await apiClient.get<PageRow[]>(`/admin/pages?keyword=${encodeURIComponent(keyword)}&status=${statusParam}&lockFilter=${lockParam}`)
+      const pages = await apiClient.get<PageRow[]>(`/admin/page-list?keyword=${encodeURIComponent(keyword)}&status=${statusParam}&lockFilter=${lockParam}`)
       if (Array.isArray(pages)) {
         setRowData(pages)
       } else {
@@ -65,7 +96,7 @@ const PageManagePage: React.FC = () => {
     setStatusFilter('ALL')
     setLockFilter('ALL')
     setLoading(true)
-    apiClient.get<PageRow[]>('/admin/pages?keyword=&status=&lockFilter=')
+    apiClient.get<PageRow[]>('/admin/page-list?keyword=&status=&lockFilter=')
       .then(data => {
         if (Array.isArray(data)) {
           setRowData(data)
@@ -83,7 +114,7 @@ const PageManagePage: React.FC = () => {
   const handleToggleStatus = async (pageId: number, currentStatus: string) => {
     const nextStatus = currentStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
     try {
-      const updated = await apiClient.post<PageRow>(`/admin/pages/${pageId}/status`, { status: nextStatus })
+      const updated = await apiClient.post<PageRow>(`/admin/page-list/${pageId}/status`, { status: nextStatus })
       setRowData(prev => prev.map(row => row.id === pageId ? { ...row, status: updated.status } : row))
     } catch (error: any) {
       console.error('상태 변경 실패:', error)
@@ -93,7 +124,7 @@ const PageManagePage: React.FC = () => {
 
   const handleToggleLock = async (pageId: number) => {
     try {
-      const updated = await apiClient.post<PageRow>(`/admin/pages/${pageId}/lock-toggle`)
+      const updated = await apiClient.post<PageRow>(`/admin/page-list/${pageId}/lock-toggle`)
       setRowData(prev => prev.map(row => row.id === pageId ? { 
         ...row, 
         lockUser: updated.lockUser, 
@@ -115,12 +146,21 @@ const PageManagePage: React.FC = () => {
     },
     {
       field: 'folder',
-      headerName: '메뉴 분류 (폴더)',
-      width: 200,
+      headerName: '메뉴 분류 (폴더 경로)',
+      width: 320,
       valueGetter: (params: any) => {
         const f = params.data.folder
-        if (!f) return '-'
-        return f.nums ? `[${f.nums}] ${f.name}` : f.name
+        if (!f || !f.id) return '-'
+        
+        const path: string[] = []
+        let curr = folderMap.get(f.id)
+        while (curr) {
+          path.unshift(curr.name)
+          curr = curr.parentId ? folderMap.get(curr.parentId) : null
+        }
+        
+        const pathStr = path.length > 0 ? path.join(' > ') : f.name
+        return pathStr
       },
       cellClass: 'text-slate-500 font-medium text-xs'
     },
@@ -134,13 +174,13 @@ const PageManagePage: React.FC = () => {
     { 
       field: 'aka', 
       headerName: '별칭 (AKA)', 
-      width: 150, 
+      width: 200, 
       cellClass: 'font-mono text-gray-500 text-xs' 
     },
     {
       field: 'status',
       headerName: '배포 상태',
-      width: 160,
+      width: 180,
       cellRenderer: (params: any) => {
         const status = params.value
         const isPublished = status === 'PUBLISHED'
@@ -168,7 +208,7 @@ const PageManagePage: React.FC = () => {
     {
       field: 'lockUser',
       headerName: '페이지 잠금',
-      width: 220,
+      width: 180,
       cellRenderer: (params: any) => {
         const lockUser = params.value
         const isLocked = !!lockUser
@@ -196,8 +236,8 @@ const PageManagePage: React.FC = () => {
     {
       field: 'lockTime',
       headerName: '잠금 일시',
-      width: 160,
-      cellClass: 'text-gray-400 font-mono text-[11px] text-center',
+      width: 200,
+      cellClass: 'text-gray-400 font-mono text-[12px] text-center',
       valueFormatter: (params: any) => {
         if (!params.value) return '-'
         return params.value.replace('T', ' ').substring(0, 19)
@@ -266,10 +306,11 @@ const PageManagePage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleReset}
-                className="p-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-slate-500 cursor-pointer"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-slate-600 text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center space-x-1"
                 title="필터 초기화"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>초기화</span>
               </button>
             </form>
           </div>

@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/admin/pages")
+@RequestMapping("/admin/page-list")
 public class AdminPageController {
 
     private final PageRepository pageRepository;
