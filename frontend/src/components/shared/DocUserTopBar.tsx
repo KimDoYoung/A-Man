@@ -25,6 +25,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const isAdminAssetsPage = location.pathname === '/admin/assets'
   const isAdminUsersPage = location.pathname === '/admin/users'
   const isAdminFoldersPage = location.pathname === '/admin/folders'
+  const isAdminPagesPage = location.pathname === '/admin/pages'
   const isAdminSettingsPage = location.pathname === '/admin/settings'
   const isAdminAboutPage = location.pathname === '/admin/about'
   const isDocEditPage = location.pathname === '/admin' || 
@@ -32,6 +33,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
      !location.pathname.startsWith('/admin/assets') && 
      !location.pathname.startsWith('/admin/users') && 
      !location.pathname.startsWith('/admin/folders') &&
+     !location.pathname.startsWith('/admin/pages') &&
      !location.pathname.startsWith('/admin/settings') &&
      !location.pathname.startsWith('/admin/about'))
   const [version, setVersion] = useState('0.0.1')
@@ -127,37 +129,41 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             홈으로
           </button>
-          <button
-            onClick={() => {
-              if (onCloseImageEditor) onCloseImageEditor()
-              const lastFolderId = localStorage.getItem('aman_last_active_folder_id')
-              if (lastFolderId) {
-                navigate(`/admin/folder/${lastFolderId}`)
-              } else {
-                navigate('/admin')
-              }
-            }}
-            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
-              isDocEditPage && !isImageEditorOpen
-                ? 'bg-indigo-600 text-white border-indigo-600' 
-                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
-            }`}
-            title="문서 편집 화면으로 이동"
-          >
-            문서 편집
-          </button>
-          {onOpenImageEditor && isDocEditPage && (
-            <button
-              onClick={isImageEditorOpen ? onCloseImageEditor : onOpenImageEditor}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border shadow-xs ${
-                isImageEditorOpen
-                  ? 'bg-pink-600 text-white border-pink-600 hover:bg-pink-700' 
-                  : 'bg-pink-500/10 text-pink-400 border-pink-500/20 hover:bg-pink-500/20'
-              }`}
-              title={isImageEditorOpen ? "도움말 편집 화면으로 복귀" : "도움말 가이드용 이미지 편집기 열기"}
-            >
-              이미지 편집
-            </button>
+          {user?.role !== 'admin' && (
+            <>
+              <button
+                onClick={() => {
+                  if (onCloseImageEditor) onCloseImageEditor()
+                  const lastFolderId = localStorage.getItem('aman_last_active_folder_id')
+                  if (lastFolderId) {
+                    navigate(`/admin/folder/${lastFolderId}`)
+                  } else {
+                    navigate('/admin')
+                  }
+                }}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                  isDocEditPage && !isImageEditorOpen
+                    ? 'bg-indigo-600 text-white border-indigo-600' 
+                    : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+                }`}
+                title="문서 편집 화면으로 이동"
+              >
+                문서 편집
+              </button>
+              {onOpenImageEditor && isDocEditPage && (
+                <button
+                  onClick={isImageEditorOpen ? onCloseImageEditor : onOpenImageEditor}
+                  className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border shadow-xs ${
+                    isImageEditorOpen
+                      ? 'bg-pink-600 text-white border-pink-600 hover:bg-pink-700' 
+                      : 'bg-pink-500/10 text-pink-400 border-pink-500/20 hover:bg-pink-500/20'
+                  }`}
+                  title={isImageEditorOpen ? "도움말 편집 화면으로 복귀" : "도움말 가이드용 이미지 편집기 열기"}
+                >
+                  이미지 편집
+                </button>
+              )}
+            </>
           )}          
           <button
             onClick={() => navigate('/admin/assets')}
@@ -181,13 +187,28 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             메뉴 관리
           </button>
-          <button
-            onClick={() => setIsRecentPagesOpen(true)}
-            className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
-            title="최근 작업 문서 이력 보기 (Alt + H)"
-          >
-            작업이력
-          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin/pages')}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                isAdminPagesPage 
+                  ? 'bg-indigo-600 text-white border-indigo-600' 
+                  : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+              }`}
+              title="도움말 페이지 관리 화면으로 이동"
+            >
+              페이지 관리
+            </button>
+          )}
+          {user?.role !== 'admin' && (
+            <button
+              onClick={() => setIsRecentPagesOpen(true)}
+              className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
+              title="최근 작업 문서 이력 보기 (Alt + H)"
+            >
+              작업이력
+            </button>
+          )}
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin/users')}

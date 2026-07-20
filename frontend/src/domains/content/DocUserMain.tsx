@@ -97,6 +97,13 @@ const DocUserMain: React.FC = () => {
     }
   }, [])
 
+  // 관리자 권한 접근 제한 리다이렉트
+  useEffect(() => {
+    if (currentUser?.role === 'admin') {
+      navigate('/admin/pages', { replace: true })
+    }
+  }, [currentUser, navigate])
+
   const handleLock = async () => {
     if (!page || !page.id) return
     try {
@@ -782,57 +789,13 @@ const DocUserMain: React.FC = () => {
             {page ? (
               <>
                 {/* 잠금 정보 배너 */}
-                {page.id && (
+                {page.id && page.lockUser && page.lockUser !== currentUser?.username && (
                   <div className="mb-4 shrink-0 select-none">
-                    {page.lockUser && page.lockUser !== currentUser?.username && (
-                      <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-xs flex items-center justify-between shadow-xs">
-                        <span className="flex items-center space-x-1.5 font-medium">
-                          <span>🔒 이 페이지는 현재 <strong>{page.lockUser}</strong>님({page.lockRole === 'admin' ? '관리자' : '문서작성자'})에 의해 잠겨 있습니다. (잠금일시: {page.lockTime})</span>
-                        </span>
-                        {currentUser?.role === 'admin' && (
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={handleLock}
-                              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
-                            >
-                              페이지 잠그기 (덮어쓰기)
-                            </button>
-                            <button
-                              onClick={handleUnlock}
-                              className="px-2.5 py-1 bg-rose-650 hover:bg-rose-750 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
-                            >
-                              잠금 강제 해제
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {page.lockUser && page.lockUser === currentUser?.username && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md text-xs flex items-center justify-between shadow-xs">
-                        <span className="flex items-center space-x-1.5 font-medium">
-                          <span>🔑 내가 이 페이지를 잠갔습니다. (잠금일시: {page.lockTime})</span>
-                        </span>
-                        <button
-                          onClick={handleUnlock}
-                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
-                        >
-                          잠금 해제
-                        </button>
-                      </div>
-                    )}
-                    {!page.lockUser && (
-                      <div className="p-3 bg-slate-50 border border-slate-200 text-slate-700 rounded-md text-xs flex items-center justify-between shadow-xs">
-                        <span className="flex items-center space-x-1.5 font-medium text-slate-500">
-                          <span>🔓 이 페이지는 현재 잠겨 있지 않습니다. 동시에 편집하면 내용이 덮어써질 수 있으므로 편집 전에 잠금을 권장합니다.</span>
-                        </span>
-                        <button
-                          onClick={handleLock}
-                          className="px-2.5 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
-                        >
-                          페이지 잠그기
-                        </button>
-                      </div>
-                    )}
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-xs flex items-center justify-between shadow-xs">
+                      <span className="flex items-center space-x-1.5 font-medium">
+                        <span>🔒 이 페이지는 현재 <strong>{page.lockUser}</strong>님({page.lockRole === 'admin' ? '관리자' : '문서작성자'})에 의해 잠겨 있습니다. (잠금일시: {page.lockTime})</span>
+                      </span>
+                    </div>
                   </div>
                 )}
 
@@ -885,6 +848,11 @@ const DocUserMain: React.FC = () => {
                   handleToggleStatus={handleToggleStatus}
                   copyTextToClipboard={copyTextToClipboard}
                   readOnly={!!(page.lockUser && page.lockUser !== currentUser?.username)}
+                  isAdmin={currentUser?.role === 'admin'}
+                  isLockedByMe={!!(page.lockUser && page.lockUser === currentUser?.username)}
+                  isLockedByOthers={!!(page.lockUser && page.lockUser !== currentUser?.username)}
+                  handleLock={handleLock}
+                  handleUnlock={handleUnlock}
                 />
               </>
             ) : (
