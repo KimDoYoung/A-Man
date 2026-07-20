@@ -73,12 +73,57 @@ const DocUserMain: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
   const [copied, setCopied] = useState(false)
   const [settings, setSettings] = useState<Record<string, string>>({})
+  const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null)
 
   const isDirty = page ? (
     pageContent !== (page.content || '') || 
     pageAka !== (page.aka || '') ||
     pageStatus !== (page.status || 'DRAFT')
   ) : false
+
+  // 사용자 정보 로드
+  useEffect(() => {
+    const userStr = localStorage.getItem('aman_user')
+    if (userStr) {
+      try {
+        const parsed = JSON.parse(userStr)
+        setCurrentUser({
+          username: parsed.username || '',
+          role: parsed.role || 'user'
+        })
+      } catch (e) {
+        console.error('Failed to parse user from localStorage:', e)
+      }
+    }
+  }, [])
+
+  const handleLock = async () => {
+    if (!page || !page.id) return
+    try {
+      const updatedPage = await apiClient.post<any>(`/content/${page.id}/lock`)
+      setPage(updatedPage)
+      setPageContent(updatedPage.content)
+      setPageStatus(updatedPage.status || 'DRAFT')
+      setPageAka(updatedPage.aka || '')
+    } catch (error: any) {
+      console.error('잠금 실패:', error)
+      alert(error.response?.data?.toString() || '페이지 잠금 설정에 실패했습니다.')
+    }
+  }
+
+  const handleUnlock = async () => {
+    if (!page || !page.id) return
+    try {
+      const updatedPage = await apiClient.post<any>(`/content/${page.id}/unlock`)
+      setPage(updatedPage)
+      setPageContent(updatedPage.content)
+      setPageStatus(updatedPage.status || 'DRAFT')
+      setPageAka(updatedPage.aka || '')
+    } catch (error: any) {
+      console.error('잠금 해제 실패:', error)
+      alert(error.response?.data?.toString() || '페이지 잠금 해제에 실패했습니다.')
+    }
+  }
 
   // 1. 브라우저 새로고침, 탭 닫기, 외부 페이지 이동 차단 (beforeunload)
   useEffect(() => {
@@ -551,14 +596,22 @@ const DocUserMain: React.FC = () => {
 
       const trimmedContent = pageContent.trim()
 
-      const savedPage = await apiClient.post<any>('/content', {
+      const response = await apiClient.post<any>('/content', {
         id: page.id,
         folderId: folderId,
         title: titleToSave,
         content: trimmedContent,
         aka: trimmedAka,
-        status: pageStatus
+        status: pageStatus,
+        lockUser: page.lockUser
       })
+      
+      const savedPage = response.page || response
+      const warning = response.warning
+
+      if (warning === 'LOCK_RELEASED_BY_ADMIN') {
+        alert('관리자에 의해 잠금이 해제되었습니다. 문서가 저장되었습니다.')
+      }
       
       setSaveStatus({ type: 'success', text: '변경사항 저장이 완료되었습니다.' })
       
@@ -728,6 +781,61 @@ const DocUserMain: React.FC = () => {
 
             {page ? (
               <>
+                {/* 잠금 정보 배너 */}
+                {page.id && (
+                  <div className="mb-4 shrink-0 select-none">
+                    {page.lockUser && page.lockUser !== currentUser?.username && (
+                      <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-md text-xs flex items-center justify-between shadow-xs">
+                        <span className="flex items-center space-x-1.5 font-medium">
+                          <span>🔒 이 페이지는 현재 <strong>{page.lockUser}</strong>님({page.lockRole === 'admin' ? '관리자' : '문서작성자'})에 의해 잠겨 있습니다. (잠금일시: {page.lockTime})</span>
+                        </span>
+                        {currentUser?.role === 'admin' && (
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={handleLock}
+                              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
+                            >
+                              페이지 잠그기 (덮어쓰기)
+                            </button>
+                            <button
+                              onClick={handleUnlock}
+                              className="px-2.5 py-1 bg-rose-650 hover:bg-rose-750 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
+                            >
+                              잠금 강제 해제
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {page.lockUser && page.lockUser === currentUser?.username && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md text-xs flex items-center justify-between shadow-xs">
+                        <span className="flex items-center space-x-1.5 font-medium">
+                          <span>🔑 내가 이 페이지를 잠갔습니다. (잠금일시: {page.lockTime})</span>
+                        </span>
+                        <button
+                          onClick={handleUnlock}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
+                        >
+                          잠금 해제
+                        </button>
+                      </div>
+                    )}
+                    {!page.lockUser && (
+                      <div className="p-3 bg-slate-50 border border-slate-200 text-slate-700 rounded-md text-xs flex items-center justify-between shadow-xs">
+                        <span className="flex items-center space-x-1.5 font-medium text-slate-500">
+                          <span>🔓 이 페이지는 현재 잠겨 있지 않습니다. 동시에 편집하면 내용이 덮어써질 수 있으므로 편집 전에 잠금을 권장합니다.</span>
+                        </span>
+                        <button
+                          onClick={handleLock}
+                          className="px-2.5 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded text-[10px] font-bold shadow-xs cursor-pointer transition-colors"
+                        >
+                          페이지 잠그기
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* 스플릿 편집 및 미리보기 컨테이너 */}
                 <MarkdownSplitEditor
                   page={page}
@@ -752,6 +860,7 @@ const DocUserMain: React.FC = () => {
                   textareaRef={textareaRef}
                   containerRef={containerRef}
                   previewContainerRef={previewContainerRef}
+                  readOnly={!!(page.lockUser && page.lockUser !== currentUser?.username)}
                   onImportSuccess={(importedPage) => {
                     isLeavingRef.current = true;
                     navigate(`/admin/page/${importedPage.id}`);
@@ -775,6 +884,7 @@ const DocUserMain: React.FC = () => {
                   handleDelete={handleDelete}
                   handleToggleStatus={handleToggleStatus}
                   copyTextToClipboard={copyTextToClipboard}
+                  readOnly={!!(page.lockUser && page.lockUser !== currentUser?.username)}
                 />
               </>
             ) : (

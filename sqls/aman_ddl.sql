@@ -20,6 +20,9 @@ CREATE TABLE pages (
     sort_order  INTEGER DEFAULT 0,                  -- 폴더 내에서 페이지 노출 순서
     aka         TEXT NOT NULL UNIQUE,               -- 페이지 별칭 (URL 경로에 사용될 수 있는 고유한 문자열)
     status      TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'PUBLISHED')), -- DRAFT(초안), PUBLISHED(발행)
+    lock_user   TEXT DEFAULT NULL,                  -- 잠근 사용자 ID (username)
+    lock_time   DATETIME DEFAULT NULL,              -- 잠금 일시
+    lock_role   TEXT DEFAULT NULL,                  -- 잠근 사용자의 권한 (admin / user)
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     

@@ -7,6 +7,7 @@ import kr.co.kfs.aman.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,6 +74,13 @@ public class ContentController {
             }
         }
 
+        String currentUsername = getLoginUsername();
+        if (currentUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요한 서비스입니다.");
+        }
+
+        boolean wasLockReleasedByAdmin = false;
+
         Page page;
         if (body.containsKey("id") && body.get("id") != null) {
             Long pageId = Long.valueOf(body.get("id").toString());
@@ -80,6 +88,22 @@ public class ContentController {
             if (pageOpt.isPresent()) {
                 // Update 수행
                 page = pageOpt.get();
+
+                // 잠금 체크
+                if (page.getLockUser() != null && !page.getLockUser().equals(currentUsername)) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body("이 페이지는 현재 " + page.getLockUser() + "님에 의해 잠겨 있어 저장할 수 없습니다.");
+                }
+
+                // 잠금 해제 체크 (Admin에 의해 풀렸는지)
+                if (page.getLockUser() == null) {
+                    String clientLockUser = body.containsKey("lockUser") && body.get("lockUser") != null 
+                            ? body.get("lockUser").toString() : null;
+                    if (clientLockUser != null && clientLockUser.equals(currentUsername)) {
+                        wasLockReleasedByAdmin = true;
+                    }
+                }
+
                 page.setFolder(folderOpt.get());
                 page.setTitle(title);
                 page.setContent(content);
@@ -126,7 +150,13 @@ public class ContentController {
         }
 
         Page savedPage = pageRepository.save(page);
-        return ResponseEntity.ok(savedPage);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("page", savedPage);
+        if (wasLockReleasedByAdmin) {
+            result.put("warning", "LOCK_RELEASED_BY_ADMIN");
+        }
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{page_id}")
@@ -151,9 +181,104 @@ public class ContentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 페이지입니다.");
         }
         
+        String currentUsername = getLoginUsername();
+        if (currentUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요한 서비스입니다.");
+        }
+        
+        Page page = pageOpt.get();
+        if (page.getLockUser() != null && !page.getLockUser().equals(currentUsername)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("이 페이지는 현재 " + page.getLockUser() + "님에 의해 잠겨 있어 삭제할 수 없습니다.");
+        }
+
         // 요구사항: Hard Delete (물리적 삭제) 수행
         pageRepository.deleteById(pageId);
         return ResponseEntity.ok("페이지가 영구 삭제되었습니다.");
+    }
+
+    @PostMapping("/{page_id}/lock")
+    public ResponseEntity<?> lockPage(@PathVariable("page_id") Long pageId) {
+        Optional<Page> pageOpt = pageRepository.findById(pageId);
+        if (!pageOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 페이지입니다.");
+        }
+        Page page = pageOpt.get();
+        
+        String currentUsername = getLoginUsername();
+        if (currentUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요한 서비스입니다.");
+        }
+        
+        boolean isAdmin = isAdmin();
+        String currentRole = isAdmin ? "admin" : "user";
+        
+        // 이미 잠겨있는 경우 검사
+        if (page.getLockUser() != null) {
+            // 본인이 이미 잠근 경우 통과
+            if (page.getLockUser().equals(currentUsername)) {
+                return ResponseEntity.ok(page);
+            }
+            // 다른 사람이 잠갔으나 현재 사용자가 관리자(Admin)인 경우 덮어쓰기 허용
+            if (!isAdmin) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("이미 " + page.getLockUser() + "님에 의해 잠겨 있습니다.");
+            }
+        }
+        
+        // 잠금 설정
+        page.setLockUser(currentUsername);
+        page.setLockTime(LocalDateTime.now());
+        page.setLockRole(currentRole);
+        
+        Page savedPage = pageRepository.save(page);
+        return ResponseEntity.ok(savedPage);
+    }
+
+    @PostMapping("/{page_id}/unlock")
+    public ResponseEntity<?> unlockPage(@PathVariable("page_id") Long pageId) {
+        Optional<Page> pageOpt = pageRepository.findById(pageId);
+        if (!pageOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 페이지입니다.");
+        }
+        Page page = pageOpt.get();
+        
+        if (page.getLockUser() == null) {
+            return ResponseEntity.ok(page);
+        }
+        
+        String currentUsername = getLoginUsername();
+        if (currentUsername == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요한 서비스입니다.");
+        }
+        
+        boolean isAdmin = isAdmin();
+        
+        // 권한 검사: 본인이 잠근 경우이거나, 관리자인 경우에만 해제 가능
+        if (page.getLockUser().equals(currentUsername) || isAdmin) {
+            page.setLockUser(null);
+            page.setLockTime(null);
+            page.setLockRole(null);
+            Page savedPage = pageRepository.save(page);
+            return ResponseEntity.ok(savedPage);
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("이 잠금은 작성자 또는 관리자만 해제할 수 있습니다.");
+        }
+    }
+
+    private String getLoginUsername() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof String && !"anonymousUser".equals(principal)) {
+            return (String) principal;
+        }
+        return null;
+    }
+
+    private boolean isAdmin() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+                .stream()
+                .anyMatch(auth -> "ROLE_ADMIN".equals(auth.getAuthority()));
     }
 
     @PostMapping("/image")

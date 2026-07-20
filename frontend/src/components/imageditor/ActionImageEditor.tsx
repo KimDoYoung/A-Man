@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Undo, Redo, Download, Copy, Type, Square, CircleDot, Check, Save, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { drawBlockArrowStamp } from './arrowStamp'
-import { drawCallout, getCalloutTailPoint, CALLOUT_DEFAULT_WIDTH, CALLOUT_DEFAULT_HEIGHT } from './calloutStamp'
+import { drawCallout, getCalloutTailPoint } from './calloutStamp'
 import TextItemInput from './TextItemInput'
 
 

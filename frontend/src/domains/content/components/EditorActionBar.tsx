@@ -15,6 +15,7 @@ interface EditorActionBarProps {
   handleDelete: () => void;
   handleToggleStatus: () => void;
   copyTextToClipboard: (text: string) => Promise<boolean>;
+  readOnly?: boolean;
 }
 
 const EditorActionBar: React.FC<EditorActionBarProps> = ({
@@ -30,6 +31,7 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
   handleDelete,
   handleToggleStatus,
   copyTextToClipboard,
+  readOnly = false,
 }) => {
   if (!page) return null;
 
@@ -102,10 +104,10 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
           <span className="text-xs font-bold text-slate-500">배포 상태:</span>
           <button
             type="button"
-            onClick={handleToggleStatus}
-            className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            onClick={readOnly ? undefined : handleToggleStatus}
+            className={`relative inline-flex h-5 w-10 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
               pageStatus === 'PUBLISHED' ? 'bg-indigo-600' : 'bg-slate-400'
-            }`}
+            } ${readOnly ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
           >
             <span
               aria-hidden="true"
@@ -122,7 +124,7 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
         <button
           onClick={() => handleSave()}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={saving || !isDirty}
+          disabled={saving || !isDirty || readOnly}
         >
           <Save className="w-3.5 h-3.5" />
           <span>{saving ? '저장 중...' : '변경사항 저장하기'}</span>
@@ -131,7 +133,7 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
         <button
           onClick={handleDelete}
           className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={deleting || !page || !page.id}
+          disabled={deleting || !page || !page.id || readOnly}
         >
           <Trash2 className="w-3.5 h-3.5" />
           <span>{deleting ? '삭제 중...' : '삭제하기'}</span>

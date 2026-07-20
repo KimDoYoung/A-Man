@@ -27,6 +27,7 @@ interface MarkdownSplitEditorProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   containerRef: React.RefObject<HTMLDivElement>;
   previewContainerRef: React.RefObject<HTMLDivElement>;
+  readOnly?: boolean;
   onImportSuccess: (importedPage: any) => void;
 }
 
@@ -53,6 +54,7 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
   textareaRef,
   containerRef,
   previewContainerRef,
+  readOnly = false,
   onImportSuccess,
 }) => {
   if (!page) return null;
@@ -68,21 +70,23 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
         style={{ width: previewOpen ? `${previewWidthPercent}%` : '100%' }}
       >
         {/* 에디터 툴바 */}
-        <EditorToolbar
-          insertMarkdown={insertMarkdown}
-          insertLink={insertLink}
-          insertBullet={insertBullet}
-          insertNumber={insertNumber}
-          selectAndUploadImage={selectAndUploadImage}
-          aka={pageAka}
-          onAkaChange={setPageAka}
-          previewOpen={previewOpen}
-          setPreviewOpen={setPreviewOpen}
-          pageTitle={pageTitle}
-          pageContent={pageContent}
-          folderId={folderId}
-          onImportSuccess={onImportSuccess}
-        />
+        <div className={readOnly ? 'pointer-events-none opacity-50 select-none' : ''}>
+          <EditorToolbar
+            insertMarkdown={insertMarkdown}
+            insertLink={insertLink}
+            insertBullet={insertBullet}
+            insertNumber={insertNumber}
+            selectAndUploadImage={selectAndUploadImage}
+            aka={pageAka}
+            onAkaChange={setPageAka}
+            previewOpen={previewOpen}
+            setPreviewOpen={setPreviewOpen}
+            pageTitle={pageTitle}
+            pageContent={pageContent}
+            folderId={folderId}
+            onImportSuccess={onImportSuccess}
+          />
+        </div>
 
         {/* 텍스트 편집창 */}
         <MdTextarea
@@ -90,6 +94,7 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
           onChange={setPageContent}
           onSave={handleSave}
           textareaRef={textareaRef}
+          readOnly={readOnly}
         />
       </div>
 

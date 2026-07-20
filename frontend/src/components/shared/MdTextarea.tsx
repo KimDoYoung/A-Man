@@ -7,6 +7,7 @@ interface Props {
     onChange: (value: string) => void;
     onSave?: () => void;
     textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+    readOnly?: boolean;
 }
 
 interface MenuPosition {
@@ -60,7 +61,7 @@ const FALLBACK_SYMBOLS: Asset[] = [
     { atype: 'SYMBOL', name: 'Checkmark (✓)', value: '✓' }
 ];
 
-const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: externalRef }) => {
+const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: externalRef, readOnly = false }) => {
     const [form, setForm] = useState({ content: value });
     const [menuPos, setMenuPos] = useState<MenuPosition>({ x: 0, y: 0, visible: false });
     const internalRef = useRef<HTMLTextAreaElement>(null);
@@ -246,6 +247,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handleAction = (action: string) => {
+        if (readOnly) return;
         const textarea = textareaRef.current;
         if (!textarea) return;
 
@@ -496,6 +498,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handleContextMenu = (e: React.MouseEvent) => {
+        if (readOnly) return;
         e.preventDefault();
         
         const clientX = e.clientX;
@@ -521,6 +524,12 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handleKeydown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (readOnly) {
+            if (e.key === 'Tab' || e.key === 'Enter') {
+                e.preventDefault();
+            }
+            return;
+        }
         // 패널이 열려 있는 상태에서의 키 입력 가로채기
         if (panelState.type !== null) {
             const items = panelState.type === 'emoji' ? emojis
@@ -990,6 +999,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
     };
 
     const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        if (readOnly) return;
         const items = e.clipboardData?.items;
         if (!items) return;
         for (const item of Array.from(items)) {
@@ -1041,6 +1051,7 @@ const MdTextarea: React.FC<Props> = ({ value, onChange, onSave, textareaRef: ext
                 onKeyDown={handleKeydown}
                 onPaste={handlePaste}
                 onContextMenu={handleContextMenu}
+                readOnly={readOnly}
                 className="flex-1 w-full p-4 pb-[50vh] font-mono text-sm resize-none focus:outline-hidden leading-relaxed bg-white border border-gray-200 rounded-lg custom-scroll"
             />
 

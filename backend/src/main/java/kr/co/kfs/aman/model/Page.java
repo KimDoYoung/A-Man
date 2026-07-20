@@ -57,6 +57,15 @@ public class Page {
     @Builder.Default
     private String status = "DRAFT";
 
+    @Column(name = "lock_user")
+    private String lockUser;
+
+    @Column(name = "lock_time")
+    private LocalDateTime lockTime;
+
+    @Column(name = "lock_role")
+    private String lockRole;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

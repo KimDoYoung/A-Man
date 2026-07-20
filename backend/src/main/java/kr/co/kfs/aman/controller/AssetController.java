@@ -59,7 +59,9 @@ public class AssetController {
         java.util.List<String> emojis = new java.util.ArrayList<>();
         for (String p : parts) {
             String t = p.trim();
-            if (!t.isEmpty()) emojis.add(t);
+            if (!t.isEmpty()) {
+                emojis.add(t);
+            }
         }
         return ResponseEntity.ok(emojis);
     }

@@ -20,11 +20,15 @@ export interface PageSummary {
 
 // 도움말 상세 문서 데이터 인터페이스
 export interface PageData {
-  id: number;
+  id?: number;
   title: string;
   content: string;
   aka?: string;
-  updatedAt: string;
+  updatedAt?: string;
+  status?: 'DRAFT' | 'PUBLISHED';
+  lockUser?: string | null;
+  lockTime?: string | null;
+  lockRole?: string | null;
 }
 
 // 목차(TOC) 아이템 인터페이스
