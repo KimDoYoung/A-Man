@@ -27,6 +27,7 @@ export interface CanvasItem {
     calloutShape?: 'speech-rect' | 'speech-oval' | 'line'
     calloutTailX?: number
     calloutTailY?: number
+    shape?: 'circle' | 'rect'
   }
 }
 

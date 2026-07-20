@@ -5,6 +5,7 @@ export const SYSTEM_ITEM_DEFAULTS = {
   circleNumberBorderColor: '#f59e0b',
   circleNumberBorderWidth: 3,
   circleNumberFontSize: 28,
+  circleNumberShape: 'circle' as 'circle' | 'rect',
 
   // 2. 강조 상자 (box) 전용 속성
   boxBorderColor: '#ef4444',

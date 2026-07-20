@@ -379,6 +379,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [circleNumberBorderColor, setCircleNumberBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
   const [circleNumberBorderWidth, setCircleNumberBorderWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
   const [circleNumberFontSize, setCircleNumberFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+  const [circleNumberShape, setCircleNumberShape] = useState<'circle' | 'rect'>(SYSTEM_ITEM_DEFAULTS.circleNumberShape)
 
   // 2. 강조 상자 (box) 관련 속성
   const [boxBorderColor, setBoxBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
@@ -468,6 +469,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBorderColor: string
     circleNumberBorderWidth: number
     circleNumberFontSize: number
+    circleNumberShape: 'circle' | 'rect'
     boxBorderColor: string
     boxLineWidth: number
     boxLineStyle: 'solid' | 'dashed'
@@ -677,6 +679,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBorderColor !== lastSavedState.circleNumberBorderColor ||
     circleNumberBorderWidth !== lastSavedState.circleNumberBorderWidth ||
     circleNumberFontSize !== lastSavedState.circleNumberFontSize ||
+    circleNumberShape !== lastSavedState.circleNumberShape ||
     boxBorderColor !== lastSavedState.boxBorderColor ||
     boxLineWidth !== lastSavedState.boxLineWidth ||
     boxLineStyle !== lastSavedState.boxLineStyle ||
@@ -971,39 +974,66 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         }
       }
       else if (item.type === 'circle-number') {
-        const radius = (item.style.fontSize || circleNumberFontSize) * 1.05
-        // 테두리 및 그림자
-        ctx.beginPath()
-        ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
-        ctx.fillStyle = item.style.backgroundColor || circleNumberBgColor
+        const fontSize = item.style.fontSize || circleNumberFontSize
+        const radius = fontSize * 1.05
+        const shape = item.style.shape || 'circle'
+        const bgColor = item.style.backgroundColor || circleNumberBgColor
+        const bColor = item.style.borderColor || circleNumberBorderColor
+        const bWidth = item.style.borderWidth || circleNumberBorderWidth
+
+        ctx.save()
         ctx.shadowColor = 'rgba(0,0,0,0.15)'
         ctx.shadowBlur = 4
         ctx.shadowOffsetY = 2
-        ctx.fill()
-        
-        ctx.beginPath()
-        ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
-        ctx.lineWidth = item.style.borderWidth || circleNumberBorderWidth
-        ctx.strokeStyle = item.style.borderColor || circleNumberBorderColor
-        ctx.shadowColor = 'transparent' // 테두리엔 그림자 제외
-        ctx.stroke()
+        ctx.fillStyle = bgColor
 
-        // 텍스트 그리기
+        if (shape === 'rect') {
+          const side = radius * 2
+          const rx = item.x - radius
+          const ry = item.y - radius
+          ctx.beginPath()
+          ctx.roundRect(rx, ry, side, side, 6)
+          ctx.fill()
+          ctx.shadowColor = 'transparent'
+          ctx.lineWidth = bWidth
+          ctx.strokeStyle = bColor
+          ctx.beginPath()
+          ctx.roundRect(rx, ry, side, side, 6)
+          ctx.stroke()
+        } else {
+          ctx.beginPath()
+          ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
+          ctx.fill()
+          ctx.shadowColor = 'transparent'
+          ctx.lineWidth = bWidth
+          ctx.strokeStyle = bColor
+          ctx.beginPath()
+          ctx.arc(item.x, item.y, radius, 0, 2 * Math.PI)
+          ctx.stroke()
+        }
+
         ctx.fillStyle = item.style.textColor || circleNumberTextColor
-        ctx.font = `bold ${item.style.fontSize || circleNumberFontSize}px sans-serif`
+        ctx.font = `bold ${fontSize}px sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(item.text || '1', item.x, item.y)
 
-        // 선택 영역 하이라이트
         if (isSelected) {
-          ctx.beginPath()
-          ctx.arc(item.x, item.y, radius + 4, 0, 2 * Math.PI)
+          ctx.setLineDash([4, 4])
           ctx.strokeStyle = '#3b82f6'
           ctx.lineWidth = 1.5
-          ctx.setLineDash([4, 4])
-          ctx.stroke()
+          if (shape === 'rect') {
+            const side = radius * 2
+            ctx.beginPath()
+            ctx.roundRect(item.x - radius - 4, item.y - radius - 4, side + 8, side + 8, 8)
+            ctx.stroke()
+          } else {
+            ctx.beginPath()
+            ctx.arc(item.x, item.y, radius + 4, 0, 2 * Math.PI)
+            ctx.stroke()
+          }
         }
+        ctx.restore()
       } 
       else if (item.type === 'box') {
         // 사각형 강조 박스 (둥글기 borderRadius 반영)
@@ -1422,6 +1452,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.circleNumberBorderColor !== undefined) setCircleNumberBorderColor(config.circleNumberBorderColor)
         if (config.circleNumberBorderWidth !== undefined) setCircleNumberBorderWidth(config.circleNumberBorderWidth)
         if (config.circleNumberFontSize !== undefined) setCircleNumberFontSize(config.circleNumberFontSize)
+        if (config.circleNumberShape !== undefined) setCircleNumberShape(config.circleNumberShape)
 
         // 2. 강조 상자
         if (config.boxBorderColor !== undefined) setBoxBorderColor(config.boxBorderColor)
@@ -1487,6 +1518,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBorderColor,
     circleNumberBorderWidth,
     circleNumberFontSize,
+    circleNumberShape,
     boxBorderColor,
     boxLineWidth,
     boxLineStyle,
@@ -1547,6 +1579,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setCircleNumberBorderColor(cfg.circleNumberBorderColor)
     setCircleNumberBorderWidth(cfg.circleNumberBorderWidth)
     setCircleNumberFontSize(cfg.circleNumberFontSize)
+    setCircleNumberShape(cfg.circleNumberShape)
     setBoxBorderColor(cfg.boxBorderColor)
     setBoxLineWidth(cfg.boxLineWidth)
     setBoxLineStyle(cfg.boxLineStyle)
@@ -1596,6 +1629,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBorderColor: data.circleNumberBorderColor ?? data.circleBorderColor ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
     circleNumberBorderWidth: data.circleNumberBorderWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
     circleNumberFontSize: data.circleNumberFontSize ?? data.fontSize ?? SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    circleNumberShape: data.circleNumberShape ?? SYSTEM_ITEM_DEFAULTS.circleNumberShape,
     boxBorderColor: data.boxBorderColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.boxBorderColor,
     boxLineWidth: data.boxLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.boxLineWidth,
     boxLineStyle: data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.boxLineStyle,
@@ -1720,6 +1754,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
       setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
       setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
+      setCircleNumberShape(SYSTEM_ITEM_DEFAULTS.circleNumberShape)
 
       setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
       setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
@@ -2224,8 +2259,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         
         if (item.type === 'circle-number') {
           const radius = (item.style.fontSize || 13) * 1.05
-          const dist = Math.hypot(item.x - x, item.y - y)
-          if (dist <= radius + 2) {
+          const shape = item.style.shape || 'circle'
+          const hit = shape === 'rect'
+            ? (x >= item.x - radius - 2 && x <= item.x + radius + 2 && y >= item.y - radius - 2 && y <= item.y + radius + 2)
+            : Math.hypot(item.x - x, item.y - y) <= radius + 2
+          if (hit) {
             setSelectedItemId(item.id)
             setDraggedItemOffset({ x: x - item.x, y: y - item.y })
             found = true
@@ -2362,7 +2400,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           borderColor: circleNumberBorderColor,
           borderWidth: circleNumberBorderWidth,
           textColor: circleNumberTextColor,
-          fontSize: circleNumberFontSize
+          fontSize: circleNumberFontSize,
+          shape: circleNumberShape
         }
       }
       pushToUndo([...items, newItem])
@@ -3772,6 +3811,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setCircleNumberBorderWidth={setCircleNumberBorderWidth}
                 circleNumberFontSize={circleNumberFontSize}
                 setCircleNumberFontSize={setCircleNumberFontSize}
+                circleNumberShape={circleNumberShape}
+                setCircleNumberShape={setCircleNumberShape}
                 boxBorderColor={boxBorderColor}
                 setBoxBorderColor={setBoxBorderColor}
                 boxLineWidth={boxLineWidth}

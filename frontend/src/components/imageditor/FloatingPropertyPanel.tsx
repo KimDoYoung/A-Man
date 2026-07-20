@@ -31,6 +31,8 @@ interface FloatingPropertyPanelProps {
   setCircleNumberBorderWidth: (width: number) => void
   circleNumberFontSize: number
   setCircleNumberFontSize: (size: number) => void
+  circleNumberShape: 'circle' | 'rect'
+  setCircleNumberShape: (shape: 'circle' | 'rect') => void
 
   // 2. 강조 상자 (box) 관련 속성
   boxBorderColor: string
@@ -154,6 +156,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setCircleNumberBorderWidth,
   circleNumberFontSize,
   setCircleNumberFontSize,
+  circleNumberShape,
+  setCircleNumberShape,
   boxBorderColor,
   setBoxBorderColor,
   boxLineWidth,
@@ -746,6 +750,38 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               {/* circle-number 타입 인스펙터 */}
               {selectedItem.type === 'circle-number' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 모양 선택 */}
+                  <div className="space-y-2">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                    <div className="flex gap-2">
+                      {(['circle', 'rect'] as const).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setCircleNumberShape(s)
+                            const updated = items.map(item =>
+                              item.id === selectedItemId
+                                ? { ...item, style: { ...item.style, shape: s } }
+                                : item
+                            )
+                            pushToUndo(updated)
+                          }}
+                          className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                            (selectedItem.style.shape || 'circle') === s
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                              : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                          }`}
+                          title={s === 'circle' ? '원형' : '사각형'}
+                        >
+                          {s === 'circle'
+                            ? <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="8" cy="8" r="6"/></svg>
+                            : <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                          }
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 원배경 색상 */}
                   <ColorPicker
                     label="원배경 색상"
@@ -1310,6 +1346,28 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     {/* 활성화된 그리기 툴 별 기본값 설정 */}
                     {activeTool === 'circle-number' && (
                       <>
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                          <div className="flex gap-2">
+                            {(['circle', 'rect'] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => setCircleNumberShape(s)}
+                                className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                  circleNumberShape === s
+                                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                    : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                                }`}
+                                title={s === 'circle' ? '원형' : '사각형'}
+                              >
+                                {s === 'circle'
+                                  ? <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="8" cy="8" r="6"/></svg>
+                                  : <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                                }
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                         <ColorPicker
                           label="원배경 색상"
                           selectedColor={circleNumberBgColor}
