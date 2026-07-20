@@ -72,21 +72,22 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
           </span>
         )}
         {!saveStatus.type && page.aka && (
-          <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-md">
-            <span>별칭:</span>
-            <span className="font-mono text-[11px] text-slate-700 bg-white border border-slate-200 px-1 py-0.5 rounded-sm select-all">
-              {page.aka}
+          <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-600">
+            <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] bg-slate-200 px-1.5 py-0.5 rounded mr-1">URL</span>
+            <span className="font-mono text-slate-750 select-all">
+              {`${window.location.origin}/aman/manual/${page.aka}`}
             </span>
             <button
               onClick={() => {
-                copyTextToClipboard(page.aka || '')
+                const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`;
+                copyTextToClipboard(fullUrl)
                   .then(() => {
                     setCopied(true)
                     setTimeout(() => setCopied(false), 2000)
                   })
               }}
-              className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-200 rounded-sm transition-colors cursor-pointer"
-              title="AKA 복사"
+              className="p-1 text-slate-400 hover:text-indigo-650 hover:bg-slate-200 rounded-sm transition-colors cursor-pointer"
+              title="URL 복사"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>

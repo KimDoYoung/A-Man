@@ -165,28 +165,32 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               )}
             </>
           )}          
-          <button
-            onClick={() => navigate('/admin/assets')}
-            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
-              isAdminAssetsPage 
-                ? 'bg-indigo-600 text-white border-indigo-600' 
-                : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
-            }`}
-            title="공통 자산 관리 화면으로 이동"
-          >
-            자산 관리
-          </button>
-          <button
-            onClick={() => navigate('/admin/folders')}
-            className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
-              isAdminFoldersPage 
-                ? 'bg-amber-600 text-white border-amber-600' 
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-            }`}
-            title="메뉴 폴더 구조 관리 화면으로 이동"
-          >
-            메뉴 관리
-          </button>
+          {user?.role === 'admin' && (
+            <>
+              <button
+                onClick={() => navigate('/admin/assets')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                  isAdminAssetsPage 
+                    ? 'bg-indigo-600 text-white border-indigo-600' 
+                    : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20'
+                }`}
+                title="공통 자산 관리 화면으로 이동"
+              >
+                자산 관리
+              </button>
+              <button
+                onClick={() => navigate('/admin/folders')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                  isAdminFoldersPage 
+                    ? 'bg-amber-600 text-white border-amber-600' 
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
+                }`}
+                title="메뉴 폴더 구조 관리 화면으로 이동"
+              >
+                메뉴 관리
+              </button>
+            </>
+          )}
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin/pages')}
