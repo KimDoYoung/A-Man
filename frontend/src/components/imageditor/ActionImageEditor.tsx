@@ -4,7 +4,9 @@ import { apiClient } from '@/lib/apiClient'
 import { drawBlockArrowStamp } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
 import TextItemInput from './TextItemInput'
-
+import { getDistanceToSegment, getTextBounds, drawArrow, drawOrthogonalArrow, drawSelectionHandles, createRoundedRectPath } from './canvasDrawHelpers'
+import { copyTextToClipboard, loadImageFromFile } from './fileHelpers'
+import { getItemEdgeBounds, shiftItemX, shiftItemY, offsetItemForCrop, isItemWithinCropBounds } from './itemGeometry'
 
 // wYYMMDD 형태의 기본 타이틀을 생성하는 헬퍼 함수
 function getDefaultEditorTitle(): string {
@@ -13,335 +15,6 @@ function getDefaultEditorTitle(): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
   return `w${yy}${mm}${dd}`
-}
-
-// 선분과 점 사이의 거리를 계산하는 수학 헬퍼 함수
-function getDistanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
-  const dx = x2 - x1
-  const dy = y2 - y1
-  const lenSq = dx * dx + dy * dy
-  if (lenSq === 0) return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2)
-  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq
-  t = Math.max(0, Math.min(1, t))
-  const projX = x1 + t * dx
-  const projY = y1 + t * dy
-  return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2)
-}
-
-// 텍스트 아이템의 실제 너비와 높이를 계산하는 헬퍼 함수
-function getTextBounds(
-  ctx: CanvasRenderingContext2D | null,
-  text: string,
-  fontSize: number,
-  fontStyle: 'normal' | 'italic'
-) {
-  const lines = text.split('\n')
-  const lineHeight = fontSize * 1.2
-  let maxW = 0
-  if (ctx) {
-    ctx.save()
-    ctx.font = `${fontStyle === 'italic' ? 'italic' : 'normal'} bold ${fontSize}px sans-serif`
-    lines.forEach((line) => {
-      const w = ctx.measureText(line).width
-      if (w > maxW) maxW = w
-    })
-    ctx.restore()
-  } else {
-    maxW = text.length * fontSize * 0.65
-  }
-  const height = lines.length > 0 ? (lines.length - 1) * lineHeight + fontSize : 0
-  return {
-    width: maxW,
-    height,
-    lineHeight,
-    lines
-  }
-}
-
-// 화살표 그리기 헬퍼 함수
-function drawArrow(
-  ctx: CanvasRenderingContext2D,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  color: string,
-  width: number,
-  lineStyle: 'solid' | 'dashed',
-  isSelected: boolean,
-  headSizeLevel: number = 1
-) {
-  ctx.save()
-
-  // 1. 선 스타일 설정
-  ctx.strokeStyle = color
-  ctx.lineWidth = width
-  if (lineStyle === 'dashed') {
-    ctx.setLineDash([4, 4])
-  } else {
-    ctx.setLineDash([])
-  }
-
-  const angle = Math.atan2(toY - fromY, toX - fromX)
-  const scale = headSizeLevel === 2 ? 1.5 : headSizeLevel === 3 ? 2.0 : 1.0
-  const headLength = Math.max(12, width * 3) * scale
-  const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2)
-  const offset = Math.min(distance * 0.8, headLength * 0.8)
-  const lineToX = toX - offset * Math.cos(angle)
-  const lineToY = toY - offset * Math.sin(angle)
-
-  // 2. 선택 상태일 때 외곽 파란색 하이라이트선 먼저 그리기
-  if (isSelected) {
-    ctx.save()
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'
-    ctx.lineWidth = width + 6
-    ctx.setLineDash([])
-    
-    // 메인 선분 그리기
-    ctx.beginPath()
-    ctx.moveTo(fromX, fromY)
-    ctx.lineTo(lineToX, lineToY)
-    ctx.stroke()
-
-    // 화살촉 그리기
-    const arrowAngle = Math.PI / 6
-    const leftX = toX - headLength * Math.cos(angle - arrowAngle)
-    const leftY = toY - headLength * Math.sin(angle - arrowAngle)
-    const rightX = toX - headLength * Math.cos(angle + arrowAngle)
-    const rightY = toY - headLength * Math.sin(angle + arrowAngle)
-
-    ctx.beginPath()
-    ctx.moveTo(toX, toY)
-    ctx.lineTo(leftX, leftY)
-    ctx.lineTo(rightX, rightY)
-    ctx.closePath()
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.4)'
-    ctx.fill()
-    ctx.restore()
-  }
-
-  // 3. 메인 화살표 선 그리기
-  ctx.beginPath()
-  ctx.moveTo(fromX, fromY)
-  ctx.lineTo(lineToX, lineToY)
-  ctx.stroke()
-
-  // 4. 화살촉 채우기
-  const arrowAngle = Math.PI / 6
-  const leftX = toX - headLength * Math.cos(angle - arrowAngle)
-  const leftY = toY - headLength * Math.sin(angle - arrowAngle)
-  const rightX = toX - headLength * Math.cos(angle + arrowAngle)
-  const rightY = toY - headLength * Math.sin(angle + arrowAngle)
-
-  ctx.beginPath()
-  ctx.moveTo(toX, toY)
-  ctx.lineTo(leftX, leftY)
-  ctx.lineTo(rightX, rightY)
-  ctx.closePath()
-  ctx.fillStyle = color
-  ctx.fill()
-  
-  // 5. 선택 상태일 때 양 끝 앵커 포인트 그려서 조작감 극대화
-  if (isSelected) {
-    ctx.beginPath()
-    ctx.arc(fromX, fromY, 6, 0, 2 * Math.PI)
-    ctx.moveTo(toX + 6, toY)
-    ctx.arc(toX, toY, 6, 0, 2 * Math.PI)
-    ctx.fillStyle = '#3b82f6'
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 1.5
-    ctx.fill()
-    ctx.stroke()
-  }
-
-  ctx.restore()
-}
-
-// 직각으로 꺾이는 화살표 그리기 헬퍼 함수 (3세그먼트 H-V-H 모델)
-// midX/midY 둘 다 저장, 어느 축이 더 "바깥"인지로 경로 자동 결정
-// xOutside >= yOutside → ㄷ 경로: from→(midX,fromY)→(midX,toY)→to
-// xOutside  < yOutside → 冖 경로: from→(fromX,midY)→(toX,midY)→to
-function drawOrthogonalArrow(
-  ctx: CanvasRenderingContext2D,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  midX: number,
-  midY: number,
-  color: string,
-  width: number,
-  lineStyle: 'solid' | 'dashed',
-  isSelected: boolean,
-  headSizeLevel: number = 1
-) {
-  const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
-  const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
-  const xOutside = Math.max(0, minX - midX, midX - maxX)
-  const yOutside = Math.max(0, minY - midY, midY - maxY)
-  const useHorizontal = xOutside >= yOutside
-
-  const p1x = useHorizontal ? midX : fromX
-  const p1y = useHorizontal ? fromY : midY
-  const p2x = useHorizontal ? midX : toX
-  const p2y = useHorizontal ? toY : midY
-
-  let angle: number
-  if (useHorizontal) {
-    angle = Math.abs(toX - midX) > 0.5 ? Math.atan2(0, toX - midX) : Math.atan2(toY - fromY, 0)
-  } else {
-    angle = Math.abs(toY - midY) > 0.5 ? Math.atan2(toY - midY, 0) : Math.atan2(0, toX - fromX)
-  }
-
-  const scale = headSizeLevel === 2 ? 1.5 : headSizeLevel === 3 ? 2.0 : 1.0
-  const headLength = Math.max(12, width * 3) * scale
-  const lastSegLen = useHorizontal
-    ? (Math.abs(toX - midX) > 0.5 ? Math.abs(toX - midX) : Math.abs(toY - fromY))
-    : (Math.abs(toY - midY) > 0.5 ? Math.abs(toY - midY) : Math.abs(toX - fromX))
-  const offset = Math.min(lastSegLen * 0.8, headLength * 0.8)
-  const lineToX = toX - offset * Math.cos(angle)
-  const lineToY = toY - offset * Math.sin(angle)
-
-  ctx.save()
-  ctx.strokeStyle = color
-  ctx.lineWidth = width
-  ctx.setLineDash(lineStyle === 'dashed' ? [4, 4] : [])
-
-  if (isSelected) {
-    ctx.save()
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)'
-    ctx.lineWidth = width + 6
-    ctx.setLineDash([])
-    ctx.beginPath()
-    ctx.moveTo(fromX, fromY)
-    ctx.lineTo(p1x, p1y)
-    ctx.lineTo(p2x, p2y)
-    ctx.lineTo(lineToX, lineToY)
-    ctx.stroke()
-    ctx.restore()
-  }
-
-  ctx.beginPath()
-  ctx.moveTo(fromX, fromY)
-  ctx.lineTo(p1x, p1y)
-  ctx.lineTo(p2x, p2y)
-  ctx.lineTo(lineToX, lineToY)
-  ctx.stroke()
-
-  const arrowAngle = Math.PI / 6
-  ctx.beginPath()
-  ctx.moveTo(toX, toY)
-  ctx.lineTo(toX - headLength * Math.cos(angle - arrowAngle), toY - headLength * Math.sin(angle - arrowAngle))
-  ctx.lineTo(toX - headLength * Math.cos(angle + arrowAngle), toY - headLength * Math.sin(angle + arrowAngle))
-  ctx.closePath()
-  ctx.fillStyle = color
-  ctx.fill()
-
-  if (isSelected) {
-    const drawHandle = (hx: number, hy: number, fill: string) => {
-      ctx.beginPath()
-      ctx.arc(hx, hy, 6, 0, 2 * Math.PI)
-      ctx.fillStyle = fill
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 1.5
-      ctx.setLineDash([])
-      ctx.fill()
-      ctx.stroke()
-    }
-    drawHandle(fromX, fromY, '#3b82f6')
-    drawHandle(toX, toY, '#3b82f6')
-    // 핸들 위치: ㄷ=수직 arm 중앙, 冖=수평 arm 중앙
-    const hx = useHorizontal ? midX : (fromX + toX) / 2
-    const hy = useHorizontal ? (fromY + toY) / 2 : midY
-    drawHandle(hx, hy, '#10b981')
-  }
-
-  ctx.restore()
-}
-
-// box/image 타입 공용: 선택 영역 하이라이트 및 4꼭지점 조절 핸들 그리기
-function drawSelectionHandles(
-  ctx: CanvasRenderingContext2D,
-  item: { x: number; y: number; width?: number; height?: number }
-) {
-  ctx.strokeStyle = '#3b82f6'
-  ctx.lineWidth = 1.5
-  ctx.setLineDash([4, 4])
-  ctx.strokeRect(item.x - 3, item.y - 3, (item.width || 0) + 6, (item.height || 0) + 6)
-
-  // 4꼭지점 핸들 그리기
-  ctx.save()
-  ctx.setLineDash([])
-  ctx.fillStyle = '#ffffff'
-  ctx.strokeStyle = '#3b82f6'
-  ctx.lineWidth = 1.5
-  const handleSize = 6
-  const points = [
-    { x: item.x, y: item.y }, // TL
-    { x: item.x + (item.width || 0), y: item.y }, // TR
-    { x: item.x, y: item.y + (item.height || 0) }, // BL
-    { x: item.x + (item.width || 0), y: item.y + (item.height || 0) } // BR
-  ]
-  points.forEach((pt) => {
-    ctx.fillRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
-    ctx.strokeRect(pt.x - handleSize / 2, pt.y - handleSize / 2, handleSize, handleSize)
-  })
-  ctx.restore()
-}
-
-// HTTP 및 HTTPS 모두 호환되는 텍스트 클립보드 복사 헬퍼 함수
-async function copyTextToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text)
-      return
-    } catch (err) {
-      console.warn('navigator.clipboard 실패, fallback 사용:', err)
-    }
-  }
-
-  // 비보안 환경(HTTP)용 fallback
-  const textArea = document.createElement('textarea')
-  textArea.value = text
-  textArea.style.position = 'fixed'
-  textArea.style.left = '-999999px'
-  textArea.style.top = '-999999px'
-  document.body.appendChild(textArea)
-  textArea.focus()
-  textArea.select()
-  try {
-    const successful = document.execCommand('copy')
-    textArea.remove()
-    if (!successful) throw new Error('execCommand 복사 실패')
-  } catch (err) {
-    textArea.remove()
-    throw new Error('클립보드 복사 최종 실패: ' + err)
-  }
-}
-
-// File → dataURL → HTMLImageElement 공용 로딩 헬퍼 (addSubImage/loadImage 공용)
-function readFileAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => resolve((e.target?.result as string) || '')
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-function loadImageElement(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = src
-  })
-}
-
-async function loadImageFromFile(file: File): Promise<{ img: HTMLImageElement; dataUrl: string }> {
-  const dataUrl = await readFileAsDataURL(file)
-  const img = await loadImageElement(dataUrl)
-  return { img, dataUrl }
 }
 
 import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_types'
@@ -847,28 +520,6 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
     
     setSelectedItemId(null)
-  }
-
-  // 둥근 사각형 경로 생성 헬퍼 함수
-  const createRoundedRectPath = (
-    ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    radius: number
-  ) => {
-    ctx.beginPath()
-    ctx.moveTo(x + radius, y)
-    ctx.lineTo(x + width - radius, y)
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
-    ctx.lineTo(x + width, y + height - radius)
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
-    ctx.lineTo(x + radius, y + height)
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
-    ctx.lineTo(x, y + radius)
-    ctx.quadraticCurveTo(x, y, x + radius, y)
-    ctx.closePath()
   }
 
   // 캔버스 그리기 함수
@@ -1761,59 +1412,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         }
       }
 
-      // 설정을 시스템 디폴트 설정으로 복원
-      setCircleNumberBgColor(SYSTEM_ITEM_DEFAULTS.circleNumberBgColor)
-      setCircleNumberTextColor(SYSTEM_ITEM_DEFAULTS.circleNumberTextColor)
-      setCircleNumberBorderColor(SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor)
-      setCircleNumberBorderWidth(SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth)
-      setCircleNumberFontSize(SYSTEM_ITEM_DEFAULTS.circleNumberFontSize)
-      setCircleNumberShape(SYSTEM_ITEM_DEFAULTS.circleNumberShape)
-
-      setBoxBorderColor(SYSTEM_ITEM_DEFAULTS.boxBorderColor)
-      setBoxLineWidth(SYSTEM_ITEM_DEFAULTS.boxLineWidth)
-      setBoxLineStyle(SYSTEM_ITEM_DEFAULTS.boxLineStyle)
-      setBoxBgColor(SYSTEM_ITEM_DEFAULTS.boxBgColor)
-      setBoxOpacity(SYSTEM_ITEM_DEFAULTS.boxOpacity)
-      setBoxBorderRadius(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
-
-      setArrowColor(SYSTEM_ITEM_DEFAULTS.arrowColor)
-      setArrowLineWidth(SYSTEM_ITEM_DEFAULTS.arrowLineWidth)
-      setArrowLineStyle(SYSTEM_ITEM_DEFAULTS.arrowLineStyle)
+      // 설정을 시스템 디폴트 설정으로 복원 (handleResetToEmpty와 동일한 방식)
+      applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
+      // arrowHeadSize는 StyleConfig에 포함되지 않아 applyStyleConfig가 리셋하지 않으므로 별도 처리
       setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
-
-      setTextTextColor(SYSTEM_ITEM_DEFAULTS.textTextColor)
-      setTextFontSize(SYSTEM_ITEM_DEFAULTS.textFontSize)
-      setTextBgColor(SYSTEM_ITEM_DEFAULTS.textBgColor)
-      setTextFontStyle(SYSTEM_ITEM_DEFAULTS.textFontStyle)
-      setTextTextDecoration(SYSTEM_ITEM_DEFAULTS.textTextDecoration)
-
-      setSymbolEmoji(SYSTEM_ITEM_DEFAULTS.symbolEmoji)
-      setSymbolScale(SYSTEM_ITEM_DEFAULTS.symbolScale)
-
-      setImageSrcBorderColor(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
-      setImageSrcBorderWidth(SYSTEM_ITEM_DEFAULTS.imageSrcBorderWidth)
-      setImageSrcBorderStyle(SYSTEM_ITEM_DEFAULTS.imageSrcBorderStyle)
-      setImageSrcHasBorder(SYSTEM_ITEM_DEFAULTS.imageSrcHasBorder)
-      setImageSrcCaptionText(SYSTEM_ITEM_DEFAULTS.imageSrcCaptionText)
-      setImageSrcHasCaption(SYSTEM_ITEM_DEFAULTS.imageSrcHasCaption)
-
-      setCalloutShape(SYSTEM_ITEM_DEFAULTS.calloutShape)
-      setCalloutBgColor(SYSTEM_ITEM_DEFAULTS.calloutBgColor)
-      setCalloutBorderColor(SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
-      setCalloutBorderWidth(SYSTEM_ITEM_DEFAULTS.calloutBorderWidth)
-      setCalloutLineStyle(SYSTEM_ITEM_DEFAULTS.calloutLineStyle)
-      setCalloutOpacity(SYSTEM_ITEM_DEFAULTS.calloutOpacity)
-      setCalloutBorderRadius(SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
-      setCalloutTextColor(SYSTEM_ITEM_DEFAULTS.calloutTextColor)
-      setCalloutFontSize(SYSTEM_ITEM_DEFAULTS.calloutFontSize)
-
-      setCaptionAlign(SYSTEM_ITEM_DEFAULTS.captionAlign)
-      setStampScale(SYSTEM_ITEM_DEFAULTS.stampScale)
-      setStampDirection(SYSTEM_ITEM_DEFAULTS.stampDirection)
-      setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
-      setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
-      setBorderWidth(SYSTEM_ITEM_DEFAULTS.borderWidth)
-      setBorderStyle(SYSTEM_ITEM_DEFAULTS.borderStyle)
 
       showSaveMessage('개인 설정을 삭제하고 시스템 기본값으로 복원했습니다.', 'success')
     } catch (e) {
@@ -2794,55 +2396,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       
       // 크롭 영역 바깥의 아이템 필터링 및 오프셋 조정
       const updatedItems = items
-        .map((item) => {
-          if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
-            return {
-              ...item,
-              x: item.x - cX,
-              y: item.y - cY,
-              style: {
-                ...item.style,
-                midX: item.style.midX - cX,
-                ...(item.style.midY !== undefined ? { midY: item.style.midY - cY } : {})
-              }
-            }
-          }
-          if (item.type === 'callout') {
-            const tail = getCalloutTailPoint(item)
-            return {
-              ...item,
-              x: item.x - cX,
-              y: item.y - cY,
-              style: {
-                ...item.style,
-                calloutTailX: tail.x - cX,
-                calloutTailY: tail.y - cY
-              }
-            }
-          }
-          return { ...item, x: item.x - cX, y: item.y - cY }
-        })
-        .filter((item) => {
-          // 크롭 캔버스 범위 내부에 들어오는 것만 유지
-          if (item.type === 'circle-number') {
-            const r = (item.style.fontSize || 13) * 1.05
-            return item.x >= -r && item.x <= cW + r && item.y >= -r && item.y <= cH + r
-          } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'callout') {
-            return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
-          } else if (item.type === 'text') {
-            return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
-          } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
-            const x2 = item.x + (item.width || 0)
-            const y2 = item.y + (item.height || 0)
-            const startIn = item.x >= 0 && item.x <= cW && item.y >= 0 && item.y <= cH
-            const endIn = x2 >= 0 && x2 <= cW && y2 >= 0 && y2 <= cH
-            return startIn || endIn
-          } else if (item.type === 'symbol') {
-            const radius = (item.style.fontSize || 48) / 2
-            return item.x >= -radius && item.x <= cW + radius && item.y >= -radius && item.y <= cH + radius
-          }
-          return true
-        })
+        .map((item) => offsetItemForCrop(item, cX, cY))
+        .filter((item) => isItemWithinCropBounds(item, cW, cH))
 
       // 크롭 직전 상태(uncropped bgImageSrc & items)를 undoStack에 보관
       setUndoStack((prev) => [...prev, { items: items, bgImageSrc: bgImageSrc, imageScale: imageScale }])
@@ -3413,25 +2968,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (!bgImage) return 0
     let maxEdge = 0
     items.forEach((item) => {
-      let itemBottom = item.y
-      if (item.type === 'circle-number') {
-        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
-        itemBottom = item.y + r
-      } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
-        itemBottom = item.y + (item.height || 0)
-      } else if (item.type === 'callout') {
-        itemBottom = Math.max(item.y + (item.height || 0), getCalloutTailPoint(item).y)
-      } else if (item.type === 'text') {
-        itemBottom = item.y + (item.style.fontSize || textFontSize) * 1.2
-      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
-        itemBottom = Math.max(item.y, item.y + (item.height || 0))
-      } else if (item.type === 'symbol') {
-        const radius = (item.style.fontSize || 48) / 2
-        itemBottom = item.y + radius
-      }
+      const { bottom } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
       const imageBottom = bgImage.height + canvasExpandTop
-      if (itemBottom > imageBottom) {
-        const edge = itemBottom - imageBottom
+      if (bottom > imageBottom) {
+        const edge = bottom - imageBottom
         if (edge > maxEdge) {
           maxEdge = edge
         }
@@ -3444,25 +2984,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (!bgImage) return 0
     let maxEdge = 0
     items.forEach((item) => {
-      let itemRight = item.x
-      if (item.type === 'circle-number') {
-        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
-        itemRight = item.x + r
-      } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
-        itemRight = item.x + (item.width || 0)
-      } else if (item.type === 'callout') {
-        itemRight = Math.max(item.x + (item.width || 0), getCalloutTailPoint(item).x)
-      } else if (item.type === 'text') {
-        itemRight = item.x + 100 // approximate text width
-      } else if (item.type === 'arrow' || item.type === 'orthogonal-arrow') {
-        itemRight = Math.max(item.x, item.x + (item.width || 0))
-      } else if (item.type === 'symbol') {
-        const radius = (item.style.fontSize || 48) / 2
-        itemRight = item.x + radius
-      }
+      const { right } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
       const imageRight = bgImage.width + canvasExpandLeft
-      if (itemRight > imageRight) {
-        const edge = itemRight - imageRight
+      if (right > imageRight) {
+        const edge = right - imageRight
         if (edge > maxEdge) {
           maxEdge = edge
         }
@@ -3476,17 +3001,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (canvasExpandTop < 100) return false
     let safe = true
     items.forEach(item => {
-      let itemTop = item.y
-      if (item.type === 'circle-number') {
-        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
-        itemTop = item.y - r
-      } else if (item.type === 'symbol') {
-        const radius = (item.style.fontSize || 48) / 2
-        itemTop = item.y - radius
-      } else if (item.type === 'callout') {
-        itemTop = Math.min(item.y, getCalloutTailPoint(item).y)
-      }
-      if (itemTop < 100) safe = false
+      const { top } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      if (top < 100) safe = false
     })
     return safe
   }, [items, canvasExpandTop, circleNumberFontSize])
@@ -3495,43 +3011,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     if (canvasExpandLeft < 100) return false
     let safe = true
     items.forEach(item => {
-      let itemLeft = item.x
-      if (item.type === 'circle-number') {
-        const r = (item.style.fontSize || circleNumberFontSize) * 1.05
-        itemLeft = item.x - r
-      } else if (item.type === 'symbol') {
-        const radius = (item.style.fontSize || 48) / 2
-        itemLeft = item.x - radius
-      } else if (item.type === 'callout') {
-        itemLeft = Math.min(item.x, getCalloutTailPoint(item).x)
-      }
-      if (itemLeft < 100) safe = false
+      const { left } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      if (left < 100) safe = false
     })
     return safe
   }, [items, canvasExpandLeft, circleNumberFontSize])
-
-  // callout 아이템의 y좌표 이동 시 꼬리 끝점(calloutTailY)도 함께 이동시키는 헬퍼
-  const shiftItemY = (item: CanvasItem, delta: number): CanvasItem => {
-    if (item.type === 'orthogonal-arrow' && item.style.midY !== undefined) {
-      return { ...item, y: item.y + delta, style: { ...item.style, midY: item.style.midY + delta } }
-    }
-    if (item.type === 'callout') {
-      const tail = getCalloutTailPoint(item)
-      return { ...item, y: item.y + delta, style: { ...item.style, calloutTailY: tail.y + delta } }
-    }
-    return { ...item, y: item.y + delta }
-  }
-
-  const shiftItemX = (item: CanvasItem, delta: number): CanvasItem => {
-    if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
-      return { ...item, x: item.x + delta, style: { ...item.style, midX: item.style.midX + delta } }
-    }
-    if (item.type === 'callout') {
-      const tail = getCalloutTailPoint(item)
-      return { ...item, x: item.x + delta, style: { ...item.style, calloutTailX: tail.x + delta } }
-    }
-    return { ...item, x: item.x + delta }
-  }
 
   // 원본 이미지 크기 조절 실행 함수
   const handleResizeImage = async (targetScale: number) => {
