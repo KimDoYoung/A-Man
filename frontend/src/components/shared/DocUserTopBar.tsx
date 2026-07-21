@@ -49,7 +49,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       const isAltOnly = e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey;
       
-      if (isAltOnly && e.key.toLowerCase() === 'h') {
+      if (isAltOnly && e.key.toLowerCase() === 'h' && !isImageEditorOpen) {
         e.preventDefault();
         setIsRecentPagesOpen((prev) => !prev);
       }
@@ -62,7 +62,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isImageEditorOpen]);
 
   useEffect(() => {
     apiClient.get<any>('/health')
@@ -204,7 +204,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               페이지 관리
             </button>
           )}
-          {user?.role !== 'admin' && (
+          {user?.role !== 'admin' && !isImageEditorOpen && (
             <button
               onClick={() => setIsRecentPagesOpen(true)}
               className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
