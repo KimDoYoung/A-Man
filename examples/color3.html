@@ -1,0 +1,33 @@
+<!-- CSS & JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js"></script>
+
+<div class="color-picker"></div>
+
+<script>
+  const pickr = Pickr.create({
+    el: '.color-picker',
+    theme: 'classic', // 'monolith', 'nano' 테마 지원
+
+    components: {
+      // 메인 스펙트럼 및 슬라이더
+      preview: true,
+      opacity: true,
+      hue: true,
+
+      // 입력란 및 변환 버튼 (HEXA, RGBA, HSLA, HSVA, CMYK)
+      interaction: {
+        hex: true,
+        rgba: true,
+        hsla: true,
+        input: true,
+        clear: true,
+        save: true
+      }
+    }
+  });
+
+  pickr.on('change', (color, source, instance) => {
+    console.log('HEXA:', color.toHEXA().toString());
+  });
+</script>

@@ -1,0 +1,24 @@
+<!-- CDN 불러오기 -->
+<script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+
+<div id="picker"></div>
+
+<script>
+  const colorPicker = new iro.ColorPicker("#picker", {
+    width: 280,
+    color: "#f00",
+    // 원하는 UI 슬라이더 컴포넌트를 자유롭게 배치 가능
+    layout: [
+      { component: iro.ui.Box },     // 2D 박스 스펙트럼
+      { component: iro.ui.Slider, options: { sliderType: 'hue' } },  // Hue Bar
+      { component: iro.ui.Slider, options: { sliderType: 'alpha' } } // Alpha Bar
+    ]
+  });
+
+  // 색상 변경 이벤트 감지
+  colorPicker.on('color:change', function(color) {
+    console.log("HEX:", color.hexString);
+    console.log("RGB:", color.rgbString);
+    console.log("HSV:", color.hsv);
+  });
+</script>

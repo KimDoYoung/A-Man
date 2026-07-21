@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/aman/favicon.png">
     <title>AssetERP 도움말 색상 팔레트</title>
+    <!-- CDN 및 로컬 FontAwesome 주입 -->
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <script src="all.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -14,7 +17,8 @@
             background-color: #f8fafc;
             color: #0f172a;
             margin: 0;
-            padding: 40px 20px;
+            padding: 30px 20px;
+            min-height: 100vh;
         }
         .container {
             max-width: 1200px;
@@ -22,43 +26,36 @@
         }
         header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 25px;
         }
         h1 {
-            font-size: 2.2rem;
+            font-size: 2.0rem;
             font-weight: 700;
             color: #1e3a8a;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
         }
         p.subtitle {
             color: #475569;
-            font-size: 0.95rem;
-        }
-        h2 {
-            margin-top: 40px;
-            font-size: 1.4rem;
-            color: #1e3a8a;
-            border-left: 5px solid #3b82f6;
-            padding-left: 15px;
-            margin-bottom: 20px;
+            font-size: 0.9rem;
+            margin: 0;
         }
         .search-box {
             position: relative;
-            max-width: 600px;
-            margin: 0 auto 30px auto;
+            max-width: 500px;
+            margin: 0 auto 20px auto;
         }
         .search-box input {
             width: 100%;
-            padding: 15px 20px;
+            padding: 12px 20px;
             border-radius: 8px;
             border: 2px solid #cbd5e1;
             background-color: #ffffff;
             color: #0f172a;
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             text-align: center;
@@ -67,16 +64,118 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
+        
+        /* 메인 좌우 레이아웃 */
+        .main-layout {
+            display: flex;
+            gap: 25px;
+            align-items: flex-start;
+        }
+        
+        /* 왼쪽 피커 패널 */
+        .picker-panel {
+            width: 320px;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .picker-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
+            width: 100%;
+            text-align: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 10px;
+        }
+        .live-preview-box {
+            width: 100%;
+            height: 70px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: bold;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 1.05rem;
+            transition: background-color 0.1s;
+        }
+        .live-preview-box span {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            font-weight: normal;
+            margin-top: 2px;
+        }
+        .picker-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+        .btn-picker-copy {
+            width: 100%;
+            padding: 9px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background-color: #ffffff;
+            color: #1e293b;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            outline: none;
+        }
+        .btn-picker-copy:hover {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
+        .btn-picker-copy:active {
+            transform: scale(0.97);
+        }
+
+        /* 오른쪽 색상표 패널 */
+        .palette-panel {
+            flex: 1;
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            color: #1e3a8a;
+            border-left: 4px solid #3b82f6;
+            padding-left: 12px;
+            margin-bottom: 15px;
+        }
+        .section-group {
+            margin-bottom: 30px;
+        }
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+            gap: 10px;
         }
         .card {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 6px;
+            padding: 8px;
             text-align: center;
             transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
             user-select: none;
@@ -84,7 +183,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            min-height: 180px;
+            min-height: 130px;
         }
         .card:hover {
             transform: translateY(-2px);
@@ -93,53 +192,57 @@
         }
         .color-preview {
             width: 100%;
-            height: 60px;
-            border-radius: 6px;
+            height: 35px;
+            border-radius: 4px;
             border: 1px solid #cbd5e1;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         .card-name {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             color: #334155;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             background: #f1f5f9;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 2px 4px;
+            border-radius: 3px;
             border: 1px solid #cbd5e1;
             width: 100%;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             box-sizing: border-box;
             font-weight: bold;
         }
         .card-hex {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             color: #64748b;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         .card-actions {
             display: flex;
-            gap: 6px;
+            gap: 4px;
             width: 100%;
             box-sizing: border-box;
         }
         .btn-copy {
             flex: 1;
-            padding: 6px 2px;
-            font-size: 0.7rem;
+            padding: 5px 2px;
+            font-size: 0.65rem;
             font-weight: 600;
-            border-radius: 4px;
+            border-radius: 3px;
             border: 1px solid #cbd5e1;
             background-color: #ffffff;
             color: #475569;
             cursor: pointer;
-            transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+            transition: background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.1s;
             outline: none;
             box-sizing: border-box;
             white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
         }
         .btn-copy:hover {
             background-color: #3b82f6;
@@ -149,6 +252,7 @@
         .btn-copy:active {
             transform: scale(0.95);
         }
+        
         /* Toast notification */
         .toast {
             position: fixed;
@@ -157,7 +261,7 @@
             transform: translateX(-50%) translateY(100px);
             background-color: #0f172a;
             color: #ffffff;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 50px;
             font-weight: 600;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
@@ -167,7 +271,11 @@
             pointer-events: none;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+        .toast i, .toast svg {
+            color: #10b981;
         }
         .toast.show {
             transform: translateX(-50%) translateY(0);
@@ -176,16 +284,21 @@
         .no-results {
             text-align: center;
             color: #64748b;
-            font-size: 1.1rem;
-            margin-top: 40px;
+            font-size: 1.05rem;
+            margin-top: 30px;
             grid-column: 1 / -1;
             display: none;
         }
-        #status {
-            text-align: center;
-            font-weight: 600;
-            color: #3b82f6;
-            margin-bottom: 20px;
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .picker-panel {
+                width: 100%;
+                position: static;
+            }
         }
     </style>
 </head>
@@ -201,19 +314,37 @@
         <input type="text" id="searchInput" placeholder="색상 이름 또는 Hex 코드로 검색하세요..." autocomplete="off">
     </div>
 
-    <div id="status">색상 데이터를 준비하는 중...</div>
+    <div class="main-layout">
+        <!-- 1. 왼쪽 컬러 피커 영역 -->
+        <div class="picker-panel">
+            <div class="picker-title"><i class="fas fa-eye-dropper"></i> 커스텀 색상 피커</div>
+            <div id="picker"></div>
+            <div class="live-preview-box" id="livePreview">
+                <span id="previewHex">#FF0000</span>
+                <span id="previewRgb">rgb(255, 0, 0)</span>
+            </div>
+            <div class="picker-actions">
+                <button class="btn-picker-copy" id="btnCopyPickerName"><i class="far fa-copy"></i> 이름(Hex) 복사</button>
+            </div>
+        </div>
 
-    <div id="colorContainer"></div>
-    <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+        <!-- 2. 오른쪽 콤팩트 색상표 영역 -->
+        <div class="palette-panel">
+            <div id="colorContainer"></div>
+            <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
+        </div>
+    </div>
 </div>
 
 <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
     <span id="toastText">복사되었습니다.</span>
 </div>
 
 <script>
+    // 대표적인 HEX 색상 정보 목록
     const colorData = [
-        // 1. AssetERP 핵심 테마 색상
+        // ERP 핵심 색상
         { group: 'AssetERP 핵심 색상', name: 'blue', hex: '456EA6' },
         { group: 'AssetERP 핵심 색상', name: 'mint', hex: '17A2B8' },
         { group: 'AssetERP 핵심 색상', name: 'red', hex: 'DD5E5E' },
@@ -225,66 +356,94 @@
         { group: 'AssetERP 핵심 색상', name: 'paleBlue', hex: 'EEF2FC' },
         { group: 'AssetERP 핵심 색상', name: 'gray', hex: '6B6B6B' },
 
-        // 2. 범용 파스텔/Tailwind 컬러 팩
-        { group: 'Slate (슬레이트 회색)', name: 'slate-100', hex: 'F1F5F9' },
-        { group: 'Slate (슬레이트 회색)', name: 'slate-300', hex: 'CBD5E1' },
-        { group: 'Slate (슬레이트 회색)', name: 'slate-500', hex: '64748B' },
-        { group: 'Slate (슬레이트 회색)', name: 'slate-700', hex: '334155' },
-        { group: 'Slate (슬레이트 회색)', name: 'slate-900', hex: '0F172A' },
+        // 기본 웹 대표 원색 계열 (https://ernest-o.tistory.com/entry/HEX-색상-코드표-정리 참조)
+        { group: '기본 대표 원색', name: 'Red (빨강)', hex: 'FF0000' },
+        { group: '기본 대표 원색', name: 'Orange (주황)', hex: 'FFA500' },
+        { group: '기본 대표 원색', name: 'Yellow (노랑)', hex: 'FFFF00' },
+        { group: '기본 대표 원색', name: 'Green (초록)', hex: '008000' },
+        { group: '기본 대표 원색', name: 'Blue (파랑)', hex: '0000FF' },
+        { group: '기본 대표 원색', name: 'Navy (남색)', hex: '000080' },
+        { group: '기본 대표 원색', name: 'Purple (보라)', hex: '800080' },
+        { group: '기본 대표 원색', name: 'Pink (분홍)', hex: 'FFC0CB' },
+        { group: '기본 대표 원색', name: 'Brown (갈색)', hex: 'A52A2A' },
+        { group: '기본 대표 원색', name: 'White (흰색)', hex: 'FFFFFF' },
+        { group: '기본 대표 원색', name: 'Gray (회색)', hex: '808080' },
+        { group: '기본 대표 원색', name: 'Black (검정)', hex: '000000' },
 
-        { group: 'Red (빨간색 계열)', name: 'red-100', hex: 'FEE2E2' },
-        { group: 'Red (빨간색 계열)', name: 'red-300', hex: 'FCA5A5' },
-        { group: 'Red (빨간색 계열)', name: 'red-500', hex: 'EF4444' },
-        { group: 'Red (빨간색 계열)', name: 'red-700', hex: 'B91C1C' },
+        // 파스텔/Tailwind 스케일
+        { group: 'Slate (슬레이트)', name: 'slate-100', hex: 'F1F5F9' },
+        { group: 'Slate (슬레이트)', name: 'slate-300', hex: 'CBD5E1' },
+        { group: 'Slate (슬레이트)', name: 'slate-500', hex: '64748B' },
+        { group: 'Slate (슬레이트)', name: 'slate-700', hex: '334155' },
 
-        { group: 'Orange (주황색 계열)', name: 'orange-100', hex: 'FFEDD5' },
-        { group: 'Orange (주황색 계열)', name: 'orange-300', hex: 'FDBA74' },
-        { group: 'Orange (주황색 계열)', name: 'orange-500', hex: 'F97316' },
-        { group: 'Orange (주황색 계열)', name: 'orange-700', hex: 'C2410C' },
+        { group: 'Red (빨강 톤)', name: 'red-100', hex: 'FEE2E2' },
+        { group: 'Red (빨강 톤)', name: 'red-300', hex: 'FCA5A5' },
+        { group: 'Red (빨강 톤)', name: 'red-500', hex: 'EF4444' },
+        { group: 'Red (빨강 톤)', name: 'red-700', hex: 'B91C1C' },
 
-        { group: 'Amber (황색 계열)', name: 'amber-100', hex: 'FEF3C7' },
-        { group: 'Amber (황색 계열)', name: 'amber-300', hex: 'FCD34D' },
-        { group: 'Amber (황색 계열)', name: 'amber-500', hex: 'F59E0B' },
-        { group: 'Amber (황색 계열)', name: 'amber-700', hex: 'B45309' },
+        { group: 'Orange (주황 톤)', name: 'orange-100', hex: 'FFEDD5' },
+        { group: 'Orange (주황 톤)', name: 'orange-300', hex: 'FDBA74' },
+        { group: 'Orange (주황 톤)', name: 'orange-500', hex: 'F97316' },
+        { group: 'Orange (주황 톤)', name: 'orange-700', hex: 'C2410C' },
 
-        { group: 'Emerald (에메랄드 초록)', name: 'emerald-100', hex: 'D1FAE5' },
-        { group: 'Emerald (에메랄드 초록)', name: 'emerald-300', hex: '6EE7B7' },
-        { group: 'Emerald (에메랄드 초록)', name: 'emerald-500', hex: '10B981' },
-        { group: 'Emerald (에메랄드 초록)', name: 'emerald-700', hex: '047857' },
+        { group: 'Emerald (에메랄드)', name: 'emerald-100', hex: 'D1FAE5' },
+        { group: 'Emerald (에메랄드)', name: 'emerald-300', hex: '6EE7B7' },
+        { group: 'Emerald (에메랄드)', name: 'emerald-500', hex: '10B981' },
+        { group: 'Emerald (에메랄드)', name: 'emerald-700', hex: '047857' },
 
-        { group: 'Blue (파란색 계열)', name: 'blue-100', hex: 'DBEAFE' },
-        { group: 'Blue (파란색 계열)', name: 'blue-300', hex: '93C5FD' },
-        { group: 'Blue (파란색 계열)', name: 'blue-500', hex: '3B82F6' },
-        { group: 'Blue (파란색 계열)', name: 'blue-700', hex: '1D4ED8' },
-        { group: 'Blue (파란색 계열)', name: 'blue-900', hex: '1E3A8A' },
+        { group: 'Blue (파랑 톤)', name: 'blue-100', hex: 'DBEAFE' },
+        { group: 'Blue (파랑 톤)', name: 'blue-300', hex: '93C5FD' },
+        { group: 'Blue (파랑 톤)', name: 'blue-500', hex: '3B82F6' },
+        { group: 'Blue (파랑 톤)', name: 'blue-700', hex: '1D4ED8' },
 
-        { group: 'Indigo (인디고 블루)', name: 'indigo-100', hex: 'E0E7FF' },
-        { group: 'Indigo (인디고 블루)', name: 'indigo-300', hex: 'A5B4FC' },
-        { group: 'Indigo (인디고 블루)', name: 'indigo-500', hex: '6366F1' },
-        { group: 'Indigo (인디고 블루)', name: 'indigo-700', hex: '4338CA' },
+        { group: 'Indigo (인디고)', name: 'indigo-100', hex: 'E0E7FF' },
+        { group: 'Indigo (인디고)', name: 'indigo-300', hex: 'A5B4FC' },
+        { group: 'Indigo (인디고)', name: 'indigo-500', hex: '6366F1' },
+        { group: 'Indigo (인디고)', name: 'indigo-700', hex: '4338CA' },
 
-        { group: 'Violet (바이올렛 보라)', name: 'violet-100', hex: 'EDE9FE' },
-        { group: 'Violet (바이올렛 보라)', name: 'violet-300', hex: 'C4B5FD' },
-        { group: 'Violet (바이올렛 보라)', name: 'violet-500', hex: '8B5CF6' },
-        { group: 'Violet (바이올렛 보라)', name: 'violet-700', hex: '6D28D9' },
-
-        { group: 'Rose (로즈 핑크)', name: 'rose-100', hex: 'FFE4E6' },
-        { group: 'Rose (로즈 핑크)', name: 'rose-300', hex: 'FDA4AF' },
-        { group: 'Rose (로즈 핑크)', name: 'rose-500', hex: 'F43F5E' },
-        { group: 'Rose (로즈 핑크)', name: 'rose-700', hex: 'BE123C' },
-
-        { group: '기타 기본 웹 컬러', name: 'black', hex: '000000' },
-        { group: '기타 기본 웹 컬러', name: 'white', hex: 'FFFFFF' },
-        { group: '기타 기본 웹 컬러', name: 'transparent', hex: 'FFFFFF' }
+        { group: 'Violet (바이올렛)', name: 'violet-100', hex: 'EDE9FE' },
+        { group: 'Violet (바이올렛)', name: 'violet-300', hex: 'C4B5FD' },
+        { group: 'Violet (바이올렛)', name: 'violet-500', hex: '8B5CF6' },
+        { group: 'Violet (바이올렛)', name: 'violet-700', hex: '6D28D9' }
     ];
+
+    let selectedPickerColor = '#FF0000';
 
     window.onload = function () {
         const container = document.getElementById('colorContainer');
-        const status = document.getElementById('status');
         const searchInput = document.getElementById('searchInput');
         const noResults = document.getElementById('noResults');
 
-        // 그룹별로 섹션을 분할하여 렌더링
+        // 1. iro.js 컬러 피커 생성
+        const livePreview = document.getElementById('livePreview');
+        const previewHex = document.getElementById('previewHex');
+        const previewRgb = document.getElementById('previewRgb');
+        const btnCopyPickerName = document.getElementById('btnCopyPickerName');
+
+        const colorPicker = new iro.ColorPicker("#picker", {
+            width: 250,
+            color: "#FF0000",
+            layout: [
+                { component: iro.ui.Box },
+                { component: iro.ui.Slider, options: { sliderType: 'hue' } },
+                { component: iro.ui.Slider, options: { sliderType: 'alpha' } }
+            ]
+        });
+
+        // 피커 색상 변환 감지
+        colorPicker.on('color:change', function (color) {
+            selectedPickerColor = color.hexString.substring(1); // '#' 제외값 보관
+            livePreview.style.backgroundColor = color.hexString;
+            previewHex.innerText = color.hexString.toUpperCase();
+            previewRgb.innerText = color.rgbString;
+        });
+
+        // 피커 결과값 복사 버튼 바인딩
+        btnCopyPickerName.onclick = function () {
+            copyToClipboard(selectedPickerColor);
+        };
+
+        // 2. 우측 색상표 렌더링
         const groups = {};
         colorData.forEach(item => {
             if (!groups[item.group]) {
@@ -312,9 +471,7 @@
             }
         }
 
-        status.innerText = `총 ${colorData.length}개의 색상 팔레트가 준비되었습니다.`;
-
-        // 검색 기능
+        // 3. 우측 검색 기능 구현
         searchInput.addEventListener('input', function (e) {
             const query = e.target.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.card');
@@ -349,17 +506,15 @@
         card.setAttribute('data-name', color.name.toLowerCase());
         card.setAttribute('data-hex', color.hex.toLowerCase());
 
-        // 투명 또는 화이트 컬러 테두리 명시 처리
-        const borderStyle = color.name === 'white' || color.name === 'transparent' ? 'border: 1px solid #cbd5e1;' : '';
-        const bgVal = color.name === 'transparent' ? 'transparent' : `#${color.hex}`;
+        const borderStyle = color.name.toLowerCase().includes('white') ? 'border: 1px solid #cbd5e1;' : '';
 
         card.innerHTML = `
-            <div class="color-preview" style="background-color: ${bgVal}; ${borderStyle}"></div>
-            <div class="card-name">${color.name}</div>
+            <div class="color-preview" style="background-color: #${color.hex}; ${borderStyle}"></div>
+            <div class="card-name" title="${color.name}">${color.name}</div>
             <div class="card-hex">#${color.hex}</div>
             <div class="card-actions">
-                <button class="btn-copy btn-copy-name">이름 복사</button>
-                <button class="btn-copy btn-copy-hex">Hex 복사</button>
+                <button class="btn-copy btn-copy-name"><i class="far fa-copy"></i> 이름</button>
+                <button class="btn-copy btn-copy-hex"><i class="far fa-copy"></i> Hex</button>
             </div>
         `;
 
@@ -368,7 +523,7 @@
 
         btnName.onclick = function (e) {
             e.stopPropagation();
-            copyToClipboard(color.name);
+            copyToClipboard(color.name.split(' ')[0]); // 괄호 설명 제거하고 텍스트만 복사
         };
 
         btnHex.onclick = function (e) {
