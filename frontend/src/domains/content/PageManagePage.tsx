@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Search, RotateCcw, FileText } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
@@ -29,7 +29,11 @@ const PageManagePage: React.FC = () => {
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED'>('ALL')
   const [lockFilter, setLockFilter] = useState<'ALL' | 'LOCKED' | 'UNLOCKED'>('ALL')
+  const [level1Filter, setLevel1Filter] = useState<number | 'ALL'>('ALL')
+  const [level2Filter, setLevel2Filter] = useState<number | 'ALL'>('ALL')
   const [folderMap, setFolderMap] = useState<Map<number, any>>(new Map())
+  // 폴더 트리 DFS 순회 순서 인덱스 (메뉴 관리 화면과 동일한 순서로 페이지 목록을 정렬하기 위함)
+  const [folderOrderIndex, setFolderOrderIndex] = useState<Map<number, number>>(new Map())
   const gridRef = useRef<AgGridReact>(null)
 
   // 폴더 목록 조회 및 Map 캐싱
@@ -38,7 +42,9 @@ const PageManagePage: React.FC = () => {
       .then(folders => {
         if (Array.isArray(folders)) {
           const map = new Map()
-          
+          const orderIndex = new Map<number, number>()
+          let order = 0
+
           const flattenAndCache = (items: any[], parentId: number | null = null) => {
             if (!items) return
             items.forEach(item => {
@@ -47,16 +53,19 @@ const PageManagePage: React.FC = () => {
                 id: item.id,
                 name: item.name,
                 parentId: pid,
-                nums: item.nums
+                nums: item.nums,
+                level: item.level
               })
+              orderIndex.set(item.id, order++)
               if (item.children && item.children.length > 0) {
                 flattenAndCache(item.children, item.id)
               }
             })
           }
-          
+
           flattenAndCache(folders)
           setFolderMap(map)
+          setFolderOrderIndex(orderIndex)
         }
       })
       .catch(err => console.error('폴더 목록 조회 실패:', err))
@@ -91,10 +100,42 @@ const PageManagePage: React.FC = () => {
     fetchPages()
   }
 
+  // 1단계 드롭다운: 값 변경 시 2단계가 새 1단계의 자식이 아니면(또는 '전체' 선택 시) 2단계도 '전체'로 리셋
+  const handleLevel1Change = (value: string) => {
+    const next = value === 'ALL' ? 'ALL' : Number(value)
+    setLevel1Filter(next)
+    if (next === 'ALL') {
+      setLevel2Filter('ALL')
+      return
+    }
+    if (level2Filter !== 'ALL') {
+      const level2Folder = folderMap.get(level2Filter)
+      if (!level2Folder || level2Folder.parentId !== next) {
+        setLevel2Filter('ALL')
+      }
+    }
+  }
+
+  // 2단계 드롭다운: 값 변경 시 그 부모를 1단계에 자동 반영 ('전체' 선택 시 1단계는 유지)
+  const handleLevel2Change = (value: string) => {
+    if (value === 'ALL') {
+      setLevel2Filter('ALL')
+      return
+    }
+    const next = Number(value)
+    setLevel2Filter(next)
+    const folder = folderMap.get(next)
+    if (folder && folder.parentId !== null && folder.parentId !== undefined) {
+      setLevel1Filter(folder.parentId)
+    }
+  }
+
   const handleReset = () => {
     setKeyword('')
     setStatusFilter('ALL')
     setLockFilter('ALL')
+    setLevel1Filter('ALL')
+    setLevel2Filter('ALL')
     setLoading(true)
     apiClient.get<PageRow[]>('/admin/page-list?keyword=&status=&lockFilter=')
       .then(data => {
@@ -136,6 +177,61 @@ const PageManagePage: React.FC = () => {
       alert(error.response?.data?.toString() || '잠금 상태 변경 중 오류가 발생했습니다.')
     }
   }
+
+  // 1단계 드롭다운 옵션: 전체 1단계 폴더, 메뉴 트리 순서로 정렬
+  const level1Options = useMemo(() => {
+    const items: any[] = []
+    folderMap.forEach((folder) => {
+      if (folder.level === 1) items.push(folder)
+    })
+    return items.sort((a, b) => (folderOrderIndex.get(a.id) ?? 0) - (folderOrderIndex.get(b.id) ?? 0))
+  }, [folderMap, folderOrderIndex])
+
+  // 2단계 드롭다운 옵션: 1단계가 선택돼 있으면 그 하위만, 아니면 전체 2단계
+  const level2Options = useMemo(() => {
+    const items: any[] = []
+    folderMap.forEach((folder) => {
+      if (folder.level !== 2) return
+      if (level1Filter !== 'ALL' && folder.parentId !== level1Filter) return
+      items.push(folder)
+    })
+    return items.sort((a, b) => (folderOrderIndex.get(a.id) ?? 0) - (folderOrderIndex.get(b.id) ?? 0))
+  }, [folderMap, folderOrderIndex, level1Filter])
+
+  // 1단계/2단계 필터 적용: 페이지의 폴더가 선택된 폴더를 조상 체인에 포함하는지로 판정 (AND 결합)
+  const folderFilteredRowData = useMemo(() => {
+    if (level1Filter === 'ALL' && level2Filter === 'ALL') return rowData
+
+    const matchesAncestor = (folderId: number | undefined, targetId: number) => {
+      let curr = folderId !== undefined ? folderMap.get(folderId) : undefined
+      while (curr) {
+        if (curr.id === targetId) return true
+        curr = curr.parentId !== null && curr.parentId !== undefined ? folderMap.get(curr.parentId) : undefined
+      }
+      return false
+    }
+
+    return rowData.filter((row) => {
+      const folderId = row.folder?.id
+      if (folderId === undefined) return false
+      if (level1Filter !== 'ALL' && !matchesAncestor(folderId, level1Filter)) return false
+      if (level2Filter !== 'ALL' && !matchesAncestor(folderId, level2Filter)) return false
+      return true
+    })
+  }, [rowData, folderMap, level1Filter, level2Filter])
+
+  // 폴더 트리 순서(메뉴 관리 화면과 동일) → 같은 폴더 내에서는 page.sortOrder 순으로 정렬
+  const sortedRowData = useMemo(() => {
+    const getFolderRank = (folderId?: number) =>
+      folderId !== undefined ? folderOrderIndex.get(folderId) ?? Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER
+
+    return [...folderFilteredRowData].sort((a, b) => {
+      const rankA = getFolderRank(a.folder?.id)
+      const rankB = getFolderRank(b.folder?.id)
+      if (rankA !== rankB) return rankA - rankB
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    })
+  }, [folderFilteredRowData, folderOrderIndex])
 
   const columnDefs = [
     { 
@@ -259,7 +355,7 @@ const PageManagePage: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-base font-bold text-slate-800">페이지 관리</h1>
-                <p className="text-xs text-slate-400">시스템 도움말 페이지 목록을 확인하고 배포 상태 및 잠금을 설정합니다.</p>
+                <p className="text-xs text-slate-400">진행된 도움말 페이지 목록을 확인하고 배포 상태 및 잠금을 설정합니다.</p>
               </div>
             </div>
 
@@ -275,6 +371,28 @@ const PageManagePage: React.FC = () => {
                   className="pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs w-64 focus:outline-none focus:border-indigo-500 placeholder-slate-350"
                 />
               </div>
+
+              <select
+                value={level1Filter}
+                onChange={(e) => handleLevel1Change(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-650 focus:outline-none"
+              >
+                <option value="ALL">1단계 전체</option>
+                {level1Options.map((folder) => (
+                  <option key={folder.id} value={folder.id}>{folder.name}</option>
+                ))}
+              </select>
+
+              <select
+                value={level2Filter}
+                onChange={(e) => handleLevel2Change(e.target.value)}
+                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-650 focus:outline-none"
+              >
+                <option value="ALL">2단계 전체</option>
+                {level2Options.map((folder) => (
+                  <option key={folder.id} value={folder.id}>{folder.name}</option>
+                ))}
+              </select>
 
               <select
                 value={statusFilter}
@@ -325,7 +443,7 @@ const PageManagePage: React.FC = () => {
             <div className="ag-theme-alpine w-full flex-1 border border-slate-200 rounded-xl overflow-hidden shadow-inner">
               <AgGridReact
                 ref={gridRef}
-                rowData={rowData}
+                rowData={sortedRowData}
                 columnDefs={columnDefs}
                 theme="legacy"
                 animateRows={true}
