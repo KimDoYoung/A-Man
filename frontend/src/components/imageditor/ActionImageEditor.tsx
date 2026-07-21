@@ -3257,7 +3257,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 <button
                   type="button"
                   onClick={activeExpandAction.expand}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
                   title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
                 >
                   +100
@@ -3266,7 +3266,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   type="button"
                   onClick={activeExpandAction.shrink}
                   disabled={!activeExpandAction.canShrink}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
                   title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
                 >
                   -100
@@ -3396,6 +3396,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 width={bgImage ? bgImage.width + canvasExpandLeft + canvasExpandRight : 800}
                 height={bgImage ? bgImage.height + canvasExpandTop + (hasCaption ? captionHeight : 0) + canvasExpandBottom : 500}
               />
+
 
               {/* 텍스트 실시간 캔버스 오버레이 인풋 창 */}
               {textInput.visible && (
