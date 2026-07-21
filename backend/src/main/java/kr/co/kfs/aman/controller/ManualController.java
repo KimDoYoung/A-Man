@@ -1313,6 +1313,24 @@ public class ManualController {
         }
     }
 
+    @GetMapping(value = "/help/colors", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
+    public ResponseEntity<String> getColorsPage() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/help/colors.html")) {
+            if (is == null) {
+                return ResponseEntity.status(404).body("색상 찾기 페이지가 존재하지 않습니다.");
+            }
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            return ResponseEntity.ok(bos.toString("UTF-8"));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).body("오류가 발생했습니다.");
+        }
+    }
+
     @GetMapping(value = "/help/all.js", produces = "application/javascript;charset=UTF-8")
     public ResponseEntity<byte[]> getFontAwesomeJs() {
         try (java.io.InputStream is = getClass().getResourceAsStream("/help/all.js");
