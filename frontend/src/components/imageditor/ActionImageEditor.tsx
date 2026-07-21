@@ -2455,6 +2455,19 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setDragStart(null)
   }
 
+  // 숫자키 1~9 → 좌측 툴바 도구 매핑 (pointer는 Escape가 이미 담당)
+  const NUMBER_KEY_TOOLS: Record<string, typeof activeTool> = {
+    '1': 'circle-number',
+    '2': 'box',
+    '3': 'arrow',
+    '4': 'orthogonal-arrow',
+    '5': 'block-arrow-stamp',
+    '6': 'callout',
+    '7': 'symbol',
+    '8': 'text',
+    '9': 'crop'
+  }
+
   // 키보드로 지우기 감지 및 ESC/복제(Ctrl+D) 핸들링
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2529,6 +2542,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       if (e.key === 'Escape') {
         setSelectedItemId(null)
         setActiveTool('pointer')
+        return
+      }
+
+      // 숫자키 1~9로 좌측 툴바 도구 순서대로 즉시 전환 (마우스로 툴바까지 왕복하는 수고를 줄임)
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && NUMBER_KEY_TOOLS[e.key]) {
+        setActiveTool(NUMBER_KEY_TOOLS[e.key])
+        setSelectedItemId(null)
         return
       }
 
@@ -3300,17 +3320,17 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           {/* 1. 좌측 에디터 툴바 */}
           <aside className="w-14 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 flex flex-col items-center py-4 space-y-2 shrink-0">
             {[
-              { id: 'pointer', label: '선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
-              { id: 'circle-number', label: '원숫자 마크', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
-              { id: 'box', label: '강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
-              { id: 'arrow', label: '화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
-              { id: 'orthogonal-arrow', label: '꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
+              { id: 'pointer', label: 'ESC:선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
+              { id: 'circle-number', label: '1:원숫자 마크', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
+              { id: 'box', label: '2:강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
+              { id: 'arrow', label: '3:화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
+              { id: 'orthogonal-arrow', label: '4:꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
 
-              { id: 'block-arrow-stamp', label: '스탬프', icon: <Stamp className="w-4 h-4 text-orange-500 -rotate-45" /> },
-              { id: 'callout', label: '말풍선 / 설명선', icon: <MessageSquare className="w-4 h-4 text-sky-500" /> },
-              { id: 'symbol', label: '이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
-              { id: 'text', label: '글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
-              { id: 'crop', label: '잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> }
+              { id: 'block-arrow-stamp', label: '5:스탬프', icon: <Stamp className="w-4 h-4 text-orange-500 -rotate-45" /> },
+              { id: 'callout', label: '6:말풍선 / 설명선', icon: <MessageSquare className="w-4 h-4 text-sky-500" /> },
+              { id: 'symbol', label: '7:이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
+              { id: 'text', label: '8:글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
+              { id: 'crop', label: '9:잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> }
             ].map((tool) => (
               <button
                 key={tool.id}
