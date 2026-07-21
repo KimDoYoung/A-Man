@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/aman/favicon.png">
     <title>FontAwesome 5 아이콘 검색기</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <script src="./all.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -37,6 +37,12 @@
             justify-content: center;
             gap: 12px;
         }
+        h1 i, h1 svg {
+            width: 2.2rem;
+            height: 2.2rem;
+            color: #1e3a8a;
+            display: inline-block;
+        }
         p.subtitle {
             color: #475569;
             font-size: 0.95rem;
@@ -61,13 +67,15 @@
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
-        .search-box i {
+        .search-box i, .search-box svg {
             position: absolute;
             left: 20px;
             top: 50%;
             transform: translateY(-50%);
             color: #64748b;
             font-size: 1.1rem;
+            width: 1.1rem;
+            height: 1.1rem;
         }
         .grid {
             display: grid;
@@ -92,14 +100,16 @@
         .card:active {
             transform: scale(0.98);
         }
-        .card i {
+        .card i, .card svg {
             font-size: 2.2rem;
+            width: 2.2rem;
+            height: 2.2rem;
             color: #475569;
             margin-bottom: 12px;
             display: inline-block;
             transition: color 0.2s;
         }
-        .card:hover i {
+        .card:hover i, .card:hover svg {
             color: #3b82f6;
         }
         .card-name {
@@ -133,6 +143,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+        .toast i, .toast svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            color: #10b981;
         }
         .toast.show {
             transform: translateX(-50%) translateY(0);
@@ -172,8 +187,8 @@
 </div>
 
 <script>
-    const icons = [
-        // Actions
+    // 로컬 all.js 로드 실패 시 Fallback 기본 아이콘 리스트
+    const fallbackIcons = [
         { name: 'search', class: 'fas fa-search' },
         { name: 'plus', class: 'fas fa-plus' },
         { name: 'minus', class: 'fas fa-minus' },
@@ -183,153 +198,26 @@
         { name: 'ban', class: 'fas fa-ban' },
         { name: 'cog', class: 'fas fa-cog' },
         { name: 'cogs', class: 'fas fa-cogs' },
-        { name: 'undo-alt', class: 'fas fa-undo-alt' },
-        { name: 'redo-alt', class: 'fas fa-redo-alt' },
-        { name: 'sync', class: 'fas fa-sync' },
-        { name: 'upload', class: 'fas fa-upload' },
-        { name: 'download', class: 'fas fa-download' },
         { name: 'edit', class: 'fas fa-edit' },
         { name: 'pen', class: 'fas fa-pen' },
         { name: 'copy', class: 'fas fa-copy' },
         { name: 'paste', class: 'fas fa-paste' },
         { name: 'link', class: 'fas fa-link' },
-        { name: 'unlink', class: 'fas fa-unlink' },
-        { name: 'share', class: 'fas fa-share' },
-        { name: 'external-link-alt', class: 'fas fa-external-link-alt' },
         { name: 'info-circle', class: 'fas fa-info-circle' },
         { name: 'question-circle', class: 'fas fa-question-circle' },
         { name: 'exclamation-circle', class: 'fas fa-exclamation-circle' },
-        { name: 'exclamation-triangle', class: 'fas fa-exclamation-triangle' },
         { name: 'check-circle', class: 'fas fa-check-circle' },
-        { name: 'times-circle', class: 'fas fa-times-circle' },
-        { name: 'lock', class: 'fas fa-lock' },
-        { name: 'unlock', class: 'fas fa-unlock' },
-        { name: 'eye', class: 'fas fa-eye' },
-        { name: 'eye-slash', class: 'fas fa-eye-slash' },
         { name: 'calendar-alt', class: 'fas fa-calendar-alt' },
         { name: 'clock', class: 'fas fa-clock' },
-        { name: 'history', class: 'fas fa-history' },
-        { name: 'print', class: 'fas fa-print' },
-        { name: 'book', class: 'fas fa-book' },
-        { name: 'bookmark', class: 'fas fa-bookmark' },
-        { name: 'folder', class: 'fas fa-folder' },
-        { name: 'folder-open', class: 'fas fa-folder-open' },
-        { name: 'folder-plus', class: 'fas fa-folder-plus' },
-        { name: 'file', class: 'fas fa-file' },
         { name: 'file-alt', class: 'fas fa-file-alt' },
-        { name: 'file-pdf', class: 'fas fa-file-pdf' },
-        { name: 'file-excel', class: 'fas fa-file-excel' },
-        { name: 'file-word', class: 'fas fa-file-word' },
-        { name: 'file-image', class: 'fas fa-file-image' },
-        { name: 'file-archive', class: 'fas fa-file-archive' },
-        { name: 'file-code', class: 'fas fa-file-code' },
-
-        // Regular icons
-        { name: 'far fa-plus-square', class: 'far fa-plus-square' },
-        { name: 'far fa-minus-square', class: 'far fa-minus-square' },
-        { name: 'far fa-check-square', class: 'far fa-check-square' },
-        { name: 'far fa-square', class: 'far fa-square' },
-        { name: 'far fa-circle', class: 'far fa-circle' },
-        { name: 'far fa-dot-circle', class: 'far fa-dot-circle' },
-        { name: 'far fa-bookmark', class: 'far fa-bookmark' },
-        { name: 'far fa-calendar', class: 'far fa-calendar' },
-        { name: 'far fa-clock', class: 'far fa-clock' },
-        { name: 'far fa-comment', class: 'far fa-comment' },
-        { name: 'far fa-envelope', class: 'far fa-envelope' },
-        { name: 'far fa-eye', class: 'far fa-eye' },
-        { name: 'far fa-file', class: 'far fa-file' },
-        { name: 'far fa-folder', class: 'far fa-folder' },
-        { name: 'far fa-heart', class: 'far fa-heart' },
-        { name: 'far fa-paper-plane', class: 'far fa-paper-plane' },
-        { name: 'far fa-star', class: 'far fa-star' },
-        { name: 'far fa-user', class: 'far fa-user' },
-
-        // Users / Communication
+        { name: 'folder-open', class: 'fas fa-folder-open' },
         { name: 'user', class: 'fas fa-user' },
         { name: 'users', class: 'fas fa-users' },
-        { name: 'user-plus', class: 'fas fa-user-plus' },
-        { name: 'user-minus', class: 'fas fa-user-minus' },
-        { name: 'user-times', class: 'fas fa-user-times' },
-        { name: 'user-cog', class: 'fas fa-user-cog' },
-        { name: 'user-check', class: 'fas fa-user-check' },
-        { name: 'envelope', class: 'fas fa-envelope' },
-        { name: 'envelope-open', class: 'fas fa-envelope-open' },
-        { name: 'phone-alt', class: 'fas fa-phone-alt' },
-        { name: 'mobile-alt', class: 'fas fa-mobile-alt' },
-        { name: 'comments', class: 'fas fa-comments' },
-        { name: 'comment-alt', class: 'fas fa-comment-alt' },
-        { name: 'bell', class: 'fas fa-bell' },
-        { name: 'bell-slash', class: 'fas fa-bell-slash' },
-
-        // Finance / Commerce
-        { name: 'calculator', class: 'fas fa-calculator' },
         { name: 'database', class: 'fas fa-database' },
-        { name: 'chart-bar', class: 'fas fa-chart-bar' },
-        { name: 'chart-line', class: 'fas fa-chart-line' },
-        { name: 'chart-pie', class: 'fas fa-chart-pie' },
         { name: 'won-sign', class: 'fas fa-won-sign' },
-        { name: 'dollar-sign', class: 'fas fa-dollar-sign' },
-        { name: 'money-bill-wave', class: 'fas fa-money-bill-wave' },
-        { name: 'credit-card', class: 'fas fa-credit-card' },
-        { name: 'briefcase', class: 'fas fa-briefcase' },
-        { name: 'building', class: 'fas fa-building' },
-        { name: 'industry', class: 'fas fa-industry' },
-        { name: 'percent', class: 'fas fa-percent' },
-        { name: 'tag', class: 'fas fa-tag' },
-        { name: 'wallet', class: 'fas fa-wallet' },
-
-        // Arrows / Navigation
-        { name: 'arrow-up', class: 'fas fa-arrow-up' },
-        { name: 'arrow-down', class: 'fas fa-arrow-down' },
-        { name: 'arrow-left', class: 'fas fa-arrow-left' },
-        { name: 'arrow-right', class: 'fas fa-arrow-right' },
-        { name: 'arrow-circle-up', class: 'fas fa-arrow-circle-up' },
-        { name: 'arrow-circle-down', class: 'fas fa-arrow-circle-down' },
-        { name: 'arrow-circle-left', class: 'fas fa-arrow-circle-left' },
-        { name: 'arrow-circle-right', class: 'fas fa-arrow-circle-right' },
-        { name: 'chevron-up', class: 'fas fa-chevron-up' },
-        { name: 'chevron-down', class: 'fas fa-chevron-down' },
-        { name: 'chevron-left', class: 'fas fa-chevron-left' },
-        { name: 'chevron-right', class: 'fas fa-chevron-right' },
-        { name: 'angle-up', class: 'fas fa-angle-up' },
-        { name: 'angle-down', class: 'fas fa-angle-down' },
-        { name: 'angle-left', class: 'fas fa-angle-left' },
-        { name: 'angle-right', class: 'fas fa-angle-right' },
-        { name: 'angle-double-up', class: 'fas fa-angle-double-up' },
-        { name: 'angle-double-down', class: 'fas fa-angle-double-down' },
-        { name: 'angle-double-left', class: 'fas fa-angle-double-left' },
-        { name: 'angle-double-right', class: 'fas fa-angle-double-right' },
-        { name: 'caret-up', class: 'fas fa-caret-up' },
-        { name: 'caret-down', class: 'fas fa-caret-down' },
-        { name: 'caret-left', class: 'fas fa-caret-left' },
-        { name: 'caret-right', class: 'fas fa-caret-right' },
-        { name: 'exchange-alt', class: 'fas fa-exchange-alt' },
-        { name: 'arrow-alt-circle-left', class: 'fas fa-arrow-alt-circle-left' },
-
-        // Miscellaneous
         { name: 'home', class: 'fas fa-home' },
-        { name: 'globe', class: 'fas fa-globe' },
-        { name: 'heart', class: 'fas fa-heart' },
-        { name: 'star', class: 'fas fa-star' },
-        { name: 'star-half-alt', class: 'fas fa-star-half-alt' },
-        { name: 'thumbs-up', class: 'fas fa-thumbs-up' },
-        { name: 'thumbs-down', class: 'fas fa-thumbs-down' },
-        { name: 'play', class: 'fas fa-play' },
-        { name: 'pause', class: 'fas fa-pause' },
-        { name: 'stop', class: 'fas fa-stop' },
-        { name: 'wifi', class: 'fas fa-wifi' },
-        { name: 'server', class: 'fas fa-server' },
-        { name: 'desktop', class: 'fas fa-desktop' },
-        { name: 'laptop', class: 'fas fa-laptop' },
-        { name: 'tablet-alt', class: 'fas fa-tablet-alt' },
-        { name: 'keyboard', class: 'fas fa-keyboard' },
-        { name: 'mouse', class: 'fas fa-mouse' },
-        { name: 'headphones', class: 'fas fa-headphones' },
-        { name: 'microphone', class: 'fas fa-microphone' },
-        { name: 'camera', class: 'fas fa-camera' },
-        { name: 'video', class: 'fas fa-video' },
-        { name: 'flag', class: 'fas fa-flag' },
-        { name: 'bullseye', class: 'fas fa-bullseye' }
+        { name: 'arrow-right', class: 'fas fa-arrow-right' },
+        { name: 'chevron-down', class: 'fas fa-chevron-down' }
     ];
 
     const grid = document.getElementById('iconGrid');
@@ -338,6 +226,41 @@
     const toast = document.getElementById('toast');
     const toastText = document.getElementById('toastText');
     let toastTimeout;
+    let activeIcons = [];
+
+    // FontAwesome 전역 객체로부터 동적 추출
+    function loadIconsFromFontAwesome() {
+        const list = [];
+        try {
+            const fa = window.___FONT_AWESOME___;
+            if (fa && fa.styles) {
+                // styles 예: { fas: { search: [...] }, fab: { github: [...] } }
+                for (const prefix in fa.styles) {
+                    if (fa.styles.hasOwnProperty(prefix)) {
+                        const iconsOfPrefix = fa.styles[prefix];
+                        for (const name in iconsOfPrefix) {
+                            if (iconsOfPrefix.hasOwnProperty(name)) {
+                                list.push({
+                                    name: name,
+                                    class: `${prefix} fa-${name}`
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("FontAwesome 객체 파싱 오류:", e);
+        }
+        
+        if (list.length === 0) {
+            console.info("FontAwesome 객체 파싱 실패 또는 미로드로 Fallback 아이콘 리스트를 사용합니다.");
+            return fallbackIcons;
+        }
+
+        console.info(`${list.length}개의 아이콘을 성공적으로 파싱했습니다.`);
+        return list.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
     function renderIcons(list) {
         // Clear previous cards (keeping the noResults div)
@@ -376,12 +299,27 @@
 
     search.oninput = (e) => {
         const query = e.target.value.toLowerCase().trim();
-        const filtered = icons.filter(item => item.name.toLowerCase().includes(query));
+        const filtered = activeIcons.filter(item => item.name.toLowerCase().includes(query));
         renderIcons(filtered);
     };
 
-    // Initial render
-    renderIcons(icons);
+    // 로딩 문구 세팅 및 로드 시작
+    noResults.textContent = "아이콘 목록을 불러오는 중...";
+    noResults.style.display = 'block';
+
+    const initLoad = () => {
+        const list = loadIconsFromFontAwesome();
+        activeIcons = list;
+        noResults.textContent = "검색 결과가 없습니다.";
+        renderIcons(activeIcons);
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLoad);
+    } else {
+        // all.js가 이미 실행되어 전역 객체가 활성화되었을 수 있으므로 약간의 지연 처리로 안전성 확보
+        setTimeout(initLoad, 100);
+    }
 </script>
 </body>
 </html>

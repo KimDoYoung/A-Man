@@ -367,6 +367,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 바탕 확장 툴바에서 선택된 방향 (라디오 선택 + 공용 +100/-100 버튼용)
   const [expandDirection, setExpandDirection] = useState<'top' | 'bottom' | 'left' | 'right'>('bottom')
   const [zoom, setZoom] = useState<number>(1.0)
+  const [baseBgImage, setBaseBgImage] = useState<HTMLImageElement | null>(null)
+  const [baseBgImageSrc, setBaseBgImageSrc] = useState<string>('')
+  const [imageScale, setImageScale] = useState<number>(1.0)
   const [items, setItems] = useState<CanvasItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   // 서브 이미지용 프리로드 캐시
@@ -462,6 +465,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     hasCaption: boolean
     captionText: string
     captionAlign: 'left' | 'center'
+    imageScale: number // 추가
     
     // 신규 분리 속성들
     circleNumberBgColor: string
@@ -517,6 +521,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     hasCaption: false,
     captionText: '',
     captionAlign: 'center',
+    imageScale: 1.0, // 추가
 
     circleNumberBgColor: SYSTEM_ITEM_DEFAULTS.circleNumberBgColor,
     circleNumberTextColor: SYSTEM_ITEM_DEFAULTS.circleNumberTextColor,
@@ -595,6 +600,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     canvasExpandRight?: number
     canvasExpandTop?: number
     canvasExpandLeft?: number
+    imageScale?: number // 추가
   }[]>([])
   const [redoStack, setRedoStack] = useState<{
     items: CanvasItem[]
@@ -603,6 +609,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     canvasExpandRight?: number
     canvasExpandTop?: number
     canvasExpandLeft?: number
+    imageScale?: number // 추가
   }[]>([])
 
 
@@ -662,6 +669,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const isDirty = bgImage !== null && (
     editorTitle.trim() !== lastSavedState.title.trim() ||
     bgImageSrc !== lastSavedState.bgImageSrc ||
+    imageScale !== lastSavedState.imageScale || // 추가
     JSON.stringify(items) !== JSON.stringify(lastSavedState.items) ||
     canvasExpandBottom !== lastSavedState.canvasExpandBottom ||
     canvasExpandRight !== lastSavedState.canvasExpandRight ||
@@ -718,7 +726,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   useEffect(() => {
     setGeneratedImageUrl('')
   }, [
-    items, bgImageSrc, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
+    items, bgImageSrc, imageScale, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, // imageScale 추가
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
@@ -758,7 +766,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       canvasExpandBottom: canvasExpandBottom,
       canvasExpandRight: canvasExpandRight,
       canvasExpandTop: canvasExpandTop,
-      canvasExpandLeft: canvasExpandLeft
+      canvasExpandLeft: canvasExpandLeft,
+      imageScale: imageScale // 추가
     }])
     setRedoStack([]) // 새로운 액션이 생기면 redo 스택 초기화
     setItems(newItems)
@@ -775,13 +784,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       canvasExpandBottom: canvasExpandBottom,
       canvasExpandRight: canvasExpandRight,
       canvasExpandTop: canvasExpandTop,
-      canvasExpandLeft: canvasExpandLeft
+      canvasExpandLeft: canvasExpandLeft,
+      imageScale: imageScale // 추가
     }])
     setItems(prev.items)
     setCanvasExpandBottom(prev.canvasExpandBottom ?? 0)
     setCanvasExpandRight(prev.canvasExpandRight ?? 0)
     setCanvasExpandTop(prev.canvasExpandTop ?? 0)
     setCanvasExpandLeft(prev.canvasExpandLeft ?? 0)
+    setImageScale(prev.imageScale ?? 1.0) // 추가
     
     if (prev.bgImageSrc !== bgImageSrc) {
       const img = new Image()
@@ -811,13 +822,15 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       canvasExpandBottom: canvasExpandBottom,
       canvasExpandRight: canvasExpandRight,
       canvasExpandTop: canvasExpandTop,
-      canvasExpandLeft: canvasExpandLeft
+      canvasExpandLeft: canvasExpandLeft,
+      imageScale: imageScale // 추가
     }])
     setItems(next.items)
     setCanvasExpandBottom(next.canvasExpandBottom ?? 0)
     setCanvasExpandRight(next.canvasExpandRight ?? 0)
     setCanvasExpandTop(next.canvasExpandTop ?? 0)
     setCanvasExpandLeft(next.canvasExpandLeft ?? 0)
+    setImageScale(next.imageScale ?? 1.0) // 추가
     
     if (next.bgImageSrc !== bgImageSrc) {
       const img = new Image()
@@ -1934,6 +1947,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setItems([])
     setBgImage(null)
     setBgImageSrc('')
+    setBaseBgImage(null)
+    setBaseBgImageSrc('')
+    setImageScale(1.0)
     setCanvasExpandBottom(0)
     setCanvasExpandRight(0)
     setCanvasExpandTop(0)
@@ -1976,6 +1992,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       borderStyle: 'basic',
       hasCaption: false,
       captionText: '',
+      imageScale: 1.0, // 추가
       ...SYSTEM_ITEM_DEFAULTS
     })
     showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
@@ -1997,6 +2014,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         items: [],
         circleCounter: 1,
         physicalUrl: '',
+        imageScale: 1.0, // 추가
         ...buildWorkStyleConfig(),
         arrowHeadSize
       }
@@ -2011,6 +2029,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         title: finalTitle,
         bgImageSrc: dataUrl,
         items: [],
+        imageScale: 1.0, // 추가
         ...buildWorkStyleConfig()
       })
       setEditorTitle(finalTitle)
@@ -2028,6 +2047,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const applyLoadedImage = (img: HTMLImageElement, dataUrl: string) => {
     setBgImage(img)
     setBgImageSrc(dataUrl)
+    setBaseBgImage(img)
+    setBaseBgImageSrc(dataUrl)
+    setImageScale(1.0)
     setCanvasExpandBottom(0)
     setCanvasExpandRight(0)
     setCanvasExpandTop(0)
@@ -2054,6 +2076,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       borderStyle: 'basic',
       hasCaption: false,
       captionText: '',
+      imageScale: 1.0, // 추가
       ...buildStyleConfig(),
       // 기존 동작 보존: 라이브 captionAlign이 아닌 항상 'center'로 기록됨 (의도 불명확하나 그대로 유지)
       captionAlign: 'center'
@@ -2822,11 +2845,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         })
 
       // 크롭 직전 상태(uncropped bgImageSrc & items)를 undoStack에 보관
-      setUndoStack((prev) => [...prev, { items: items, bgImageSrc: bgImageSrc }])
+      setUndoStack((prev) => [...prev, { items: items, bgImageSrc: bgImageSrc, imageScale: imageScale }])
       setRedoStack([])
       setItems(updatedItems)
       setBgImage(croppedImg)
       setBgImageSrc(croppedDataUrl)
+      setBaseBgImage(croppedImg)
+      setBaseBgImageSrc(croppedDataUrl)
+      setImageScale(1.0)
       setSelectedItemId(null)
     }
     croppedImg.src = croppedDataUrl
@@ -3139,6 +3165,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         items: items,
         circleCounter: circleCounter,
         physicalUrl: generatedImageUrl, // 물리 url이 이미 생성된 상태면 함께 저장
+        imageScale: imageScale, // 추가
         ...buildWorkStyleConfig(),
         arrowHeadSize // 화살머리 크기 영구 귀속 저장 연동
       }
@@ -3155,6 +3182,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         title: finalTitle,
         bgImageSrc: bgImageSrc,
         items: items,
+        imageScale: imageScale, // 추가
         ...buildWorkStyleConfig()
       })
       setEditorTitle(finalTitle)
@@ -3332,6 +3360,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
         setBgImage(img)
         setBgImageSrc(data.originalImageUrl || '')
+        setBaseBgImage(img)
+        setBaseBgImageSrc(data.originalImageUrl || '')
+        setImageScale(data.imageScale ?? 1.0)
         setZoom(1.0)
         setItems(data.items || [])
         setCircleCounter(data.circleCounter || 1)
@@ -3354,6 +3385,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           title: work.title,
           bgImageSrc: data.originalImageUrl || '',
           items: data.items || [],
+          imageScale: data.imageScale ?? 1.0, // 추가
           ...resolved
         })
       }
@@ -3501,6 +3533,69 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     return { ...item, x: item.x + delta }
   }
 
+  // 원본 이미지 크기 조절 실행 함수
+  const handleResizeImage = async (targetScale: number) => {
+    if (!baseBgImage || !baseBgImageSrc) return
+    if (targetScale === imageScale) return // 이미 동일한 배율인 경우 무시
+
+    const ratio = targetScale / imageScale // 기존 대비 변경 비율
+
+    // 1. 임시 캔버스를 만들어 baseBgImage를 targetScale 배율로 다시 그린다
+    const targetW = Math.round(baseBgImage.width * targetScale)
+    const targetH = Math.round(baseBgImage.height * targetScale)
+
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = targetW
+    tempCanvas.height = targetH
+    const tempCtx = tempCanvas.getContext('2d')
+    if (!tempCtx) return
+
+    // 이미지 퀄리티 설정
+    tempCtx.imageSmoothingEnabled = true
+    tempCtx.imageSmoothingQuality = 'high'
+    tempCtx.drawImage(baseBgImage, 0, 0, targetW, targetH)
+
+    const resizedDataUrl = tempCanvas.toDataURL('image/png')
+    const resizedImg = new Image()
+    
+    resizedImg.onload = () => {
+      // 2. 실행 취소(Undo) 스택에 현재 상태 푸시
+      pushToUndo(scaledItems)
+
+      // 3. 이미지 상태 업데이트
+      setBgImage(resizedImg)
+      setBgImageSrc(resizedDataUrl)
+      setImageScale(targetScale)
+
+      // 4. 여백(Canvas Expand) 정보도 비율대로 조절
+      setCanvasExpandLeft(prev => Math.round(prev * ratio))
+      setCanvasExpandRight(prev => Math.round(prev * ratio))
+      setCanvasExpandTop(prev => Math.round(prev * ratio))
+      setCanvasExpandBottom(prev => Math.round(prev * ratio))
+
+      setSelectedItemId(null)
+    }
+
+    // items 스케일링
+    const scaledItems = items.map((item) => {
+      const newItem = { ...item, x: item.x * ratio, y: item.y * ratio }
+      if (item.width !== undefined) newItem.width = item.width * ratio
+      if (item.height !== undefined) newItem.height = item.height * ratio
+
+      newItem.style = { ...item.style }
+      if (item.style.midX !== undefined) newItem.style.midX = item.style.midX * ratio
+      if (item.style.midY !== undefined) newItem.style.midY = item.style.midY * ratio
+      if (item.style.calloutTailX !== undefined) newItem.style.calloutTailX = item.style.calloutTailX * ratio
+      if (item.style.calloutTailY !== undefined) newItem.style.calloutTailY = item.style.calloutTailY * ratio
+      if (item.style.fontSize !== undefined) newItem.style.fontSize = Math.round(item.style.fontSize * ratio)
+      if (item.style.borderWidth !== undefined) newItem.style.borderWidth = Math.round(item.style.borderWidth * ratio)
+
+      return newItem
+    })
+
+    resizedImg.src = resizedDataUrl
+  }
+
   // 4방향 확장/축소 실행 함수
   const handleExpandTop = () => {
     setCanvasExpandTop(prev => prev + 100)
@@ -3600,9 +3695,28 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             )}
           </div>
 
-          {/* 우측 상단 컨트롤 그룹 (바탕 확장 + 보기 배율 나란히 배치) */}
+          {/* 우측 상단 컨트롤 그룹 (이미지 크기 + 바탕 확장 + 보기 배율 나란히 배치) */}
           {bgImage && (
             <div className="flex items-center space-x-2 mr-2">
+              {/* 이미지 크기 배율 컨트롤 */}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
+                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">이미지 크기:</span>
+                {[0.3, 0.5, 0.75, 1.0, 1.5, 2.0].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => handleResizeImage(s)}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                      imageScale === s
+                        ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                        : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {Math.round(s * 100)}%
+                  </button>
+                ))}
+              </div>
+
               {/* 바탕 확장 컨트롤 (방향 라디오 + 공용 증감 버튼) */}
               <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
                 <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">바탕 확장:</span>

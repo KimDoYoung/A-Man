@@ -1313,6 +1313,24 @@ public class ManualController {
         }
     }
 
+    @GetMapping(value = "/help/all.js", produces = "application/javascript;charset=UTF-8")
+    public ResponseEntity<String> getFontAwesomeJs() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/help/all.js")) {
+            if (is == null) {
+                return ResponseEntity.status(404).body("// FontAwesome 파일이 존재하지 않습니다.");
+            }
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            return ResponseEntity.ok(bos.toString("UTF-8"));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.status(500).body("// 오류가 발생했습니다.");
+        }
+    }
+
     @GetMapping(value = "/help", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
     public ResponseEntity<String> getHelpPage(javax.servlet.http.HttpServletRequest request) {
         try (java.io.InputStream is = getClass().getResourceAsStream("/help/doc-user-help.md")) {
