@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/aman/favicon.png">
     <title>FontAwesome 5 아이콘 검색기</title>
-    <script src="./all.js"></script>
+    <script src="/aman/manual/help/all.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -46,6 +46,14 @@
         p.subtitle {
             color: #475569;
             font-size: 0.95rem;
+        }
+        h2 {
+            margin-top: 40px;
+            font-size: 1.5rem;
+            color: #1e3a8a;
+            border-left: 5px solid #3b82f6;
+            padding-left: 15px;
+            margin-bottom: 20px;
         }
         .search-box {
             position: relative;
@@ -176,9 +184,10 @@
         <input type="text" id="searchInput" placeholder="검색할 아이콘 이름을 입력하세요..." autocomplete="off">
     </div>
 
-    <div class="grid" id="iconGrid">
-        <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
-    </div>
+    <div id="status" style="text-align: center; font-weight: 600; color: #3b82f6; margin-bottom: 20px;">아이콘 데이터를 분석하는 중...</div>
+
+    <div id="iconContainer"></div>
+    <div class="no-results" id="noResults">검색 결과가 없습니다.</div>
 </div>
 
 <div class="toast" id="toast">
@@ -187,138 +196,108 @@
 </div>
 
 <script>
-    // 로컬 all.js 로드 실패 시 Fallback 기본 아이콘 리스트
-    const fallbackIcons = [
-        { name: 'search', class: 'fas fa-search' },
-        { name: 'plus', class: 'fas fa-plus' },
-        { name: 'minus', class: 'fas fa-minus' },
-        { name: 'check', class: 'fas fa-check' },
-        { name: 'times', class: 'fas fa-times' },
-        { name: 'trash', class: 'fas fa-trash' },
-        { name: 'ban', class: 'fas fa-ban' },
-        { name: 'cog', class: 'fas fa-cog' },
-        { name: 'cogs', class: 'fas fa-cogs' },
-        { name: 'edit', class: 'fas fa-edit' },
-        { name: 'pen', class: 'fas fa-pen' },
-        { name: 'copy', class: 'fas fa-copy' },
-        { name: 'paste', class: 'fas fa-paste' },
-        { name: 'link', class: 'fas fa-link' },
-        { name: 'info-circle', class: 'fas fa-info-circle' },
-        { name: 'question-circle', class: 'fas fa-question-circle' },
-        { name: 'exclamation-circle', class: 'fas fa-exclamation-circle' },
-        { name: 'check-circle', class: 'fas fa-check-circle' },
-        { name: 'calendar-alt', class: 'fas fa-calendar-alt' },
-        { name: 'clock', class: 'fas fa-clock' },
-        { name: 'file-alt', class: 'fas fa-file-alt' },
-        { name: 'folder-open', class: 'fas fa-folder-open' },
-        { name: 'user', class: 'fas fa-user' },
-        { name: 'users', class: 'fas fa-users' },
-        { name: 'database', class: 'fas fa-database' },
-        { name: 'won-sign', class: 'fas fa-won-sign' },
-        { name: 'home', class: 'fas fa-home' },
-        { name: 'arrow-right', class: 'fas fa-arrow-right' },
-        { name: 'chevron-down', class: 'fas fa-chevron-down' }
-    ];
+    window.onload = function () {
+        const fa = window.___FONT_AWESOME___;
+        const container = document.getElementById('iconContainer');
+        const status = document.getElementById('status');
+        const searchInput = document.getElementById('searchInput');
+        const noResults = document.getElementById('noResults');
 
-    const grid = document.getElementById('iconGrid');
-    const search = document.getElementById('searchInput');
-    const noResults = document.getElementById('noResults');
-    const toast = document.getElementById('toast');
-    const toastText = document.getElementById('toastText');
-    let toastTimeout;
-    let activeIcons = [];
-
-    // FontAwesome 전역 객체로부터 동적 추출
-    function loadIconsFromFontAwesome() {
-        const list = [];
-        try {
-            const fa = window.___FONT_AWESOME___;
-            if (fa && fa.styles) {
-                // styles 예: { fas: { search: [...] }, fab: { github: [...] } }
-                for (const prefix in fa.styles) {
-                    if (fa.styles.hasOwnProperty(prefix)) {
-                        const iconsOfPrefix = fa.styles[prefix];
-                        for (const name in iconsOfPrefix) {
-                            if (iconsOfPrefix.hasOwnProperty(name)) {
-                                list.push({
-                                    name: name,
-                                    class: `${prefix} fa-${name}`
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("FontAwesome 객체 파싱 오류:", e);
-        }
-        
-        if (list.length === 0) {
-            console.info("FontAwesome 객체 파싱 실패 또는 미로드로 Fallback 아이콘 리스트를 사용합니다.");
-            return fallbackIcons;
-        }
-
-        console.info(`${list.length}개의 아이콘을 성공적으로 파싱했습니다.`);
-        return list.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    function renderIcons(list) {
-        // Clear previous cards (keeping the noResults div)
-        const cards = grid.querySelectorAll('.card');
-        cards.forEach(c => c.remove());
-
-        if (list.length === 0) {
-            noResults.style.display = 'block';
+        if (!fa || !fa.styles) {
+            status.innerHTML = "all.js를 불러오지 못했습니다.";
             return;
         }
-        noResults.style.display = 'none';
 
-        list.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <i class="${item.class}"></i>
-                <div class="card-name">${item.name}</div>
-            `;
-            card.onclick = () => copyText(item.name);
-            grid.appendChild(card);
+        let totalIcons = 0;
+
+        // 1. 데이터 파싱 및 초기 렌더링
+        for (const prefix in fa.styles) {
+            if (fa.styles.hasOwnProperty(prefix)) {
+                const section = document.createElement('div');
+                section.id = `section-${prefix}`;
+                section.className = 'section-group';
+                section.innerHTML = `<h2>Style: ${prefix}</h2>`;
+
+                const grid = document.createElement('div');
+                grid.className = 'grid';
+                grid.id = `grid-${prefix}`;
+
+                for (const name in fa.styles[prefix]) {
+                    if (fa.styles[prefix].hasOwnProperty(name)) {
+                        totalIcons++;
+                        const card = createCard(prefix, name);
+                        grid.appendChild(card);
+                    }
+                }
+                section.appendChild(grid);
+                container.appendChild(section);
+            }
+        }
+
+        status.innerText = `총 ${totalIcons}개의 아이콘이 준비되었습니다.`;
+
+        // 2. 검색 기능 구현
+        searchInput.addEventListener('input', function (e) {
+            const query = e.target.value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.card');
+            let hasVisibleCard = false;
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                if (name.includes(query)) {
+                    card.style.display = 'block';
+                    hasVisibleCard = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // 검색 중에는 섹션 타이틀 숨기기 처리
+            document.querySelectorAll('.section-group h2').forEach(h2 => {
+                h2.style.display = query ? 'none' : 'block';
+            });
+
+            // 검색 결과 없음 문구 처리
+            if (query && !hasVisibleCard) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+            }
         });
-    }
-
-    function copyText(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            toastText.textContent = `"${text}" 복사되었습니다.`;
-            toast.classList.add('show');
-            
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2000);
-        });
-    }
-
-    search.oninput = (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        const filtered = activeIcons.filter(item => item.name.toLowerCase().includes(query));
-        renderIcons(filtered);
     };
 
-    // 로딩 문구 세팅 및 로드 시작
-    noResults.textContent = "아이콘 목록을 불러오는 중...";
-    noResults.style.display = 'block';
+    function createCard(prefix, name) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.setAttribute('data-name', name);
+        card.innerHTML = `
+            <i class="${prefix} fa-${name}"></i>
+            <div class="card-name">${name}</div>
+        `;
 
-    const initLoad = () => {
-        const list = loadIconsFromFontAwesome();
-        activeIcons = list;
-        noResults.textContent = "검색 결과가 없습니다.";
-        renderIcons(activeIcons);
-    };
+        // 클릭 시 사용법 복사 기능
+        card.onclick = function () {
+            const copyTextStr = `<i class="${prefix} fa-${name}"></i>`;
+            copyToClipboard(copyTextStr);
+        };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initLoad);
-    } else {
-        // all.js가 이미 실행되어 전역 객체가 활성화되었을 수 있으므로 약간의 지연 처리로 안전성 확보
-        setTimeout(initLoad, 100);
+        return card;
+    }
+
+    function copyToClipboard(text) {
+        const temp = document.createElement('textarea');
+        document.body.appendChild(temp);
+        temp.value = text;
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+
+        // 토스트 알림 표시
+        const toast = document.getElementById('toast');
+        const toastText = document.getElementById('toastText');
+        toastText.innerText = `복사됨: ${text}`;
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 2000);
     }
 </script>
 </body>

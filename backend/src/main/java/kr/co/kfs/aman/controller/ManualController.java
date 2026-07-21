@@ -1314,20 +1314,20 @@ public class ManualController {
     }
 
     @GetMapping(value = "/help/all.js", produces = "application/javascript;charset=UTF-8")
-    public ResponseEntity<String> getFontAwesomeJs() {
-        try (java.io.InputStream is = getClass().getResourceAsStream("/help/all.js")) {
+    public ResponseEntity<byte[]> getFontAwesomeJs() {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/help/all.js");
+             java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream()) {
             if (is == null) {
-                return ResponseEntity.status(404).body("// FontAwesome 파일이 존재하지 않습니다.");
+                return ResponseEntity.status(404).body("// FontAwesome 파일이 존재하지 않습니다.".getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
-            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
             byte[] buffer = new byte[4096];
             int len;
             while ((len = is.read(buffer)) != -1) {
                 bos.write(buffer, 0, len);
             }
-            return ResponseEntity.ok(bos.toString("UTF-8"));
+            return ResponseEntity.ok(bos.toByteArray());
         } catch (java.io.IOException e) {
-            return ResponseEntity.status(500).body("// 오류가 발생했습니다.");
+            return ResponseEntity.status(500).body("// 오류가 발생했습니다.".getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
     }
 
