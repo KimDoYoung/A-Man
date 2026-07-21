@@ -411,7 +411,7 @@ const PageManagePage: React.FC = () => {
               >
                 <option value="ALL">전체 잠금상태</option>
                 <option value="LOCKED">잠김</option>
-                <option value="UNLOCKED">잠금 없음</option>
+                <option value="UNLOCKED">잠금 안 함</option>
               </select>
 
               <button
