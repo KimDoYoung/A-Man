@@ -5,6 +5,10 @@
     <property name="LOG_DIR"  value="${BASE_DIR}/logs"/>
     <property name="LOG_FILE" value="${LOG_DIR}/${APP_NAME}.log"/>
 
+    <springProperty name="LOG_LEVEL_AMAN" source="logging.level.kr.co.kfs.aman" defaultValue="INFO"/>
+    <springProperty name="LOG_LEVEL_SQL" source="logging.level.org.hibernate.SQL" defaultValue="INFO"/>
+    <springProperty name="LOG_LEVEL_BINDER" source="logging.level.org.hibernate.type.descriptor.sql.BasicBinder" defaultValue="INFO"/>
+
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan([%15.15t]) %yellow(%-40.40logger{39}) : %msg%n</pattern>
@@ -26,7 +30,7 @@
         </rollingPolicy>
     </appender>
 
-    <logger name="kr.co.kfs.aman" level="DEBUG" additivity="false">
+    <logger name="kr.co.kfs.aman" level="${LOG_LEVEL_AMAN}" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
@@ -41,11 +45,11 @@
         <appender-ref ref="FILE"/>
     </logger>
 
-    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+    <logger name="org.hibernate.SQL" level="${LOG_LEVEL_SQL}" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
-    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="${LOG_LEVEL_BINDER}" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
