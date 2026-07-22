@@ -42,3 +42,14 @@
   • 문서 관리 컨트롤러: ContentController.java
   • 회원 관리 컨트롤러: UserController.java
   • 인증 관리 컨트롤러: AuthController.java
+
+
+## 배포
+
+- deploy-119.sh (git에 없음)
+  - aview 서버에 배포 스크립트
+  - aview 서버에 접속, tomcat/webapps에 aman.war로 복사
+
+## 백업
+
+- 백업은 
