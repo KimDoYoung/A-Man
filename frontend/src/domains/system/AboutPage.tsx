@@ -81,16 +81,6 @@ const AboutPage: React.FC = () => {
                   한국펀드서비스 작성자에게는 웹 기반 WYSIWYG 마크다운 에디터 환경을 제공하는 통합 매뉴얼 시스템입니다.
                 </p>
               </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="px-4 py-2.5 bg-slate-800 text-white hover:bg-slate-900 text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4 text-white" />
-                  <span>문서 편집으로 돌아가기</span>
-                </button>
-              </div>
             </div>
 
             {/* 기본 정보 배지 */}
