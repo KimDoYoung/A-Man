@@ -13,10 +13,36 @@ interface BackupFile {
 const BackupPages: React.FC = () => {
   const [files, setFiles] = useState<BackupFile[]>([])
   const [backupDir, setBackupDir] = useState<string>('')
+  const [backupCron, setBackupCron] = useState<string>('')
   const [filterType, setFilterType] = useState<'ALL' | 'WAR' | 'DATABASE' | 'IMAGES'>('ALL')
   const [loading, setLoading] = useState(false)
   const [runningBackup, setRunningBackup] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
+
+  // 크론 표현식을 사람이 읽기 쉬운 문구로 치환하는 헬퍼 함수
+  const formatCron = (cronStr: string) => {
+    if (!cronStr) return '매일 12:30, 23:30' // 기본값 폴백
+    const parts = cronStr.trim().split(/\s+/)
+    if (parts.length < 5) return `설정 주기(${cronStr})`
+
+    const min = parts[1]
+    const hour = parts[2]
+
+    // 만약 매일 특정 시간에 실행되는 패턴인 경우 (예: "0 30 12,23 * * ?")
+    if (parts[3] === '*' && parts[4] === '*') {
+      const hours = hour.split(',')
+      const timeFormatted = hours
+        .map((h) => {
+          const hh = h.padStart(2, '0')
+          const mm = min.padStart(2, '0')
+          return `${hh}:${mm}`
+        })
+        .join(', ')
+      return `매일 ${timeFormatted}`
+    }
+
+    return `설정 주기(${cronStr})`
+  }
 
   const fetchFiles = async () => {
     setLoading(true)
@@ -24,6 +50,7 @@ const BackupPages: React.FC = () => {
       const res = await apiClient.get<any>('/admin/backup/files')
       if (res && typeof res === 'object') {
         setBackupDir(res.backupDir || '')
+        setBackupCron(res.backupCron || '')
         if (Array.isArray(res.files)) {
           setFiles(res.files)
         } else {
@@ -31,6 +58,7 @@ const BackupPages: React.FC = () => {
         }
       } else {
         setBackupDir('')
+        setBackupCron('')
         setFiles([])
         console.warn('Expected object containing files from API, but received:', res)
       }
@@ -101,7 +129,7 @@ const BackupPages: React.FC = () => {
               시스템 백업 관리 (Backup Management)
             </h1>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              정기 백업 스케줄러(매일 12:30, 23:30)에 의해 백업된 파일과 외부 업로드된 패키지(*.war) 파일 목록입니다.
+              정기 백업 스케줄러({formatCron(backupCron)})에 의해 백업된 파일과 외부 업로드된 패키지(*.war) 파일 목록입니다.
               {backupDir && (
                 <span className="block md:inline md:ml-2 font-semibold text-slate-650">
                   backup folder : <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-indigo-650 select-all">{backupDir}</code>

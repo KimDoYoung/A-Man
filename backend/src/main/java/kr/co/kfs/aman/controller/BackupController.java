@@ -25,6 +25,9 @@ public class BackupController {
     @Value("${aman.backup.dir}")
     private String backupDir;
 
+    @Value("${aman.backup.cron:0 30 12,23 * * ?}")
+    private String backupCron;
+
     public BackupController(BackupService backupService) {
         this.backupService = backupService;
     }
@@ -39,6 +42,7 @@ public class BackupController {
     public ResponseEntity<?> getBackupFiles() {
         java.util.Map<String, Object> response = new java.util.HashMap<>();
         response.put("backupDir", backupDir);
+        response.put("backupCron", backupCron);
         response.put("files", backupService.getBackupFiles());
         return ResponseEntity.ok(response);
     }
