@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,23 +62,25 @@ public class LogController {
     @GetMapping("/files")
     public ResponseEntity<?> getLogFiles() {
         File logDir = getLogDir();
-        List<Map<String, Object>> result = new ArrayList<>();
-        if (!logDir.exists()) {
-            return ResponseEntity.ok(result);
-        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("logDir", logDir.getAbsolutePath());
 
-        File[] files = logDir.listFiles((dir, name) -> name.endsWith(".log") || name.endsWith(".gz"));
-        if (files != null) {
-            Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
-            for (File f : files) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("name", f.getName());
-                map.put("size", f.length());
-                map.put("lastModified", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(f.lastModified())));
-                result.add(map);
+        List<Map<String, Object>> fileList = new ArrayList<>();
+        if (logDir.exists()) {
+            File[] files = logDir.listFiles((dir, name) -> name.endsWith(".log") || name.endsWith(".gz"));
+            if (files != null) {
+                Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
+                for (File f : files) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("name", f.getName());
+                    map.put("size", f.length());
+                    map.put("lastModified", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(f.lastModified())));
+                    fileList.add(map);
+                }
             }
         }
-        return ResponseEntity.ok(result);
+        response.put("files", fileList);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/tail")
@@ -120,6 +123,30 @@ public class LogController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .contentType(mediaType)
                 .body(new FileSystemResource(file));
+    }
+
+    @DeleteMapping("/delete/{fileName}")
+    public ResponseEntity<?> deleteLogFile(@PathVariable("fileName") String fileName) {
+        if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            return ResponseEntity.badRequest().body("잘못된 로그 파일명입니다.");
+        }
+
+        // 보안상 압축 로그 파일(.gz)만 삭제 가능하도록 제한
+        if (!fileName.endsWith(".gz")) {
+            return ResponseEntity.badRequest().body("보관된 압축 로그 파일(.gz)만 삭제할 수 있습니다.");
+        }
+
+        File file = new File(getLogDir(), fileName);
+        if (!file.exists()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("요청하신 로그 파일이 존재하지 않습니다.");
+        }
+
+        boolean deleted = file.delete();
+        if (!deleted) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("로그 파일 삭제에 실패했습니다.");
+        }
+
+        return ResponseEntity.ok("성공적으로 로그 파일이 삭제되었습니다.");
     }
 
     private String readLastLines(File file, int numLines) throws IOException {

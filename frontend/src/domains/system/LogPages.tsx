@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Download, RefreshCw, Search, Terminal, FileText } from 'lucide-react'
+import { Download, RefreshCw, Search, Terminal, FileText, Eye, EyeOff, X, Trash2 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 
@@ -16,6 +16,7 @@ const LogPages: React.FC = () => {
   const [filterText, setFilterText] = useState<string>('')
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
   const [showFileList, setShowFileList] = useState<boolean>(true)
+  const [logDir, setLogDir] = useState<string>('')
   const [loadingList, setLoadingList] = useState<boolean>(false)
   const [loadingText, setLoadingText] = useState<boolean>(false)
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
@@ -32,7 +33,10 @@ const LogPages: React.FC = () => {
     setLoadingList(true)
     try {
       const res = await apiClient.get<any>('/admin/logs/files')
-      if (Array.isArray(res)) {
+      if (res && typeof res === 'object' && 'files' in res) {
+        setFiles(res.files || [])
+        setLogDir(res.logDir || '')
+      } else if (Array.isArray(res)) {
         setFiles(res)
       } else {
         setFiles([])
@@ -80,6 +84,18 @@ const LogPages: React.FC = () => {
     showStatus('success', `${fileName} 다운로드가 요청되었습니다.`)
   }
 
+  const handleDelete = async (fileName: string) => {
+    if (!confirm(`${fileName} 파일을 정말로 삭제하시겠습니까?`)) return
+    try {
+      await apiClient.delete(`/admin/logs/delete/${fileName}`)
+      showStatus('success', `${fileName} 파일이 삭제되었습니다.`)
+      fetchLogFiles()
+    } catch (err) {
+      console.error('로그 파일 삭제 실패:', err)
+      showStatus('error', '로그 파일 삭제에 실패했습니다.')
+    }
+  }
+
   // 바이트 단위를 가독성 높게 환산
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -99,11 +115,32 @@ const LogPages: React.FC = () => {
     return 'text-[#4e342e]' // 에스프레소 브라운 기본 텍스트
   }
 
-  // 검색 필터 적용된 라인들 가공
+  // 정규식 예약어 이스케이프 처리
+  const escapeRegExp = (str: string) => {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  // 매칭되는 키워드 하이라이트 마킹 렌더링
+  const renderHighlightedLine = (line: string, keyword: string, colorClass: string) => {
+    if (!keyword) return <span className={colorClass}>{line}</span>
+
+    const escapedKeyword = escapeRegExp(keyword)
+    const parts = line.split(new RegExp(`(${escapedKeyword})`, 'gi'))
+    
+    return (
+      <span className={colorClass}>
+        {parts.map((part, i) => 
+          part.toLowerCase() === keyword.toLowerCase()
+            ? <mark key={i} className="bg-red-100 text-red-700 font-bold px-0.5 rounded border border-red-200/50">{part}</mark>
+            : part
+        )}
+      </span>
+    )
+  }
+
+  // 검색 필터 및 하이라이트 적용된 라인들 가공
   const logLines = logText.split('\n')
-  const filteredLines = logLines.filter(line => 
-    !filterText || line.toLowerCase().includes(filterText.toLowerCase())
-  )
+  const filteredLines = logLines
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
@@ -117,8 +154,13 @@ const LogPages: React.FC = () => {
               <Terminal className="w-5 h-5 text-indigo-500" />
               시스템 로그 조회 (Log Viewer)
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Tomcat 및 Spring Boot WAS의 실시간 콘솔 출력 로그 파일 리스트 및 최신 실행 기록을 조회합니다.
+            <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>Tomcat 및 Spring Boot WAS의 실시간 콘솔 출력 로그 파일 리스트 및 최신 실행 기록을 조회합니다.</span>
+              {logDir && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-650 rounded text-[11px] font-mono border border-slate-200">
+                  로그폴더: {logDir}
+                </span>
+              )}
             </p>
           </div>
 
@@ -148,39 +190,52 @@ const LogPages: React.FC = () => {
         <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
           
           {/* Left Column: Log Files List */}
-          {/* Left Column: Log Files List */}
           {showFileList && (
             <div className="w-full lg:w-80 bg-white rounded-xl shadow-xs border border-slate-200 flex flex-col p-4 overflow-hidden">
               <h2 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-2.5 shrink-0">
                 <FileText className="w-4 h-4 text-indigo-500" />
-                보관 로그 파일 ({files.length})
+                보관 로그 파일 (최근 {Math.min(files.length, 10)}개)
               </h2>
               <div className="flex-1 overflow-y-auto mt-2 space-y-2 pr-1">
-                {files.map((file) => (
-                  <div 
-                    key={file.name} 
-                    className={`p-3 rounded-lg border transition-all flex flex-col justify-between items-start gap-1.5 ${
-                      file.name === 'aman.log' 
-                        ? 'bg-indigo-50/40 border-indigo-100' 
-                        : 'bg-slate-50/50 border-slate-150 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="w-full">
-                      <div className="text-xs font-mono font-bold text-slate-750 break-all select-all">{file.name}</div>
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                        <span>{formatBytes(file.size)}</span>
-                        <span>{file.lastModified}</span>
+                {files.slice(0, 10).map((file) => {
+                  const isActiveLog = file.name.endsWith('.log')
+                  return (
+                    <div 
+                      key={file.name} 
+                      className={`p-3 rounded-lg border transition-all relative flex flex-col justify-between items-start gap-1 ${
+                        isActiveLog
+                          ? 'bg-indigo-50/40 border-indigo-100' 
+                          : 'bg-slate-50/50 border-slate-150 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className={`w-full ${isActiveLog ? 'pr-8' : 'pr-14'}`}>
+                        <div className="text-xs font-mono font-bold text-slate-755 break-all select-all">{file.name}</div>
+                        <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                          <span>{formatBytes(file.size)}</span>
+                          <span>{file.lastModified}</span>
+                        </div>
+                      </div>
+                      <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                        <button
+                          onClick={() => handleDownload(file.name)}
+                          className="p-1 hover:bg-slate-200/60 rounded text-indigo-650 cursor-pointer transition-colors"
+                          title="다운로드"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        {!isActiveLog && (
+                          <button
+                            onClick={() => handleDelete(file.name)}
+                            className="p-1 hover:bg-red-50 rounded text-red-650 cursor-pointer transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDownload(file.name)}
-                      className="w-full py-1 bg-white hover:bg-slate-100 border border-slate-200 text-indigo-650 rounded text-[10px] font-bold cursor-pointer transition-all inline-flex items-center justify-center gap-1"
-                    >
-                      <Download className="w-3 h-3" />
-                      다운로드
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
                 {files.length === 0 && !loadingList && (
                   <div className="py-8 text-center text-xs text-slate-400">
                     저장된 로그 파일이 존재하지 않습니다.
@@ -198,9 +253,10 @@ const LogPages: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFileList(!showFileList)}
-                  className="px-2.5 py-1 text-xs border border-slate-200 bg-white hover:bg-slate-50 rounded-lg focus:outline-hidden font-semibold cursor-pointer text-slate-700 transition-colors"
+                  className="px-2.5 py-1 text-xs border border-slate-200 bg-white hover:bg-slate-50 rounded-lg focus:outline-hidden font-semibold cursor-pointer text-slate-700 transition-colors flex items-center gap-1.5"
                 >
-                  {showFileList ? '보관로그 숨기기' : '보관로그 보이기'}
+                  {showFileList ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  <span>{showFileList ? '보관로그 숨기기' : '보관로그 보이기'}</span>
                 </button>
                 <span className="text-xs font-bold text-slate-600 shrink-0 ml-1">줄수 선택:</span>
                 <select
@@ -232,8 +288,17 @@ const LogPages: React.FC = () => {
                   placeholder="로그 키워드 검색..."
                   value={filterText}
                   onChange={(e) => setFilterText(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1 text-xs border border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-700"
+                  className="w-full pl-8 pr-8 py-1 text-xs border border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-indigo-500 text-slate-700"
                 />
+                {filterText && (
+                  <button
+                    onClick={() => setFilterText('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded p-0.5 cursor-pointer transition-colors"
+                    title="검색어 초기화"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -244,8 +309,8 @@ const LogPages: React.FC = () => {
                 className="flex-1 overflow-auto font-mono text-[12px] leading-relaxed select-text space-y-0.5 pr-2"
               >
                 {filteredLines.map((line, idx) => (
-                  <div key={idx} className={getLineColorClass(line)}>
-                    {line}
+                  <div key={idx}>
+                    {renderHighlightedLine(line, filterText, getLineColorClass(line))}
                   </div>
                 ))}
                 {filteredLines.length === 0 && !loadingText && (

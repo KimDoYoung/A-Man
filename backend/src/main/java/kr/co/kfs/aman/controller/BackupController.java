@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,5 +85,29 @@ public class BackupController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("백업 실행 실패: " + e.getMessage());
         }
+    }
+
+    @DeleteMapping("/delete/{fileName}")
+    public ResponseEntity<?> deleteFile(@PathVariable("fileName") String fileName) {
+        if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            return ResponseEntity.badRequest().body("잘못된 백업 파일명입니다.");
+        }
+
+        // 보안상 백업 파일(db, gz, war)만 삭제 가능하도록 제한
+        if (!fileName.endsWith(".db") && !fileName.endsWith(".gz") && !fileName.endsWith(".war")) {
+            return ResponseEntity.badRequest().body("백업 파일(.db, .gz, .war)만 삭제할 수 있습니다.");
+        }
+
+        File file = new File(backupDir, fileName);
+        if (!file.exists()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("지정한 백업 파일이 존재하지 않습니다.");
+        }
+
+        boolean deleted = file.delete();
+        if (!deleted) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("백업 파일 삭제에 실패했습니다.");
+        }
+
+        return ResponseEntity.ok("성공적으로 백업 파일이 삭제되었습니다.");
     }
 }
