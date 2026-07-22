@@ -10,6 +10,7 @@ import UserManagePage from '@/domains/user/UserManagePage'
 import FolderManagePage from '@/domains/folder/FolderManagePage'
 import SettingsPage from '@/domains/system/SettingsPage'
 import BackupPages from '@/domains/system/BackupPages'
+import LogPages from '@/domains/system/LogPages'
 import AboutPage from '@/domains/system/AboutPage'
 import PageManagePage from '@/domains/content/PageManagePage'
 import { apiClient } from '@/lib/apiClient'
@@ -70,6 +71,7 @@ const router = createBrowserRouter([
       { path: 'pages', element: <PageManagePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'backup', element: <BackupPages /> },
+      { path: 'logs', element: <LogPages /> },
       { path: 'about', element: <AboutPage /> }
     ]
   },
