@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -35,6 +34,7 @@ public class BackupService {
 
     private final SettingRepository settingRepository;
     private final SystemSettings systemSettings;
+    private final javax.sql.DataSource dataSource;
 
     @Value("${aman.image-dir}")
     private String imageDir;
@@ -45,9 +45,10 @@ public class BackupService {
     @Value("${aman.backup.retention-days:30}")
     private int retentionDays;
 
-    public BackupService(SettingRepository settingRepository, SystemSettings systemSettings) {
+    public BackupService(SettingRepository settingRepository, SystemSettings systemSettings, javax.sql.DataSource dataSource) {
         this.settingRepository = settingRepository;
         this.systemSettings = systemSettings;
+        this.dataSource = dataSource;
     }
 
     /**
@@ -69,9 +70,15 @@ public class BackupService {
         } catch (Exception e) { /* ignored */ }
 
         LocalDateTime max = LocalDateTime.of(1970, 1, 1, 0, 0, 0);
-        if (maxPageUpdate != null && maxPageUpdate.isAfter(max)) max = maxPageUpdate;
-        if (maxPageCreate != null && maxPageCreate.isAfter(max)) max = maxPageCreate;
-        if (maxFolderCreate != null && maxFolderCreate.isAfter(max)) max = maxFolderCreate;
+        if (maxPageUpdate != null && maxPageUpdate.isAfter(max)) {
+            max = maxPageUpdate;
+        }
+        if (maxPageCreate != null && maxPageCreate.isAfter(max)) {
+            max = maxPageCreate;
+        }
+        if (maxFolderCreate != null && maxFolderCreate.isAfter(max)) {
+            max = maxFolderCreate;
+        }
 
         return max;
     }
@@ -97,7 +104,6 @@ public class BackupService {
     /**
      * 백업 실행 비즈니스 로직
      */
-    @Transactional
     public boolean executeBackup(boolean force) {
         LocalDateTime lastModify = getLastModifyTime();
         LocalDateTime lastBackup = getLastBackupTime();
@@ -107,11 +113,15 @@ public class BackupService {
             return false;
         }
 
-        log.info("백업 프로세스를 시작합니다. (최근 백업: {}, 최종 수정: {})", lastBackup.format(DF), lastModify.format(DF));
+        String lastBackupStr = (lastBackup != null) ? lastBackup.format(DF) : "N/A";
+        String lastModifyStr = (lastModify != null) ? lastModify.format(DF) : "N/A";
+        log.info("백업 프로세스를 시작합니다. (최근 백업: {}, 최종 수정: {})", lastBackupStr, lastModifyStr);
 
         File dir = new File(backupDir);
         if (!dir.exists()) {
-            dir.mkdirs();
+            if (!dir.mkdirs() && !dir.exists()) {
+                log.warn("백업 디렉토리 생성 실패: {}", dir.getAbsolutePath());
+            }
         }
 
         // 짝이 맞는 시간 접미사 생성
@@ -122,15 +132,22 @@ public class BackupService {
             // 1. DB 백업 생성 (VACUUM INTO)
             File dbBackupFile = new File(dir, "aman." + timeSuffix + ".db");
             if (dbBackupFile.exists()) {
-                dbBackupFile.delete();
+                if (!dbBackupFile.delete()) {
+                    log.warn("기존 임시 DB 백업 파일 삭제 실패: {}", dbBackupFile.getAbsolutePath());
+                }
             }
-            entityManager.createNativeQuery("VACUUM INTO '" + dbBackupFile.getAbsolutePath() + "'").executeUpdate();
+            try (java.sql.Connection conn = dataSource.getConnection();
+                 java.sql.Statement stmt = conn.createStatement()) {
+                stmt.execute("VACUUM INTO '" + dbBackupFile.getAbsolutePath() + "'");
+            }
             log.info("SQLite DB 백업 파일 생성 완료: {}", dbBackupFile.getName());
 
             // 2. 이미지 백업 생성 (Linux tar -czf)
             File imagesTarGz = new File(dir, "images-" + timeSuffix + ".tar.gz");
             if (imagesTarGz.exists()) {
-                imagesTarGz.delete();
+                if (!imagesTarGz.delete()) {
+                    log.warn("기존 이미지 백업 파일 삭제 실패: {}", imagesTarGz.getAbsolutePath());
+                }
             }
             tarGzImages(imagesTarGz);
             log.info("이미지 폴더 백업 파일 생성 완료: {}", imagesTarGz.getName());
@@ -150,7 +167,9 @@ public class BackupService {
     private void tarGzImages(File tarGzFile) throws Exception {
         File imageFolder = new File(imageDir);
         if (!imageFolder.exists()) {
-            imageFolder.mkdirs();
+            if (!imageFolder.mkdirs() && !imageFolder.exists()) {
+                log.warn("이미지 폴더 생성 실패: {}", imageFolder.getAbsolutePath());
+            }
         }
         File parentDir = imageFolder.getParentFile();
         String folderName = imageFolder.getName();
@@ -182,7 +201,9 @@ public class BackupService {
 
     private void runRetentionCleanup() {
         File dir = new File(backupDir);
-        if (!dir.exists()) return;
+        if (!dir.exists()) {
+            return;
+        }
 
         // 1. *.war 파일 정리: 최신 10개만 보존
         File[] warFiles = dir.listFiles((d, name) -> name.endsWith(".war"));
@@ -206,8 +227,11 @@ public class BackupService {
                     String ts = name.substring("images-".length(), name.length() - ".tar.gz".length());
                     File dbFile = new File(dir, "aman." + ts + ".db");
                     if (dbFile.exists()) {
-                        dbFile.delete();
-                        log.info("오래된 매칭 DB 백업 제거 완료: {}", dbFile.getName());
+                        if (dbFile.delete()) {
+                            log.info("오래된 매칭 DB 백업 제거 완료: {}", dbFile.getName());
+                        } else {
+                            log.warn("오래된 매칭 DB 백업 제거 실패: {}", dbFile.getName());
+                        }
                     }
                 }
                 if (gzFile.delete()) {
@@ -223,10 +247,14 @@ public class BackupService {
     public List<Map<String, Object>> getBackupFiles() {
         List<Map<String, Object>> list = new ArrayList<>();
         File dir = new File(backupDir);
-        if (!dir.exists()) return list;
+        if (!dir.exists()) {
+            return list;
+        }
 
         File[] files = dir.listFiles((d, name) -> name.endsWith(".war") || name.endsWith(".db") || name.endsWith(".gz"));
-        if (files == null) return list;
+        if (files == null) {
+            return list;
+        }
 
         // 최신 생성된 날짜순 정렬
         Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
@@ -238,9 +266,13 @@ public class BackupService {
             map.put("lastModified", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(f.lastModified())));
             
             String type = "OTHER";
-            if (f.getName().endsWith(".war")) type = "WAR";
-            else if (f.getName().endsWith(".db")) type = "DATABASE";
-            else if (f.getName().endsWith(".gz")) type = "IMAGES";
+            if (f.getName().endsWith(".war")) {
+                type = "WAR";
+            } else if (f.getName().endsWith(".db")) {
+                type = "DATABASE";
+            } else if (f.getName().endsWith(".gz")) {
+                type = "IMAGES";
+            }
             map.put("type", type);
             
             list.add(map);

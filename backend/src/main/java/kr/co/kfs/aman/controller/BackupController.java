@@ -37,7 +37,10 @@ public class BackupController {
 
     @GetMapping("/files")
     public ResponseEntity<?> getBackupFiles() {
-        return ResponseEntity.ok(backupService.getBackupFiles());
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("backupDir", backupDir);
+        response.put("files", backupService.getBackupFiles());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/download/{fileName}")

@@ -12,6 +12,8 @@ interface BackupFile {
 
 const BackupPages: React.FC = () => {
   const [files, setFiles] = useState<BackupFile[]>([])
+  const [backupDir, setBackupDir] = useState<string>('')
+  const [filterType, setFilterType] = useState<'ALL' | 'WAR' | 'DATABASE' | 'IMAGES'>('ALL')
   const [loading, setLoading] = useState(false)
   const [runningBackup, setRunningBackup] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | ''; text: string }>({ type: '', text: '' })
@@ -19,8 +21,19 @@ const BackupPages: React.FC = () => {
   const fetchFiles = async () => {
     setLoading(true)
     try {
-      const data = await apiClient.get<BackupFile[]>('/admin/backup/files')
-      setFiles(data || [])
+      const res = await apiClient.get<any>('/admin/backup/files')
+      if (res && typeof res === 'object') {
+        setBackupDir(res.backupDir || '')
+        if (Array.isArray(res.files)) {
+          setFiles(res.files)
+        } else {
+          setFiles([])
+        }
+      } else {
+        setBackupDir('')
+        setFiles([])
+        console.warn('Expected object containing files from API, but received:', res)
+      }
     } catch (err) {
       console.error('백업 파일 로딩 실패:', err)
       showStatus('error', '백업 파일 목록을 불러오지 못했습니다.')
@@ -67,6 +80,14 @@ const BackupPages: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  // 필터링 및 최신일시순(내림차순) 정렬 처리
+  const filteredFiles = files
+    .filter((file) => {
+      if (filterType === 'ALL') return true
+      return file.type === filterType
+    })
+    .sort((a, b) => b.lastModified.localeCompare(a.lastModified))
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans">
       <DocUserTopBar sidebarOpen={false} setSidebarOpen={() => {}} />
@@ -79,8 +100,13 @@ const BackupPages: React.FC = () => {
               <Database className="w-5 h-5 text-indigo-500" />
               시스템 백업 관리 (Backup Management)
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
               정기 백업 스케줄러(매일 12:30, 23:30)에 의해 백업된 파일과 외부 업로드된 패키지(*.war) 파일 목록입니다.
+              {backupDir && (
+                <span className="block md:inline md:ml-2 font-semibold text-slate-650">
+                  backup folder : <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-indigo-650 select-all">{backupDir}</code>
+                </span>
+              )}
             </p>
           </div>
 
@@ -104,59 +130,113 @@ const BackupPages: React.FC = () => {
               <button
                 onClick={handleTriggerBackup}
                 disabled={runningBackup || loading}
-                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs hover:shadow-sm"
+                className={`px-3.5 py-1.5 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs hover:shadow-sm ${
+                  runningBackup || loading
+                    ? 'bg-slate-400 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
+                }`}
               >
-                <Play className="w-3.5 h-3.5" />
-                <span>즉시 백업 실행</span>
+                {runningBackup ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Play className="w-3.5 h-3.5" />
+                )}
+                <span>{runningBackup ? '백업중...' : '즉시 백업 실행'}</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* 백업 파일 테이블 영역 */}
-        <div className="flex-1 bg-white rounded-xl shadow-xs border border-slate-200 flex flex-col p-5 overflow-auto">
-          <table className="w-full text-left border-collapse text-slate-650">
-            <thead>
-              <tr className="border-b border-slate-200 text-[12px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
-                <th className="py-3 px-4">종류</th>
-                <th className="py-3 px-4">파일명</th>
-                <th className="py-3 px-4">파일 크기</th>
-                <th className="py-3 px-4">백업/생성 시간</th>
-                <th className="py-3 px-4 text-center">액션</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-150 text-[13px]">
-              {files.map((file) => (
-                <tr key={file.name} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold">
-                    {file.type === 'WAR' && <span className="flex items-center gap-1 text-amber-600"><FileArchive className="w-4 h-4" /> 패키지 (WAR)</span>}
-                    {file.type === 'DATABASE' && <span className="flex items-center gap-1 text-indigo-600"><Database className="w-4 h-4" /> 데이터베이스 (DB)</span>}
-                    {file.type === 'IMAGES' && <span className="flex items-center gap-1 text-emerald-600"><FolderOpen className="w-4 h-4" /> 이미지 압축본 (GZ)</span>}
-                    {file.type === 'OTHER' && <span className="text-gray-400">기타</span>}
-                  </td>
-                  <td className="py-3.5 px-4 font-mono font-medium text-slate-700">{file.name}</td>
-                  <td className="py-3.5 px-4 text-slate-500">{formatBytes(file.size)}</td>
-                  <td className="py-3.5 px-4 text-slate-500">{file.lastModified}</td>
-                  <td className="py-3.5 px-4 text-center">
-                    <button
-                      onClick={() => handleDownload(file.name)}
-                      className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-indigo-600 rounded text-[11px] font-bold cursor-pointer transition-all inline-flex items-center gap-1"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      다운로드
-                    </button>
-                  </td>
+        <div className="flex-1 bg-white rounded-xl shadow-xs border border-slate-200 flex flex-col p-5 overflow-hidden">
+          {/* 필터 탭 바 */}
+          <div className="flex items-center space-x-1 border-b border-slate-200 shrink-0 mb-4">
+            <button
+              onClick={() => setFilterType('ALL')}
+              className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+                filterType === 'ALL'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              전체 ({files.length})
+            </button>
+            <button
+              onClick={() => setFilterType('WAR')}
+              className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+                filterType === 'WAR'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              패키지 (WAR) ({files.filter(f => f.type === 'WAR').length})
+            </button>
+            <button
+              onClick={() => setFilterType('DATABASE')}
+              className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+                filterType === 'DATABASE'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              데이터베이스 (DB) ({files.filter(f => f.type === 'DATABASE').length})
+            </button>
+            <button
+              onClick={() => setFilterType('IMAGES')}
+              className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 cursor-pointer ${
+                filterType === 'IMAGES'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              이미지 압축본 (GZ) ({files.filter(f => f.type === 'IMAGES').length})
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-left border-collapse text-slate-650">
+              <thead>
+                <tr className="border-b border-slate-200 text-[12px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50 sticky top-0 z-10">
+                  <th className="py-3 px-4">종류</th>
+                  <th className="py-3 px-4">파일명</th>
+                  <th className="py-3 px-4">파일 크기</th>
+                  <th className="py-3 px-4">백업/생성 시간</th>
+                  <th className="py-3 px-4 text-center">액션</th>
                 </tr>
-              ))}
-              {files.length === 0 && !loading && (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
-                    백업 디렉토리에 백업 파일이 존재하지 않습니다.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-150 text-[13px]">
+                {filteredFiles.map((file) => (
+                  <tr key={file.name} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3.5 px-4 font-semibold">
+                      {file.type === 'WAR' && <span className="flex items-center gap-1 text-amber-600"><FileArchive className="w-4 h-4" /> 패키지 (WAR)</span>}
+                      {file.type === 'DATABASE' && <span className="flex items-center gap-1 text-indigo-600"><Database className="w-4 h-4" /> 데이터베이스 (DB)</span>}
+                      {file.type === 'IMAGES' && <span className="flex items-center gap-1 text-emerald-600"><FolderOpen className="w-4 h-4" /> 이미지 압축본 (GZ)</span>}
+                      {file.type === 'OTHER' && <span className="text-gray-400">기타</span>}
+                    </td>
+                    <td className="py-3.5 px-4 font-mono font-medium text-slate-700">{file.name}</td>
+                    <td className="py-3.5 px-4 text-slate-500">{formatBytes(file.size)}</td>
+                    <td className="py-3.5 px-4 text-slate-500">{file.lastModified}</td>
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        onClick={() => handleDownload(file.name)}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-indigo-600 rounded text-[11px] font-bold cursor-pointer transition-all inline-flex items-center gap-1"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        다운로드
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filteredFiles.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400">
+                      필터에 해당하는 백업 파일이 존재하지 않습니다.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </main>
     </div>

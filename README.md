@@ -54,3 +54,4 @@
 - 백업은 springboot 자체의 스케줄러에 의해서 동작한다.
 - application-<profile>.properties에 스케줄정보 기술
 - docs/백업.md 참조
+- admin 사용자에 '백업관리' 메뉴 제공

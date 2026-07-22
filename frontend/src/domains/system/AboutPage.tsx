@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Info, Server, Cpu, Layers, Terminal, ShieldCheck, FileText, Sparkles, Code, CheckCircle, ArrowLeft, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
+import { Info, Server, Cpu, Layers, Terminal, ShieldCheck, FileText, Sparkles, Code, CheckCircle, History, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
 
@@ -11,7 +10,6 @@ interface HistoryItem {
 }
 
 const AboutPage: React.FC = () => {
-  const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [historyList, setHistoryList] = useState<HistoryItem[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
