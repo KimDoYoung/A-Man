@@ -9,6 +9,7 @@ import AssetAdminPage from '@/domains/content/AssetAdminPage'
 import UserManagePage from '@/domains/user/UserManagePage'
 import FolderManagePage from '@/domains/folder/FolderManagePage'
 import SettingsPage from '@/domains/system/SettingsPage'
+import BackupPages from '@/domains/system/BackupPages'
 import AboutPage from '@/domains/system/AboutPage'
 import PageManagePage from '@/domains/content/PageManagePage'
 import { apiClient } from '@/lib/apiClient'
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
       { path: 'folders', element: <FolderManagePage /> },
       { path: 'pages', element: <PageManagePage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'backup', element: <BackupPages /> },
       { path: 'about', element: <AboutPage /> }
     ]
   },

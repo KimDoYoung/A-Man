@@ -27,6 +27,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   const isAdminFoldersPage = location.pathname === '/admin/folders'
   const isAdminPagesPage = location.pathname === '/admin/pages'
   const isAdminSettingsPage = location.pathname === '/admin/settings'
+  const isAdminBackupPage = location.pathname === '/admin/backup'
   const isAdminAboutPage = location.pathname === '/admin/about'
   const isDocEditPage = location.pathname === '/admin' || 
     (location.pathname.startsWith('/admin/') && 
@@ -35,6 +36,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
      !location.pathname.startsWith('/admin/folders') &&
      !location.pathname.startsWith('/admin/pages') &&
      !location.pathname.startsWith('/admin/settings') &&
+     !location.pathname.startsWith('/admin/backup') &&
      !location.pathname.startsWith('/admin/about'))
   const [version, setVersion] = useState('0.0.1')
 
@@ -237,6 +239,19 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               title="시스템 환경 설정 화면으로 이동"
             >
               설정
+            </button>
+          )}
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => navigate('/admin/backup')}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                isAdminBackupPage 
+                  ? 'bg-purple-600 text-white border-purple-600' 
+                  : 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20'
+              }`}
+              title="시스템 백업 관리 화면으로 이동"
+            >
+              백업 관리
             </button>
           )}
         </div>
