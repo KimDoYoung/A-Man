@@ -25,6 +25,11 @@ export default defineConfig({
       '^/aman/(assets|auth|content|docs/(folders|\\d+)|folder|manual|admin/(settings|work-stack|image-work|user-settings|page-list|backup|logs)(/.*)?|health|history|user)': {
         target: 'http://localhost:8686',
         changeOrigin: true,
+        bypass: (req) => {
+          if (req.headers.accept && req.headers.accept.indexOf('html') !== -1) {
+            return '/aman/index.html';
+          }
+        }
       },
     },
   },
