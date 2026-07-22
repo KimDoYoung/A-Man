@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare } from 'lucide-react'
+import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, ChevronRight } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { drawBlockArrowStamp } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
@@ -236,6 +236,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     calloutFontSize: SYSTEM_ITEM_DEFAULTS.calloutFontSize
   })
   
+  // 컨트롤 그룹 보이기/숨기기 상태
+  const [showImageScaleControls, setShowImageScaleControls] = useState<boolean>(false)
+  const [showCanvasExpandControls, setShowCanvasExpandControls] = useState<boolean>(false)
+  const [showZoomControls, setShowZoomControls] = useState<boolean>(false)
+
   // 헤더 3초 알림 메시지 상태
   const [saveMessage, setSaveMessage] = useState<{ text: string; type: 'success' | 'error' | '' }>({ text: '', type: '' })
   
@@ -1599,6 +1604,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ...SYSTEM_ITEM_DEFAULTS
     })
     showSaveMessage('캔버스가 초기 상태로 재설정되었습니다.', 'success')
+  }
+
+  // 새 이미지 업로드 핸들러
+  const handleUploadClick = () => {
+    if (isDirty && !window.confirm('저장되지 않은 변경 사항이 있습니다. 정말 새 이미지를 업로드하시겠습니까?')) {
+      return
+    }
+    fileInputRef.current?.click()
   }
 
   // 이미지 최초 로딩 시 백엔드 자동 임시저장 수행
@@ -3227,88 +3240,147 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           {bgImage && (
             <div className="flex items-center space-x-2 mr-2">
               {/* 이미지 크기 배율 컨트롤 */}
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
-                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">이미지 크기:</span>
-                {[0.3, 0.5, 0.75, 1.0, 1.5, 2.0].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => handleResizeImage(s)}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                      imageScale === s
-                        ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                        : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {Math.round(s * 100)}%
-                  </button>
-                ))}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImageScaleControls(!showImageScaleControls)
+                    setShowCanvasExpandControls(false)
+                    setShowZoomControls(false)
+                  }}
+                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                    showImageScaleControls 
+                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
+                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="이미지 크기 조절 메뉴 토글"
+                >
+                  <span>이미지 크기: {Math.round(imageScale * 100)}%</span>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showImageScaleControls ? 'rotate-180' : ''}`} />
+                </button>
+                {showImageScaleControls && (
+                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
+                    {[0.3, 0.5, 0.75, 1.0, 1.5, 2.0].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => handleResizeImage(s)}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                          imageScale === s
+                            ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                            : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {Math.round(s * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 바탕 확장 컨트롤 (방향 라디오 + 공용 증감 버튼) */}
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
-                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">바탕 확장:</span>
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCanvasExpandControls(!showCanvasExpandControls)
+                    setShowImageScaleControls(false)
+                    setShowZoomControls(false)
+                  }}
+                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                    showCanvasExpandControls 
+                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
+                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="바탕 확장 메뉴 토글"
+                >
+                  <span>바탕 확장 ({EXPAND_DIRECTION_LABELS[expandDirection]})</span>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showCanvasExpandControls ? 'rotate-180' : ''}`} />
+                </button>
+                {showCanvasExpandControls && (
+                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
+                    {/* 방향 라디오 (단일 선택) */}
+                    <div role="radiogroup" aria-label="바탕 확장 방향" className="flex items-center space-x-1">
+                      {(['top', 'bottom', 'left', 'right'] as const).map((dir) => (
+                        <button
+                          key={dir}
+                          type="button"
+                          role="radio"
+                          aria-checked={expandDirection === dir}
+                          onClick={() => setExpandDirection(dir)}
+                          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                            expandDirection === dir
+                              ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                              : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                          }`}
+                          title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 선택`}
+                        >
+                          {expandDirection === dir && <Check className="w-2.5 h-2.5" />}
+                          {EXPAND_DIRECTION_LABELS[dir]}
+                        </button>
+                      ))}
+                    </div>
 
-                {/* 방향 라디오 (단일 선택) */}
-                <div role="radiogroup" aria-label="바탕 확장 방향" className="flex items-center space-x-1">
-                  {(['top', 'bottom', 'left', 'right'] as const).map((dir) => (
+                    <div className="border-r border-gray-150 dark:border-slate-800 h-3.5 mx-1 shrink-0" />
+
+                    {/* 선택된 방향에 적용되는 공용 증감 버튼 */}
                     <button
-                      key={dir}
                       type="button"
-                      role="radio"
-                      aria-checked={expandDirection === dir}
-                      onClick={() => setExpandDirection(dir)}
-                      className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                        expandDirection === dir
-                          ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                          : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                      }`}
-                      title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 선택`}
+                      onClick={activeExpandAction.expand}
+                      className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
+                      title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
                     >
-                      {expandDirection === dir && <Check className="w-2.5 h-2.5" />}
-                      {EXPAND_DIRECTION_LABELS[dir]}
+                      +100
                     </button>
-                  ))}
-                </div>
-
-                <div className="border-r border-gray-150 dark:border-slate-800 h-3.5 mx-1 shrink-0" />
-
-                {/* 선택된 방향에 적용되는 공용 증감 버튼 */}
-                <button
-                  type="button"
-                  onClick={activeExpandAction.expand}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
-                  title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
-                >
-                  +100
-                </button>
-                <button
-                  type="button"
-                  onClick={activeExpandAction.shrink}
-                  disabled={!activeExpandAction.canShrink}
-                  className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
-                  title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
-                >
-                  -100
-                </button>
+                    <button
+                      type="button"
+                      onClick={activeExpandAction.shrink}
+                      disabled={!activeExpandAction.canShrink}
+                      className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
+                      title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
+                    >
+                      -100
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 보기 배율 컨트롤 */}
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs">
-                <span className="text-[10px] text-gray-500 dark:text-slate-400 font-bold px-1.5 shrink-0">보기 배율:</span>
-                {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
-                  <button
-                    key={z}
-                    onClick={() => setZoom(z)}
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                      zoom === z
-                        ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                        : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    {Math.round(z * 100)}%
-                  </button>
-                ))}
+              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowZoomControls(!showZoomControls)
+                    setShowImageScaleControls(false)
+                    setShowCanvasExpandControls(false)
+                  }}
+                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                    showZoomControls 
+                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
+                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                  }`}
+                  title="보기 배율 조절 메뉴 토글"
+                >
+                  <span>보기 배율: {Math.round(zoom * 100)}%</span>
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showZoomControls ? 'rotate-180' : ''}`} />
+                </button>
+                {showZoomControls && (
+                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
+                    {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
+                      <button
+                        key={z}
+                        onClick={() => setZoom(z)}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                          zoom === z
+                            ? 'bg-indigo-650 text-gray-700 shadow-xs'
+                            : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {Math.round(z * 100)}%
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -3384,7 +3456,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                   스크린샷 캡쳐 후 이 화면 위에서 <kbd className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border rounded font-mono text-[10px]">Ctrl + V</kbd> 키를 누르면 클립보드 원본 이미지가 즉시 편집창으로 가져와집니다.
                 </p>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={handleUploadClick}
                   className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-md text-xs font-semibold shadow-md transition-colors cursor-pointer"
                 >
                   이미지 파일 선택
@@ -3574,7 +3646,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           isDirty={isDirty}
           insertingImage={insertingImage}
           generatedImageUrl={generatedImageUrl}
-          onUploadClick={() => fileInputRef.current?.click()}
+          onUploadClick={handleUploadClick}
           onReset={handleResetToEmpty}
           onSaveToHistory={handleSaveToHistory}
           onGenerateUrl={handleGenerateUrl}
