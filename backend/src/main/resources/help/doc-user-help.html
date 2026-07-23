@@ -507,7 +507,7 @@
 <tbody>
 <tr><td align="center"><strong>일반 사용자</strong></td><td align="center">✅ 가능</td><td align="center">❌ 불가</td><td align="center">❌ 불가</td><td align="center">❌ 불가</td><td align="left">AssetERP 시스템에서 도움말 조회 (자산운용사 임직원 등)</td></tr>
 <tr><td align="center"><strong>문서 작성자</strong></td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="center">❌ 불가</td><td align="center">❌ 불가</td><td align="left">매뉴얼 및 카테고리 문서 작성/수정 (당사 업무 부서원)</td></tr>
-<tr><td align="center"><strong>시스템 관리자</strong></td><td align="center">✅ 가능</td><td align="center">❌ 불가</td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="left">A-Man 시스템 전반 관리, 사용자 계정 생성, 환경설정 제어</td></tr>
+<tr><td align="center"><strong>시스템 관리자</strong></td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="left">A-Man 시스템 전반 관리, 사용자 계정 생성, 환경설정 제어</td></tr>
 </tbody>
 </table>
 <hr />
@@ -596,31 +596,32 @@
 <li><strong>배경 색상(하이라이트) 순환</strong>: 강조할 영역을 선택하고 <strong><kbd>Ctrl</kbd> + <kbd>/</kbd></strong> 키를 입력하면, 배경색이 순환 적용됩니다. (연빨강 → 연파랑 → 연노랑 → 연회색 → 연초록 → 배경색 제거 순서)</li>
 <li>에디터 내에서 <strong>마우스 우클릭(컨텍스트 메뉴)</strong>을 호출하여 원하는 색상을 직접 고를 수도 있습니다.</li>
 </ul>
-<h4>💡 백틱(&lt;kbd&gt;)을 이용한 스마트 버튼 렌더링 및 자동 단축키 태그 적용</h4>
+<h4>💡 백틱을 이용한 스마트 버튼 렌더링 및 자동 단축키 태그 적용</h4>
 <ul>
 <li>백틱을 사용하여 AssetERP에서 사용한 버튼을 표현할 수 있습니다.</li>
 <li>버튼의 명칭에 따라서 아이콘과 색상이 결정됩니다.</li>
 <li>단 존재하지 않는다면 kbd태그와 같은 형태의 표현이 됩니다.</li>
 </ul>
-<h4>💡 커서 밀착형 에셋 입력 패널 (&lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;1&lt;/kbd&gt;, &lt;kbd&gt;2&lt;/kbd&gt;, &lt;kbd&gt;3&lt;/kbd&gt;)</h4>
+<h4>💡 커서 밀착형 에셋 입력 패널 (<kbd>Ctrl</kbd>+<kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>)</h4>
 <ul>
-<li>&lt;strong&gt;마우스 조작 불필요&lt;/strong&gt;: 본문을 작성하다가 단축키를 누르면, 현재 글자가 적히고 있는 입력 커서 바로 아래에 이모지/기호/상용구 선택 패널이 즉시 나타납니다.</li>
+<li><strong>마우스 조작 불필요</strong>: 본문을 작성하다가 단축키를 누르면, 현재 글자가 적히고 있는 입력 커서 바로 아래에 이모지/기호/상용구 선택 패널이 즉시 나타납니다.</li>
 </ul>
 <h4>💡 목록 &amp; 인용구 자동 연속 및 자동 종료</h4>
 <ul>
-<li>글머리 기호(</kbd>- <kbd>), 번호 매기기(</kbd>1. <kbd>), 인용구(</kbd>&gt; <kbd>)를 작성한 뒤 줄 바꿈을 하면, 다음 줄에 자동으로</kbd>- <kbd>,</kbd>2. <kbd>,</kbd>&gt; <kbd>기호가 선제적으로 생성됩니다.</li>
-<li>만약 목록 작성을 마친 후 일반 줄로 돌아가고 싶다면, &lt;strong&gt;빈 목록 기호 상태에서 &lt;kbd&gt;Enter&lt;/kbd&gt;를 한 번 더&lt;/strong&gt; 누릅니다. 그러면 자동으로 줄 시작 기호가 지워지며 목록이 깔끔하게 종료됩니다.</li>
+<li>글머리 기호(<kbd class="asset-kbd-btn" style="background-color: #17A2B8; border-color: #1592a6; color: #ffffff;"><i class="fas fa-minus kbd-fa-icon" aria-hidden="true"></i> <span class="kbd-text">-</span></kbd>), 번호 매기기(<kbd>1.</kbd>), 인용구(<kbd>&gt;</kbd>)를 작성한 뒤 줄 바꿈을 하면, 다음 줄에 자동으로 <kbd class="asset-kbd-btn" style="background-color: #17A2B8; border-color: #1592a6; color: #ffffff;"><i class="fas fa-minus kbd-fa-icon" aria-hidden="true"></i> <span class="kbd-text">-</span></kbd>, <kbd>2.</kbd>, <kbd>&gt;</kbd> 기호가 선제적으로 생성됩니다.</li>
+<li>만약 목록 작성을 마친 후 일반 줄로 돌아가고 싶다면, <strong>빈 목록 기호 상태에서 <kbd>Enter</kbd>를 한 번 더</strong> 누릅니다. 그러면 자동으로 줄 시작 기호가 지워지며 목록이 깔끔하게 종료됩니다.</li>
 </ul>
-<h4>💡 마크다운 표 ↔ CSV 양방향 쾌속 토글 (&lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;,&lt;/kbd&gt;)</h4>
+<h4>💡 마크다운 표 ↔ CSV 양방향 쾌속 토글 (<kbd>Ctrl</kbd>+<kbd>,</kbd>)</h4>
 <ul>
-<li>&lt;strong&gt;표 수정이 어려우신가요?&lt;/strong&gt; 마크다운으로 그려진 복잡한 표를 전체 드래그 선택하고 &lt;strong&gt;&lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;,&lt;/kbd&gt;&lt;/strong&gt;를 누르면, 순식간에</kbd>성명,나이,성별<kbd>같은 쉼표로 구분된 CSV 데이터 텍스트로 풀어집니다.</li>
-<li>CSV 상태에서 값을 편하게 수정한 뒤, 다시 드래그하여 &lt;strong&gt;&lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;,&lt;/kbd&gt;&lt;/strong&gt;를 누르면 완벽히 정렬된 깨끗한 마크다운 표로 깔끔하게 조립됩니다.</li>
+<li><strong>표 수정이 어려우신가요?</strong> 마크다운으로 그려진 복잡한 표를 전체 드래그 선택하고 <strong><kbd>Ctrl</kbd> + <kbd>,</kbd></strong>를 누르면, 순식간에 <kbd>성명,나이,성별</kbd> 같은 쉼표로 구분된 CSV 데이터 텍스트로 풀어집니다.</li>
+<li>CSV 상태에서 값을 편하게 수정한 뒤, 다시 드래그하여 <strong><kbd>Ctrl</kbd> + <kbd>,</kbd></strong>를 누르면 완벽히 정렬된 깨끗한 마크다운 표로 깔끔하게 조립됩니다.</li>
 <li>아무것도 선택하지 않은 채 누르면 3x3의 기본 테이블 템플릿이 삽입됩니다.</li>
 </ul>
-<h4>💡 클립보드 이미지 직접 붙여넣기 (&lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;V&lt;/kbd&gt;)</h4>
+<h4>💡 클립보드 이미지 직접 붙여넣기 (<kbd>Ctrl</kbd>+<kbd>V</kbd>)</h4>
 <ul>
 <li>AssetERP 화면을 캡처한 이미지나 PC에서 복사한 이미지 파일을 별도로 저장하고 올릴 필요가 없습니다.</li>
-<li>에디터 영역 안에서 단축키 &lt;strong&gt;&lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;V&lt;/kbd&gt;&lt;/strong&gt;를 누르면 백엔드 서버에 이미지가 즉시 자동 업로드되고, 본문에는</kbd><img src="/aman/content/image/..." alt="image" />` 와 같은 마크다운 코드가 생성되어 실시간 미리보기에 연동됩니다.</li>
+<li>에디터 영역 안에서 단축키 <strong><kbd>Ctrl</kbd> + <kbd>V</kbd></strong>를 누르면 백엔드 서버에 이미지가 즉시 자동 업로드되고,<br />
+본문에는 <code>![image](/aman/content/image/...)</code> 와 같은 마크다운 코드가 생성되어 실시간 미리보기에 연동됩니다.</li>
 </ul>
 <hr />
 <h2>4. 실시간 미리보기 (Live Preview) 및 화면 정렬</h2>
@@ -629,7 +630,16 @@
 <li><strong>Alt + Z 화면 정렬</strong>: 에디터 최하단에서 긴 문서를 편집할 때 모니터 아래쪽에서 계속 고개를 숙이고 작업해야 하는 불편함을 개선했습니다. <strong><kbd>Alt</kbd> + <kbd>Z</kbd></strong>를 입력하는 즉시 현재 커서 줄이 모니터 화면 정중앙으로 스크롤 재조정됩니다.</li>
 </ul>
 <hr />
-<h2>5. 고급 기능 가이드 (인터랙티브 안내)</h2>
+<h2>이미지 편집기</h2>
+<h3>특징</h3>
+<ul>
+<li>도움말에 사용할 이미지 즉 프로그램의 실행 화면을 캡쳐해서 설명하고자할 때 사용</li>
+<li>캡쳐된 이미지의 확대/축소 가능</li>
+<li>캡쳐된 이미지에 원숫자, 사각형, 화살표, 이모지, 텍스트등을 입혀서 설명 가능</li>
+<li>임시저장(<kbd>Ctrl</kbd>+<kbd>s</kbd>)를 이용하여 작업 과정의 이미지를 저장</li>
+</ul>
+<hr />
+<h2>6. 고급 기능 가이드</h2>
 <div class="tabs">
 <div class="tab-header">
 <button class="tab-btn active" onclick="switchTab(event, 'tab-editor')">이미지 편집기 가이드</button>

@@ -152,7 +152,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           >
             문서 편집
           </button>
-          {user?.role !== 'admin' && onOpenImageEditor && isDocEditPage && (
+          {onOpenImageEditor && isDocEditPage && (
             <button
               onClick={isImageEditorOpen ? onCloseImageEditor : onOpenImageEditor}
               className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border shadow-xs ${
