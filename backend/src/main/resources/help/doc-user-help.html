@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="[contextPath]/favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <title>A-Man 도움말</title>
+    <style>
+        kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: #24292e;
+            background: #f6f8fa;
+            border: 1px solid #d1d5da;
+            border-radius: 4px;
+            box-shadow: inset 0 -2px 0 #d1d5da;
+            line-height: 1.4;
+            white-space: nowrap;
+            margin: 0 1px;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        kbd.asset-kbd-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.2;
+            vertical-align: middle;
+            cursor: default;
+            user-select: none;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        kbd.asset-kbd-btn .kbd-fa-icon {
+            font-size: 10px;
+            margin-bottom: 0;
+        }
+        kbd.asset-kbd-btn .kbd-text {
+            letter-spacing: 0.5px;
+        }
+        .tabs {
+            margin: 30px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .tab-header {
+            display: flex;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 14px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn:hover {
+            color: #0f172a;
+            background-color: #f1f5f9;
+        }
+        .tab-btn.active {
+            color: #4f46e5;
+            background-color: #ffffff;
+            border-bottom: 2px solid #4f46e5;
+        }
+        .tab-content {
+            padding: 24px;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .theme-color-box {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-right: 6px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            padding: 30px;
+            margin: 0;
+            color: #334155;
+            background-color: #f8fafc;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            max-width: 900px;
+            margin: 20px auto;
+        }
+        code {
+            background-color: #f1f5f9;
+            color: #db2777;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85em;
+            border: 1px solid #e2e8f0;
+        }
+        pre {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            font-size: 13px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: left;
+        }
+        td {
+            color: #475569;
+        }
+        blockquote {
+            margin: 14px 0;
+            padding: 12px 18px;
+            background-color: #f7f9fb;
+            border-left: 3px solid #c7dbf0;
+            border-radius: 6px;
+            color: #455160;
+            font-size: 14px;
+        }
+        blockquote p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 16px auto;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        a {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        /* --- Floating TOC & ScrollToTop outside Container Bounds --- */
+        .floating-toc-trigger {
+            position: fixed;
+            bottom: 30px;
+            left: calc(50% + 450px + 50px);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: rgba(99, 102, 241, 0.35);
+            color: rgba(99, 102, 241, 0.75);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 999;
+        }
+        .floating-toc-trigger:hover {
+            transform: scale(1.05);
+            background-color: rgba(99, 102, 241, 0.95);
+            color: #ffffff;
+            border-color: #6366f1;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+        .dark-mode .floating-toc-trigger {
+            background-color: rgba(99, 102, 241, 0.25);
+            color: rgba(129, 140, 248, 0.65);
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+        .floating-scroll-top {
+            position: fixed;
+            bottom: 85px;
+            left: calc(50% + 450px + 50px);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: rgba(100, 116, 139, 0.35);
+            color: rgba(100, 116, 139, 0.75);
+            border: 1px solid rgba(100, 116, 139, 0.35);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+        }
+        .floating-scroll-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .floating-scroll-top:hover {
+            transform: scale(1.05);
+            background-color: rgba(100, 116, 139, 0.95);
+            color: #ffffff;
+            border-color: #64748b;
+            box-shadow: 0 4px 10px rgba(100, 116, 139, 0.3);
+        }
+        .dark-mode .floating-scroll-top {
+            background-color: rgba(148, 163, 184, 0.25);
+            color: rgba(148, 163, 184, 0.65);
+            border-color: rgba(148, 163, 184, 0.35);
+        }
+        .toc-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(2px);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s ease;
+        }
+        .toc-drawer-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .toc-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: 100vh;
+            background-color: #ffffff;
+            box-shadow: -4px 0 20px rgba(15, 23, 42, 0.15);
+            z-index: 1001;
+            transition: right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+        .toc-drawer.open {
+            right: 0;
+        }
+        .dark-mode .toc-drawer {
+            background-color: #1e293b;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+            border-left: 1px solid #334155;
+        }
+        .toc-drawer-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f8fafc;
+        }
+        .dark-mode .toc-drawer-header {
+            border-bottom: 1px solid #334155;
+            background-color: #0f172a;
+        }
+        .toc-drawer-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .dark-mode .toc-drawer-title {
+            color: #f8fafc;
+        }
+        .toc-drawer-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #64748b;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .toc-drawer-close:hover {
+            color: #0f172a;
+        }
+        .dark-mode .toc-drawer-close:hover {
+            color: #f8fafc;
+        }
+        .toc-drawer-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+            margin: 0;
+            list-style: none;
+        }
+        .toc-drawer-item {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .toc-drawer-link {
+            color: #475569;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: color 0.15s;
+            display: block;
+            padding: 4px 0;
+        }
+        .dark-mode .toc-drawer-link {
+            color: #cbd5e1;
+        }
+        .toc-drawer-link:hover {
+            color: #4f46e5;
+        }
+        .dark-mode .toc-drawer-link:hover {
+            color: #818cf8;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var links = document.querySelectorAll('.container a');
+            for (var i = 0; i < links.length; i++) {
+                links[i].setAttribute('target', '_blank');
+                links[i].setAttribute('rel', 'noopener noreferrer');
+            }
+        });
+    </script>
+    <script>
+        function switchTab(evt, tabId) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName('tab-pane');
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove('active');
+            }
+            tablinks = document.getElementsByClassName('tab-btn');
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove('active');
+            }
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const contentContainer = document.querySelector('.container');
+            if (!contentContainer) return;
+            
+            const headings = Array.from(contentContainer.querySelectorAll('h2')).filter(h => !h.textContent.includes('목차'));
+            if (headings.length === 0) return;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'toc-drawer-overlay';
+            document.body.appendChild(overlay);
+            
+            const drawer = document.createElement('div');
+            drawer.className = 'toc-drawer';
+            
+            const header = document.createElement('div');
+            header.className = 'toc-drawer-header';
+            
+            const title = document.createElement('span');
+            title.className = 'toc-drawer-title';
+            title.textContent = '📌 본문 목차';
+            header.appendChild(title);
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'toc-drawer-close';
+            closeBtn.innerHTML = '✕';
+            header.appendChild(closeBtn);
+            drawer.appendChild(header);
+            
+            const ol = document.createElement('ol');
+            ol.className = 'toc-drawer-list';
+            
+            headings.forEach((heading, idx) => {
+                let id = heading.textContent.trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^\w\s가-힣.-]/g, '');
+                if (!id) id = 'heading-' + idx;
+                heading.id = id;
+                heading.style.scrollMarginTop = '30px';
+                
+                const li = document.createElement('li');
+                li.className = 'toc-drawer-item';
+                
+                const a = document.createElement('a');
+                a.className = 'toc-drawer-link';
+                a.href = '#' + id;
+                a.textContent = heading.textContent;
+                
+                a.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    history.pushState(null, '', '#' + id);
+                    closeDrawer();
+                });
+                
+                li.appendChild(a);
+                ol.appendChild(li);
+            });
+            drawer.appendChild(ol);
+            document.body.appendChild(drawer);
+            
+            const trigger = document.createElement('button');
+            trigger.className = 'floating-toc-trigger';
+            trigger.setAttribute('title', '목차 보기(ESC)');
+            trigger.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>';
+            contentContainer.appendChild(trigger);
+            
+            const scrollTopBtn = document.createElement('button');
+            scrollTopBtn.className = 'floating-scroll-top';
+            scrollTopBtn.setAttribute('title', '맨 위로 스크롤');
+            scrollTopBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+            contentContainer.appendChild(scrollTopBtn);
+            
+            function openDrawer() {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+            }
+            
+            function closeDrawer() {
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+            }
+            
+            trigger.addEventListener('click', openDrawer);
+            closeBtn.addEventListener('click', closeDrawer);
+            overlay.addEventListener('click', closeDrawer);
+            
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 300) {
+                    scrollTopBtn.classList.add('visible');
+                } else {
+                    scrollTopBtn.classList.remove('visible');
+                }
+            });
+            
+            scrollTopBtn.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDrawer();
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>A-Man (AssetERP 매뉴얼 시스템) 사용자 가이드 (v[version])</h1>
+<p>본 문서는 <strong>A-Man (AssetERP 매뉴얼 시스템)</strong>의 문서를 관리하고 생성하는 <strong>문서작성자 및 관리자</strong> 분들이 시스템의 모든 기능을 200% 활용할 수 있도록 돕기 위해 작성된 상세 도움말 가이드입니다.</p>
+<hr />
+<h2>1. 개요 및 권한 안내</h2>
+<p>A-Man은 <a href="http://www.k-fs.co.kr">한국펀드서비스(주)</a>의 핵심 자산운용 패키지인 <strong>AssetERP</strong>의 도움말과 매뉴얼을 생성하고 관리하는 통합 웹 문서 시스템입니다. 모든 도움말은 직관적이고 표준적인 <strong>마크다운(Markdown)</strong> 문법을 기반으로 실시간 작성 및 편집됩니다.</p>
+<h3>사용자의 역할 구분</h3>
+<table>
+<thead>
+<tr><th align="center">권한 그룹</th><th align="center">문서 조회</th><th align="center">문서 편집</th><th align="center">사용자 관리</th><th align="center">환경 설정</th><th align="left">주요 역할</th></tr>
+</thead>
+<tbody>
+<tr><td align="center"><strong>일반 사용자</strong></td><td align="center">✅ 가능</td><td align="center">❌ 불가</td><td align="center">❌ 불가</td><td align="center">❌ 불가</td><td align="left">AssetERP 시스템에서 도움말 조회 (자산운용사 임직원 등)</td></tr>
+<tr><td align="center"><strong>문서 작성자</strong></td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="center">❌ 불가</td><td align="center">❌ 불가</td><td align="left">매뉴얼 및 카테고리 문서 작성/수정 (당사 업무 부서원)</td></tr>
+<tr><td align="center"><strong>시스템 관리자</strong></td><td align="center">✅ 가능</td><td align="center">❌ 불가</td><td align="center">✅ 가능</td><td align="center">✅ 가능</td><td align="left">A-Man 시스템 전반 관리, 사용자 계정 생성, 환경설정 제어</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>2. 시스템 관리자 및 문서 작성자 메뉴</h2>
+<p>관리자 및 작성자 모드로 접속(<kbd>[baseurl]/aman/admin</kbd>)하면 권한(역할)에 따라 상단 툴바에 다음과 같은 핵심 관리용 메뉴들이 제공됩니다.</p>
+<h3>2.1 일반 공통 메뉴 (전체 권한)</h3>
+<table>
+<thead>
+<tr><th align="left">메뉴명</th><th align="left">설명</th></tr>
+</thead>
+<tbody>
+<tr><td align="left"><strong>홈으로</strong></td><td align="left">일반 사용자용 문서 조회 메인 화면(<kbd>/aman/docs</kbd>)으로 즉시 이동합니다.</td></tr>
+<tr><td align="left"><strong>About</strong></td><td align="left">A-Man 매뉴얼 시스템의 릴리즈 정보와 개발 철학, 오픈소스 가이드를 확인합니다.</td></tr>
+<tr><td align="left"><strong>Help</strong></td><td align="left"><strong>(본 문서)</strong> 에디터의 주요 단축키와 스마트 기능을 마스터할 수 있는 도움말 화면을 새 창으로 엽니다.</td></tr>
+<tr><td align="left"><strong>사용자명 (개인정보 변경)</strong></td><td align="left">로그인 중인 본인의 이름 버튼이며, 클릭 시 비밀번호와 이메일 등 개인정보를 수정할 수 있습니다.</td></tr>
+<tr><td align="left"><strong>로그아웃</strong></td><td align="left">현재 세션을 안전하게 종료하고 로그인 화면으로 이동합니다.</td></tr>
+</tbody>
+</table>
+<h3>2.2 문서 작성자 전용 메뉴 (일반 작성자)</h3>
+<table>
+<thead>
+<tr><th align="left">메뉴명</th><th align="left">설명</th></tr>
+</thead>
+<tbody>
+<tr><td align="left"><strong>문서 편집</strong></td><td align="left">왼쪽의 메뉴 트리를 탐색하며 마크다운 에디터를 통해 실시간 매뉴얼을 작성하고 편집하는 메인 대시보드 화면으로 이동합니다.</td></tr>
+<tr><td align="left"><strong>이미지 편집</strong></td><td align="left">작성 중인 마크다운 문서 내 이미지를 더블클릭하거나 툴바 버튼을 통해 도형, 텍스트, 화살표 등을 덧그릴 수 있는 이미지 주석 편집기를 토글합니다.</td></tr>
+<tr><td align="left"><strong>작업이력</strong></td><td align="left">최근 본인이 생성, 수정 또는 조회했던 문서들의 이력을 조회하고 즉시 해당 문서로 이동할 수 있는 작업 스택 팝업을 띄웁니다 (<kbd>Alt</kbd> + <kbd>H</kbd>).</td></tr>
+</tbody>
+</table>
+<h3>2.3 시스템 관리자 전용 메뉴 (Admin 권한)</h3>
+<table>
+<thead>
+<tr><th align="left">메뉴명</th><th align="left">설명</th></tr>
+</thead>
+<tbody>
+<tr><td align="left"><strong>자산 관리</strong></td><td align="left">문서 작성 시 자주 쓰이는 <strong>이모지, 특수기호, 상용구(문구), 템플릿(레이아웃)</strong>을 등록하고 편집하여 에디터 툴바 및 팝업 패널에 실시간 연동하는 자산 허브입니다.</td></tr>
+<tr><td align="left"><strong>메뉴 관리</strong></td><td align="left">AssetERP의 3단계 메뉴 체계(대분류-중분류-소분류)와 연동되는 트리 카테고리를 추가, 수정, 삭제, 순서 변경하는 화면입니다.</td></tr>
+<tr><td align="left"><strong>페이지 관리</strong></td><td align="left">A-Man 시스템 내에 등록된 전체 페이지 목록을 AG-Grid 형태로 조회하며, 배포 상태(작성 중/배포 완료) 필터링, 잠금 상태 강제 해제 등을 지원하는 관리 화면입니다.</td></tr>
+<tr><td align="left"><strong>사용자 관리</strong></td><td align="left">문서 작성자 및 관리자 계정을 추가하고, 활성화 여부나 권한(역할) 그룹을 수정/처리하는 화면입니다.</td></tr>
+<tr><td align="left"><strong>설정</strong></td><td align="left">시스템 기본 폰트 크기, 이미지 업로드 최대 크기 제한, 링크 타겟 설정 등 시스템 전반에 적용되는 기본 환경 옵션을 설정합니다.</td></tr>
+<tr><td align="left"><strong>백업 관리</strong></td><td align="left">시스템 데이터베이스 및 업로드 파일들을 백업 파일로 내보내거나, 과거 시점으로 안전하게 복구할 수 있는 복원 기능을 제공합니다.</td></tr>
+<tr><td align="left"><strong>로그 조회</strong></td><td align="left">시스템 내부에서 발생한 주요 에러 및 운영 로그를 실시간에 가깝게 조회하고 분석할 수 있는 화면입니다.</td></tr>
+</tbody>
+</table>
+<hr />
+<h2>3. 마크다운 에디터 사용법</h2>
+<p>A-Man 에디터는 마크다운 문법을 신속하고 정확하게 작성할 수 있도록 최첨단 단축키와 반응형 기능을 탑재하고 있습니다.</p>
+<h3>3.1 특징</h3>
+<ul>
+<li>미리보기 :  편집과 동시에 <strong>미리보기</strong>를 통해서 제공되는 문서의 최종형태를 확인할 수 있습니다.</li>
+<li>문서 잠금 기능 : 편집하는 동안 문서를 <strong>잠금 상태</strong>로 놓음으로써 다른 사용자가 편집하는 문서를 변경하지 못하게 할 수 있습니다.</li>
+<li>배포상태 변경 : 배포상태가 <strong>작성 중</strong>인 경우 문서는 일반사용자에게 제공되지 않습니다.</li>
+<li>가져오기/내보내기 : 노션의 내보내기 기능으로 다운로드한 zip파일을 가져오기 할 수 있으면 역으로 내보내기를 할 수 있습니다.</li>
+</ul>
+<h3>3.2 단축키 일람표</h3>
+<p>에디터 내부에서 다음 단축키를 사용하여 빠르게 문서 서식을 지정할 수 있습니다.</p>
+<table>
+<thead>
+<tr><th align="left">기능 분류</th><th align="left">수행 동작</th><th align="center">단축키</th></tr>
+</thead>
+<tbody>
+<tr><td align="left"><strong>시스템</strong></td><td align="left">현재까지 편집된 마크다운 문서 즉시 서버 저장</td><td align="center"><kbd>Ctrl</kbd> + <kbd>S</kbd></td></tr>
+<tr><td align="left"><strong>팝업 패널</strong></td><td align="left"><strong>이모지</strong> 삽입 팝업 패널 활성화 (커서 위치 밀착)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>1</kbd></td></tr>
+<tr><td align="left"><strong>팝업 패널</strong></td><td align="left"><strong>특수기호</strong> 삽입 팝업 패널 활성화 (커서 위치 밀착)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>2</kbd></td></tr>
+<tr><td align="left"><strong>팝업 패널</strong></td><td align="left"><strong>상용구(자주 쓰는 문구)</strong> 삽입 패널 활성화 (커서 위치 밀착)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>3</kbd></td></tr>
+<tr><td align="left"><strong>리스트/기호</strong></td><td align="left">선택 영역 또는 현재 줄에 <strong>인용구 (<kbd>&gt;</kbd>)</strong> 씌우기</td><td align="center"><kbd>Ctrl</kbd> + <kbd>8</kbd></td></tr>
+<tr><td align="left"><strong>리스트/기호</strong></td><td align="left">선택 영역 또는 현재 줄에 <strong>글머리 기호 (<kbd class="asset-kbd-btn" style="background-color: #17A2B8; border-color: #1592a6; color: #ffffff;"><i class="fas fa-minus kbd-fa-icon" aria-hidden="true"></i> <span class="kbd-text">-</span></kbd>)</strong> 씌우기</td><td align="center"><kbd>Ctrl</kbd> + <kbd>0</kbd></td></tr>
+<tr><td align="left"><strong>리스트/기호</strong></td><td align="left">선택 영역 또는 현재 줄에 <strong>번호 매기기 (<kbd>1.</kbd>)</strong> 씌우기</td><td align="center"><kbd>Ctrl</kbd> + <kbd>9</kbd></td></tr>
+<tr><td align="left"><strong>표 (Table)</strong></td><td align="left"><strong>표 ↔ CSV 상호 양방향 즉시 변환</strong> / 기본 표 삽입</td><td align="center"><kbd>Ctrl</kbd> + <kbd>,</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">선택 영역 텍스트 <strong>굵게 (Bold)</strong> 처리 (<kbd>&lt;strong&gt;텍스트&lt;/strong&gt;</kbd>)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>B</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">선택 영역 텍스트 <em>기울임 (Italic)</em> 처리 (<kbd><em>텍스트</em></kbd>)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>I</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">선택 영역 텍스트 <del>취소선 (Strike)</del> 처리 (<kbd><del>텍스트</del></kbd>)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">마크다운 링크 (<kbd><a href="URL">텍스트</a></kbd>) 신속 삽입</td><td align="center"><kbd>Ctrl</kbd> + <kbd>L</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">글자 색상 순환 변경 (빨강→파랑→노랑→갈색→초록→제거)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>.</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">배경 색상 순환 변경 (연빨강→연파랑→연노랑→연회색→연초록→제거)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>/</kbd></td></tr>
+<tr><td align="left"><strong>인라인 서식</strong></td><td align="left">단축키 텍스트 분할 후 개별 <kbd> 태그 자동 적용 (예: Ctrl+Alt+S)</td><td align="center"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>K</kbd></td></tr>
+<tr><td align="left"><strong>편의 기능</strong></td><td align="left">현재 편집 중인 행을 <strong>화면 정중앙</strong>으로 스크롤 정렬</td><td align="center"><kbd>Alt</kbd> + <kbd>Z</kbd></td></tr>
+<tr><td align="left"><strong>편의 기능</strong></td><td align="left">커서 위치 상관없이 <strong>다음 줄로 즉시 강제 개행</strong></td><td align="center"><kbd>Shift</kbd> + <kbd>Enter</kbd></td></tr>
+</tbody>
+</table>
+<hr />
+<h3>3.3 핵심 스마트 편집 기능 사용법</h3>
+<h4>💡 글자 색상 및 배경 색상 순환 변경 (<kbd>Ctrl</kbd>+<kbd>.</kbd> / <kbd>Ctrl</kbd>+<kbd>/</kbd>)</h4>
+<ul>
+<li><strong>글자 색상 순환</strong>: 색상을 적용할 텍스트를 드래그 선택한 후 <strong><kbd>Ctrl</kbd> + <kbd>.</kbd></strong> 키를 입력하면, 누를 때마다 색상이 순환 적용됩니다. (빨강 → 파랑 → 노랑 → 갈색 → 초록 → 색상 제거 순서)</li>
+<li><strong>배경 색상(하이라이트) 순환</strong>: 강조할 영역을 선택하고 <strong><kbd>Ctrl</kbd> + <kbd>/</kbd></strong> 키를 입력하면, 배경색이 순환 적용됩니다. (연빨강 → 연파랑 → 연노랑 → 연회색 → 연초록 → 배경색 제거 순서)</li>
+<li>에디터 내에서 <strong>마우스 우클릭(컨텍스트 메뉴)</strong>을 호출하여 원하는 색상을 직접 고를 수도 있습니다.</li>
+</ul>
+<h4>💡 백틱(&lt;kbd&gt;)을 이용한 스마트 버튼 렌더링 및 자동 단축키 태그 적용</h4>
+<ul>
+<li>백틱을 사용하여 AssetERP에서 사용한 버튼을 표현할 수 있습니다.</li>
+<li>버튼의 명칭에 따라서 아이콘과 색상이 결정됩니다.</li>
+<li>단 존재하지 않는다면 kbd태그와 같은 형태의 표현이 됩니다.</li>
+</ul>
+<h4>💡 커서 밀착형 에셋 입력 패널 (&lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;1&lt;/kbd&gt;, &lt;kbd&gt;2&lt;/kbd&gt;, &lt;kbd&gt;3&lt;/kbd&gt;)</h4>
+<ul>
+<li>&lt;strong&gt;마우스 조작 불필요&lt;/strong&gt;: 본문을 작성하다가 단축키를 누르면, 현재 글자가 적히고 있는 입력 커서 바로 아래에 이모지/기호/상용구 선택 패널이 즉시 나타납니다.</li>
+</ul>
+<h4>💡 목록 &amp; 인용구 자동 연속 및 자동 종료</h4>
+<ul>
+<li>글머리 기호(</kbd>- <kbd>), 번호 매기기(</kbd>1. <kbd>), 인용구(</kbd>&gt; <kbd>)를 작성한 뒤 줄 바꿈을 하면, 다음 줄에 자동으로</kbd>- <kbd>,</kbd>2. <kbd>,</kbd>&gt; <kbd>기호가 선제적으로 생성됩니다.</li>
+<li>만약 목록 작성을 마친 후 일반 줄로 돌아가고 싶다면, &lt;strong&gt;빈 목록 기호 상태에서 &lt;kbd&gt;Enter&lt;/kbd&gt;를 한 번 더&lt;/strong&gt; 누릅니다. 그러면 자동으로 줄 시작 기호가 지워지며 목록이 깔끔하게 종료됩니다.</li>
+</ul>
+<h4>💡 마크다운 표 ↔ CSV 양방향 쾌속 토글 (&lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;,&lt;/kbd&gt;)</h4>
+<ul>
+<li>&lt;strong&gt;표 수정이 어려우신가요?&lt;/strong&gt; 마크다운으로 그려진 복잡한 표를 전체 드래그 선택하고 &lt;strong&gt;&lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;,&lt;/kbd&gt;&lt;/strong&gt;를 누르면, 순식간에</kbd>성명,나이,성별<kbd>같은 쉼표로 구분된 CSV 데이터 텍스트로 풀어집니다.</li>
+<li>CSV 상태에서 값을 편하게 수정한 뒤, 다시 드래그하여 &lt;strong&gt;&lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;,&lt;/kbd&gt;&lt;/strong&gt;를 누르면 완벽히 정렬된 깨끗한 마크다운 표로 깔끔하게 조립됩니다.</li>
+<li>아무것도 선택하지 않은 채 누르면 3x3의 기본 테이블 템플릿이 삽입됩니다.</li>
+</ul>
+<h4>💡 클립보드 이미지 직접 붙여넣기 (&lt;kbd&gt;Ctrl&lt;/kbd&gt;+&lt;kbd&gt;V&lt;/kbd&gt;)</h4>
+<ul>
+<li>AssetERP 화면을 캡처한 이미지나 PC에서 복사한 이미지 파일을 별도로 저장하고 올릴 필요가 없습니다.</li>
+<li>에디터 영역 안에서 단축키 &lt;strong&gt;&lt;kbd&gt;Ctrl&lt;/kbd&gt; + &lt;kbd&gt;V&lt;/kbd&gt;&lt;/strong&gt;를 누르면 백엔드 서버에 이미지가 즉시 자동 업로드되고, 본문에는</kbd><img src="/aman/content/image/..." alt="image" />` 와 같은 마크다운 코드가 생성되어 실시간 미리보기에 연동됩니다.</li>
+</ul>
+<hr />
+<h2>4. 실시간 미리보기 (Live Preview) 및 화면 정렬</h2>
+<ul>
+<li><strong>실시간 양방향 스크롤 싱크</strong>: 에디터 좌측 창을 스크롤하면 우측의 도움말 미리보기 화면도 정확히 같은 위치로 연동되어 움직입니다. 반대로 미리보기를 마우스 휠로 스크롤해도 에디터가 따라 움직입니다.</li>
+<li><strong>Alt + Z 화면 정렬</strong>: 에디터 최하단에서 긴 문서를 편집할 때 모니터 아래쪽에서 계속 고개를 숙이고 작업해야 하는 불편함을 개선했습니다. <strong><kbd>Alt</kbd> + <kbd>Z</kbd></strong>를 입력하는 즉시 현재 커서 줄이 모니터 화면 정중앙으로 스크롤 재조정됩니다.</li>
+</ul>
+<hr />
+<h2>5. 고급 기능 가이드 (인터랙티브 안내)</h2>
+<div class="tabs">
+<div class="tab-header">
+<button class="tab-btn active" onclick="switchTab(event, 'tab-editor')">이미지 편집기 가이드</button>
+<button class="tab-btn" onclick="switchTab(event, 'tab-assets')">아이콘 & 색상</button>
+</div>
+<div class="tab-content">
+<!-- 탭 1: 이미지 편집기 -->
+<div id="tab-editor" class="tab-pane active">
+<h4>🎨 이미지 편집기 주요 단축키 및 레이어 정렬 가이드</h4>
+<p>A-Man 이미지 에디터는 마크다운 본문에 삽입된 이미지를 클릭하여 직접 그리기, 텍스트 삽입, 화살표 추가 및 도형 오버레이 등의 주석 작업을 수행할 수 있습니다.</p>
+<ul>
+<li><strong>레이어 앞으로 한 단계 조정</strong>: <kbd>Ctrl</kbd> + <kbd>]</kbd></li>
+<li><strong>레이어 뒤로 한 단계 조정</strong>: <kbd>Ctrl</kbd> + <kbd>[</kbd></li>
+<li><strong>레이어 맨 앞으로 가져오기</strong>: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd></li>
+<li><strong>레이어 맨 뒤로 내보내기</strong>: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd></li>
+</ul>
+</div>
+<!-- 탭 2: 아이콘 & 색상 통합 탭 -->
+<div id="tab-assets" class="tab-pane">
+<h4>🎨 AssetERP 사용 색상 목록</h4>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 25px;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #456EA6; margin-right: 0;"></span>
+    <span>blue :</span><code>456EA6</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('456EA6');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #17A2B8; margin-right: 0;"></span>
+    <span>mint :</span><code>17A2B8</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('17A2B8');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #DD5E5E; margin-right: 0;"></span>
+    <span>red :</span><code>DD5E5E</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('DD5E5E');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #E89646; margin-right: 0;"></span>
+    <span>orange :</span><code>E89646</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('E89646');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #646362; margin-right: 0;"></span>
+    <span>darkGray :</span><code>646362</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('646362');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #6AB6CF; margin-right: 0;"></span>
+    <span>lightBlue :</span><code>6AB6CF</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('6AB6CF');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #2EAC7E; margin-right: 0;"></span>
+    <span>green :</span><code>2EAC7E</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('2EAC7E');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #343A40; margin-right: 0;"></span>
+    <span>dark :</span><code>343A40</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('343A40');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #EEF2FC; margin-right: 0;"></span>
+    <span>paleBlue :</span><code>EEF2FC</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('EEF2FC');" title="Hex 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span class="theme-color-box" style="background-color: #6B6B6B; margin-right: 0;"></span>
+    <span>gray :</span><code>6B6B6B</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('6B6B6B');" title="Hex 복사"></i>
+  </div>
+</div>
+<div style="text-align: center; margin: 15px 0 10px 0;">
+  <a href="./help/colors" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #17a2b8; color: white; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(23, 162, 184, 0.2); transition: background-color 0.2s;">
+    🎨 전체 색상 찾기 (Color Palette)
+  </a>
+</div>
+<hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+<h4>🔍 AssetERP 사용 FontAwesome 아이콘 목록</h4>
+<p style="font-size: 13px; color: #666; margin-top: -10px; margin-bottom: 15px;">
+  💡 복사 아이콘(📋)을 클릭하면 파서가 인식할 수 있는 최적의 문자열이 클립보드에 자동 복사됩니다.<br/>
+  (단순 이름 복사 시 <code>fas fa-</code>가 자동 접두사로 붙으며, <code>far fa-</code>가 필요한 아이콘은 전체 이름이 복사됩니다.)
+</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-search"></i></span>
+    <span>:</span><code>search</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('search');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-plus"></i></span>
+    <span>:</span><code>plus</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('plus');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-user-times"></i></span>
+    <span>:</span><code>user-times</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('user-times');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-envelope"></i></span>
+    <span>:</span><code>envelope</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('envelope');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-calculator"></i></span>
+    <span>:</span><code>calculator</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('calculator');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-check"></i></span>
+    <span>:</span><code>check</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('check');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="far fa-plus-square"></i></span>
+    <span>:</span><code>far fa-plus-square</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('far fa-plus-square');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="far fa-minus-square"></i></span>
+    <span>:</span><code>far fa-minus-square</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('far fa-minus-square');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-bookmark"></i></span>
+    <span>:</span><code>bookmark</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('bookmark');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-minus"></i></span>
+    <span>:</span><code>minus</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('minus');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-trash"></i></span>
+    <span>:</span><code>trash</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('trash');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-ban"></i></span>
+    <span>:</span><code>ban</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('ban');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-exchange-alt"></i></span>
+    <span>:</span><code>exchange-alt</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('exchange-alt');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-upload"></i></span>
+    <span>:</span><code>upload</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('upload');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-download"></i></span>
+    <span>:</span><code>download</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('download');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-eye"></i></span>
+    <span>:</span><code>eye</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('eye');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-arrow-right"></i></span>
+    <span>:</span><code>arrow-right</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('arrow-right');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-users"></i></span>
+    <span>:</span><code>users</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('users');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-print"></i></span>
+    <span>:</span><code>print</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('print');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-folder-plus"></i></span>
+    <span>:</span><code>folder-plus</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('folder-plus');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-undo-alt"></i></span>
+    <span>:</span><code>undo-alt</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('undo-alt');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-edit"></i></span>
+    <span>:</span><code>edit</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('edit');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-bullseye"></i></span>
+    <span>:</span><code>bullseye</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('bullseye');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-arrow-alt-circle-left"></i></span>
+    <span>:</span><code>arrow-alt-circle-left</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('arrow-alt-circle-left');" title="이름 복사"></i>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <span style="display: inline-block; width: 20px; text-align: center;"><i class="fas fa-cog"></i></span>
+    <span>:</span><code>cog</code>
+    <i class="far fa-copy" style="cursor: pointer; color: #888;" onclick="navigator.clipboard.writeText('cog');" title="이름 복사"></i>
+  </div>
+</div>
+<div style="text-align: center; margin: 25px 0 10px 0;">
+  <a href="./help/icons" target="_blank" style="display: inline-block; padding: 10px 20px; background-color: #3b82f6; color: white; border-radius: 6px; font-size: 14px; font-weight: bold; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2); transition: background-color 0.2s;">
+    🔍 FontAwesome 전체 아이콘 찾기
+  </a>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<p><em>본 도움말 문서는 A-Man 시스템 v[version] 릴리즈에 맞춰 항상 최신 단축키 정보로 갱신됩니다.</em></p>
+
+    </div>
+</body>
+</html>

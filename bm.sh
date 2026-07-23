@@ -191,6 +191,17 @@ do_lint() {
     info "Lint 완료."
 }
 
+do_generate_help() {
+    header "Generate Help HTML - 도움말 HTML 파일 생성"
+    if [[ ! -f "$GRADLEW" ]]; then
+        error "gradlew 파일을 찾을 수 없습니다."
+        exit 1
+    fi
+    chmod +x "$GRADLEW"
+    "$GRADLEW" -p "$BACKEND_DIR" test --tests "kr.co.kfs.aman.GenerateHelpHtmlTest"
+    info "도움말 HTML 생성 완료."
+}
+
 do_log() {
     local base_dir="$SCRIPT_DIR/aman-base-dir"
     local prop_file="$BACKEND_DIR/src/main/resources/application-${AMAN_MODE}.properties"
@@ -244,6 +255,7 @@ print_menu() {
         "checkstyle:코드 스타일 검사"
         "spotbugs:버그 패턴 분석"
         "lint:전체 정적 분석"
+        "generate-help:도움말 HTML 생성"
     )
 
     echo -e "  ${BOLD}명령어${NC}"
@@ -278,7 +290,7 @@ main() {
         print_banner
         print_menu
 
-        local cmds=("run" "stop" "compile" "build" "war" "test" "clean" "log" "status" "checkstyle" "spotbugs" "lint")
+        local cmds=("run" "stop" "compile" "build" "war" "test" "clean" "log" "status" "checkstyle" "spotbugs" "lint" "generate-help")
 
         read -rp "  번호를 입력하세요: " choice
         echo ""
@@ -312,6 +324,7 @@ main() {
         checkstyle) do_checkstyle ;;
         spotbugs)   do_spotbugs ;;
         lint)       do_lint ;;
+        generate-help) do_generate_help ;;
         help)
             print_banner
             print_menu

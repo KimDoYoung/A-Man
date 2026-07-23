@@ -1351,11 +1351,11 @@ public class ManualController {
 
     @GetMapping(value = "/help", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
     public ResponseEntity<String> getHelpPage(javax.servlet.http.HttpServletRequest request) {
-        try (java.io.InputStream is = getClass().getResourceAsStream("/help/doc-user-help.md")) {
+        try (java.io.InputStream is = getClass().getResourceAsStream("/help/doc-user-help.html")) {
             if (is == null) {
                 return ResponseEntity.status(404).body(
                     "<html><body style='font-family:sans-serif; text-align:center; padding:100px; color:#64748b;'>" +
-                    "<h2>⚠️ 도움말 파일을 찾을 수 없습니다.</h2>" +
+                    "<h2>⚠️ 도움말 파일(doc-user-help.html)을 찾을 수 없습니다.</h2>" +
                     "</body></html>"
                 );
             }
@@ -1365,250 +1365,16 @@ public class ManualController {
             while ((len = is.read(buffer)) != -1) {
                 bos.write(buffer, 0, len);
             }
-            String markdown = bos.toString("UTF-8");
-            markdown = markdown.replace("[version]", appVersion);
-            String parsedBody = parseMarkdownToHtml(markdown);
-            // Rewrite local image references to go through our help image endpoint dynamically using context path
+            String html = bos.toString("UTF-8");
+            
+            // Dynamic version replacement
+            html = html.replace("[version]", appVersion);
+            
+            // Dynamic contextPath replacement
             String contextPath = request.getContextPath();
-            parsedBody = parsedBody.replaceAll("src=\"\\./", "src=\"" + contextPath + "/manual/help/image/");
-
-            boolean isBlank = systemSettings.getBoolean("LINK_BLANK", true);
-            String targetBlankScript = 
-                "    <script>\n" +
-                "        document.addEventListener('DOMContentLoaded', function() {\n" +
-                (isBlank ?
-                "            var links = document.querySelectorAll('.container a');\n" +
-                "            for (var i = 0; i < links.length; i++) {\n" +
-                "                links[i].setAttribute('target', '_blank');\n" +
-                "                links[i].setAttribute('rel', 'noopener noreferrer');\n" +
-                "            }\n" : "") +
-                "        });\n" +
-                "    </script>\n";
-
-            String tabScript = 
-                "    <script>\n" +
-                "        function switchTab(evt, tabId) {\n" +
-                "            var i, tabcontent, tablinks;\n" +
-                "            tabcontent = document.getElementsByClassName('tab-pane');\n" +
-                "            for (i = 0; i < tabcontent.length; i++) {\n" +
-                "                tabcontent[i].classList.remove('active');\n" +
-                "            }\n" +
-                "            tablinks = document.getElementsByClassName('tab-btn');\n" +
-                "            for (i = 0; i < tablinks.length; i++) {\n" +
-                "                tablinks[i].classList.remove('active');\n" +
-                "            }\n" +
-                "            document.getElementById(tabId).classList.add('active');\n" +
-                "            evt.currentTarget.classList.add('active');\n" +
-                "        }\n" +
-                "    </script>\n";
-
-            String fullHtml = 
-                "<!DOCTYPE html>\n" +
-                "<html lang=\"ko\">\n" +
-                "<head>\n" +
-                "    <meta charset=\"UTF-8\">\n" +
-                "    <link rel=\"icon\" type=\"image/png\" href=\"/aman/favicon.png\">\n" +
-                "    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css\" />\n" +
-                "    <title>A-Man 도움말</title>\n" +
-                "    <style>\n" +
-                "        kbd {\n" +
-                "            display: inline-block;\n" +
-                "            padding: 2px 6px;\n" +
-                "            font-size: 0.8em;\n" +
-                "            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n" +
-                "            color: #24292e;\n" +
-                "            background: #f6f8fa;\n" +
-                "            border: 1px solid #d1d5da;\n" +
-                "            border-radius: 4px;\n" +
-                "            box-shadow: inset 0 -2px 0 #d1d5da;\n" +
-                "            line-height: 1.4;\n" +
-                "            white-space: nowrap;\n" +
-                "            margin: 0 1px;\n" +
-                "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
-                "        }\n" +
-                "        kbd.asset-kbd-btn {\n" +
-                "            display: inline-flex;\n" +
-                "            align-items: center;\n" +
-                "            justify-content: center;\n" +
-                "            gap: 6px;\n" +
-                "            padding: 3px 8px;\n" +
-                "            font-size: 11px;\n" +
-                "            font-weight: 600;\n" +
-                "            border-radius: 4px;\n" +
-                "            border: 1px solid rgba(0, 0, 0, 0.15);\n" +
-                "            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);\n" +
-                "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\n" +
-                "            line-height: 1.2;\n" +
-                "            vertical-align: middle;\n" +
-                "            cursor: default;\n" +
-                "            user-select: none;\n" +
-                "            transition: background-color 0.2s, border-color 0.2s, color 0.2s;\n" +
-                "        }\n" +
-                "        kbd.asset-kbd-btn .kbd-fa-icon {\n" +
-                "            font-size: 10px;\n" +
-                "            margin-bottom: 0;\n" +
-                "        }\n" +
-                "        kbd.asset-kbd-btn .kbd-text {\n" +
-                "            letter-spacing: 0.5px;\n" +
-                "        }\n" +
-                "        .tabs {\n" +
-                "            margin: 30px 0;\n" +
-                "            border: 1px solid #e2e8f0;\n" +
-                "            border-radius: 8px;\n" +
-                "            overflow: hidden;\n" +
-                "            background: #ffffff;\n" +
-                "        }\n" +
-                "        .tab-header {\n" +
-                "            display: flex;\n" +
-                "            background-color: #f8fafc;\n" +
-                "            border-bottom: 1px solid #e2e8f0;\n" +
-                "        }\n" +
-                "        .tab-btn {\n" +
-                "            flex: 1;\n" +
-                "            padding: 14px 16px;\n" +
-                "            font-size: 14px;\n" +
-                "            font-weight: 600;\n" +
-                "            color: #64748b;\n" +
-                "            background: none;\n" +
-                "            border: none;\n" +
-                "            cursor: pointer;\n" +
-                "            transition: all 0.2s;\n" +
-                "            outline: none;\n" +
-                "            text-align: center;\n" +
-                "            border-bottom: 2px solid transparent;\n" +
-                "        }\n" +
-                "        .tab-btn:hover {\n" +
-                "            color: #0f172a;\n" +
-                "            background-color: #f1f5f9;\n" +
-                "        }\n" +
-                "        .tab-btn.active {\n" +
-                "            color: #4f46e5;\n" +
-                "            background-color: #ffffff;\n" +
-                "            border-bottom: 2px solid #4f46e5;\n" +
-                "        }\n" +
-                "        .tab-content {\n" +
-                "            padding: 24px;\n" +
-                "        }\n" +
-                "        .tab-pane {\n" +
-                "            display: none;\n" +
-                "        }\n" +
-                "        .tab-pane.active {\n" +
-                "            display: block;\n" +
-                "        }\n" +
-                "        .theme-color-box {\n" +
-                "            display: inline-block;\n" +
-                "            width: 14px;\n" +
-                "            height: 14px;\n" +
-                "            border-radius: 3px;\n" +
-                "            vertical-align: middle;\n" +
-                "            margin-right: 6px;\n" +
-                "            border: 1px solid rgba(0,0,0,0.1);\n" +
-                "        }\n" +
-                "        body {\n" +
-                "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n" +
-                "            padding: 30px;\n" +
-                "            margin: 0;\n" +
-                "            color: #334155;\n" +
-                "            background-color: #f8fafc;\n" +
-                "            line-height: 1.6;\n" +
-                "        }\n" +
-                "        .container {\n" +
-                "            background-color: #ffffff;\n" +
-                "            border: 1px solid #e2e8f0;\n" +
-                "            padding: 40px;\n" +
-                "            border-radius: 12px;\n" +
-                "            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);\n" +
-                "            max-width: 900px;\n" +
-                "            margin: 20px auto;\n" +
-                "        }\n" +
-                "        code {\n" +
-                "            background-color: #f1f5f9;\n" +
-                "            color: #db2777;\n" +
-                "            padding: 2px 6px;\n" +
-                "            border-radius: 4px;\n" +
-                "            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n" +
-                "            font-size: 0.85em;\n" +
-                "            border: 1px solid #e2e8f0;\n" +
-                "        }\n" +
-                "        pre {\n" +
-                "            background-color: #0f172a;\n" +
-                "            color: #f8fafc;\n" +
-                "            padding: 16px;\n" +
-                "            border-radius: 8px;\n" +
-                "            overflow-x: auto;\n" +
-                "            margin: 16px 0;\n" +
-                "        }\n" +
-                "        pre code {\n" +
-                "            background-color: transparent;\n" +
-                "            color: inherit;\n" +
-                "            padding: 0;\n" +
-                "            border-radius: 0;\n" +
-                "            border: none;\n" +
-                "            font-size: 13px;\n" +
-                "        }\n" +
-                "        table {\n" +
-                "            width: 100%;\n" +
-                "            border-collapse: collapse;\n" +
-                "            margin: 20px 0;\n" +
-                "            font-size: 13px;\n" +
-                "            border: 1px solid #e2e8f0;\n" +
-                "            border-radius: 8px;\n" +
-                "            overflow: hidden;\n" +
-                "        }\n" +
-                "        th, td {\n" +
-                "            padding: 10px 16px;\n" +
-                "            border-bottom: 1px solid #e2e8f0;\n" +
-                "        }\n" +
-                "        th {\n" +
-                "            background-color: #f8fafc;\n" +
-                "            font-weight: 600;\n" +
-                "            color: #1e293b;\n" +
-                "            text-align: left;\n" +
-                "        }\n" +
-                "        td {\n" +
-                "            color: #475569;\n" +
-                "        }\n" +
-                "        blockquote {\n" +
-                "            margin: 14px 0;\n" +
-                "            padding: 12px 18px;\n" +
-                "            background-color: #f7f9fb;\n" +
-                "            border-left: 3px solid #c7dbf0;\n" +
-                "            border-radius: 6px;\n" +
-                "            color: #455160;\n" +
-                "            font-size: 14px;\n" +
-                "        }\n" +
-                "        blockquote p {\n" +
-                "            margin: 4px 0;\n" +
-                "            font-size: 14px;\n" +
-                "        }\n" +
-                "        img {\n" +
-                "            max-width: 100%;\n" +
-                "            height: auto;\n" +
-                "            display: block;\n" +
-                "            margin: 16px auto;\n" +
-                "            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);\n" +
-                "        }\n" +
-                "        a {\n" +
-                "            color: #4f46e5;\n" +
-                "            text-decoration: none;\n" +
-                "        }\n" +
-                "        a:hover {\n" +
-                "            text-decoration: underline;\n" +
-                "        }\n" +
-                TOC_CSS +
-                "    </style>\n" +
-                targetBlankScript +
-                 tabScript +
-                TOC_SCRIPT +
-                "</head>\n" +
-                "<body>\n" +
-                "    <div class=\"container\">\n" +
-                "        " + parsedBody + "\n" +
-                "    </div>\n" +
-                "</body>\n" +
-                "</html>";
-
-            return ResponseEntity.ok(fullHtml);
+            html = html.replace("[contextPath]", contextPath);
+            
+            return ResponseEntity.ok(html);
         } catch (java.io.IOException e) {
             return ResponseEntity.status(500).body("도움말 로드 중 오류가 발생했습니다.");
         }
