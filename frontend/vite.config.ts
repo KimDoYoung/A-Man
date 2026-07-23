@@ -26,6 +26,9 @@ export default defineConfig({
         target: 'http://localhost:8686',
         changeOrigin: true,
         bypass: (req) => {
+          if (req.url && (req.url.startsWith('/aman/manual') || req.url.startsWith('/manual'))) {
+            return undefined;
+          }
           if (req.headers.accept && req.headers.accept.indexOf('html') !== -1) {
             return '/aman/index.html';
           }
