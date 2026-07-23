@@ -97,12 +97,7 @@ const DocUserMain: React.FC = () => {
     }
   }, [])
 
-  // 관리자 권한 접근 제한 리다이렉트
-  useEffect(() => {
-    if (currentUser?.role === 'admin') {
-      navigate('/admin/pages', { replace: true })
-    }
-  }, [currentUser, navigate])
+
 
   const handleLock = async () => {
     if (!page || !page.id) return
