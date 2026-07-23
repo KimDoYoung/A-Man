@@ -657,8 +657,7 @@ public class GenerateHelpHtmlTest {
             return "<p style='color:#888; font-style:italic;'>내용이 비어있습니다.</p>";
         }
 
-        // **텍스트(괄호)** 등 볼드 한글 파싱 에러 방지용 전처리
-        markdown = markdown.replaceAll("\\*\\*(.*?)\\*\\*", "<strong>$1</strong>");
+
 
         // 백틱 확장 정규식 전처리 주입 (도움말 파일 개별 파싱으로 격리 보장)
         markdown = preprocessBackticks(markdown);
