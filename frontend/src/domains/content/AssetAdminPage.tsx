@@ -33,15 +33,6 @@ const AssetAdminPage: React.FC = () => {
   const [formAtype, setFormAtype] = useState<'EMOJI' | 'PHRASE' | 'TEMPLATE' | 'SYMBOL'>('EMOJI')
   const [formName, setFormName] = useState('')
   const [formValue, setFormValue] = useState('')
-  const [debouncedFormValue, setDebouncedFormValue] = useState('')
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedFormValue(formValue)
-    }, 150)
-    return () => clearTimeout(handler)
-  }, [formValue])
-
   
   // States
   const [saving, setSaving] = useState(false)
@@ -437,7 +428,7 @@ const AssetAdminPage: React.FC = () => {
                   Markdown Live Preview
                 </span>
                 <div className="prose max-w-none text-gray-800 border border-gray-150 bg-slate-50 p-4 rounded-md text-xs leading-relaxed markdown-content">
-                  {renderMarkdownToHtml(debouncedFormValue)}
+                  {renderMarkdownToHtml(formValue)}
                 </div>
               </div>
             )}
