@@ -151,11 +151,13 @@ function normalizeHtml(htmlString) {
         attr === 'style' || 
         attr === 'target' || 
         attr === 'rel' ||
-        attr === 'aria-hidden'
+        attr === 'aria-hidden' ||
+        attr === 'node'
       ) {
         $el.removeAttr(attr);
       }
     });
+
 
     // Strip class unless it is an <i> tag containing icon names (fas fa-*)
     if (el.name !== 'i') {
@@ -219,9 +221,12 @@ async function runComparison() {
   } else {
     console.error('\n\x1b[31m[실패] HTML 구조 불일치 감지! 두 파서의 변환 결과가 다릅니다.\x1b[0m');
     console.log('[TestRunner] 아래 명령어를 입력하여 정교한 차이점(diff)을 비교해 보세요:');
-    console.log(`\x1b[33mdiff -u tools/results/backend-normalized.html tools/results/frontend-normalized.html\x1b[0m\n`);
+    const relativeBackend = path.relative(process.cwd(), path.join(RESULTS_DIR, 'backend-normalized.html'));
+    const relativeFrontend = path.relative(process.cwd(), path.join(RESULTS_DIR, 'frontend-normalized.html'));
+    console.log(`\x1b[33mdiff -u ${relativeBackend} ${relativeFrontend}\x1b[0m\n`);
     process.exit(1);
   }
+
 
 }
 

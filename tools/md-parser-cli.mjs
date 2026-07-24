@@ -257,13 +257,14 @@ async function main() {
     remarkPlugins: [remarkGfm, remarkBreaks],
     rehypePlugins: [rehypeRaw],
     components: {
-      code: ({ className, children, ...props }) => {
+      code: ({ className, children, node, ...props }) => {
         const isInline = !className;
         if (isInline) {
           return React.createElement(AssetKbdRendererMock, { children });
         }
         return React.createElement('code', { className: `${className || ''} select-none`, ...props }, children);
       }
+
     }
   }, markdown);
 

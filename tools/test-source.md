@@ -35,3 +35,11 @@
 ## 5. 이미지 및 링크 테스트
 ![A-Man Logo](/aman/images/logo.png)
 자세한 정보는 [AssetERP 홈페이지](https://www.kfs.co.kr)를 참고하세요.
+
+## 6. 소스
+
+```text
+**abc**
+*기울임*
+~~취소선~~
+```
