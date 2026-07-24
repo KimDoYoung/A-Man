@@ -130,3 +130,9 @@ tasks.withType(Checkstyle) {
 tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
     group = 'verification'
 }
+
+task runParserCLI(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'kr.co.kfs.aman.util.MarkdownParserCLI'
+    standardInput = System.in
+}

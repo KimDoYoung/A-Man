@@ -1547,8 +1547,9 @@ public class ManualController {
     }
 
     private String buildDefaultKbdElement(String text) {
-        return "<kbd>" + escapeHtml(text) + "</kbd>";
+        return "<code>" + escapeHtml(text) + "</code>";
     }
+
 
     private String buildButtonElement(String color, String icon, String text) {
         String bg = color;
