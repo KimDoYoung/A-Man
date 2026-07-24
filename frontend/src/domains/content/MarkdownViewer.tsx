@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useOutletContext } from 'react-router-dom'
 import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
 import { OutletContextType, PageData, TocItem } from '@/types'
@@ -38,6 +38,13 @@ const MarkdownViewer: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('')
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [folderHierarchy, setFolderHierarchy] = useState<any[]>([])
+
+  // useMemo를 통한 마크다운 렌더링 결과물 캐싱 (fontSize, contentWidth 변경 시에만 갱신)
+  const renderedContent = useMemo(() => {
+    if (!page?.content) return null
+    return renderMarkdownToHtml(page.content)
+  }, [page?.content, fontSize, contentWidth, settings])
+
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -378,8 +385,9 @@ const MarkdownViewer: React.FC = () => {
         
         {/* 렌더링된 본문 데이터 뷰 영역 */}
         <div className="markdown-content">
-          {renderMarkdownToHtml(page.content)}
+          {renderedContent}
         </div>
+
 
         <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-12 pt-4 border-t border-gray-100 dark:border-slate-800">
           --- 문서의 끝입니다 ---

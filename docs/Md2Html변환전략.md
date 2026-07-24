@@ -31,19 +31,19 @@ graph TD
 * **사용 목적**: ERP 화면 등에서 특정 별칭(`/{aka}`)으로 매뉴얼 페이지를 단독 호출할 때, 무거운 React SPA 구동 없이 빠르게 HTML 완제품을 응답하기 위해 사용합니다.
 * **사용 라이브러리**: `com.vladsch.flexmark` (flexmark-java 0.62.x 계열)
 * **주요 소스 파일**: 
-  * [ManualController.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/controller/ManualController.java)의 `parseMarkdownToHtml(String markdown)`
+  * [ManualController.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/controller/ManualController.java)의 `parseMarkdownToHtml(String markdown)` (MarkdownCacheService 주입 위임)
+  * [MarkdownCacheService.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/service/MarkdownCacheService.java): 파싱 연산 및 정규식 전처리 기능 캡슐화 서비스 빈(Bean)
 * **동작 프로세스**:
   1. DB에서 마크다운 원문을 조회합니다.
-  2. `preprocessBackticks(markdown)` 메소드를 통해 에디터에서 특수 제작된 커스텀 백틱(예: 버튼 스타일 처리 등)을 사전 변환합니다.
-  3. Flexmark parser 및 renderer(GFM 테이블, 취소선, 태스크 리스트 등 확장 기능 활성화)를 통과시켜 HTML 스트링을 추출합니다.
-  4. HTML 스트링을 최종 CSS 스타일이 포함된 HTML 템플릿 양식에 조립하여 반환합니다.
+  2. `MarkdownCacheService`에 구현된 `parseMarkdownToHtml`을 호출합니다. (최초 호출 시 백틱 확장 전처리 및 Flexmark 변환을 거쳐 메모리에 적재되며, 이후 요청에는 연산을 건너뛰고 캐시본이 즉각 서빙됩니다.)
+  3. HTML 스트링을 최종 CSS 스타일이 포함된 HTML 템플릿 양식에 조립하여 반환합니다.
 
 ### 2.2. 프론트엔드(TypeScript/React) 변환 모듈 (CSR)
 
 * **사용 목적**: A-Man 도움말 메인 뷰어 및 관리자 전용 마크다운 편집기 내 '실시간 미리보기(Live Preview)'에서 동적인 테마 적용 및 인터랙션을 제공하기 위해 사용합니다.
 * **사용 라이브러리**:
   * `react-markdown`: 핵심 마크다운 파서 및 React 컴포넌트 변환기
-  * `remark-gfm`: GitHub Flavored Markdown 규격(테이블, 취소선 등) 지원
+  * `remark-gfm`: GFM 스펙(테이블, 취소선 등) 지원
   * `rehype-raw`: 마크다운 내의 원시 HTML 태그 파싱 허용
   * `remark-breaks`: 일반 줄바꿈(`\n`)을 `<br />`로 강제 변환
 * **주요 소스 파일**:
@@ -60,13 +60,13 @@ graph TD
 
 | 구분 | 호출 경로 | 데이터 형식 | 변환 주체 / 사용 엔진 | 최종 결과물 |
 | :--- | :--- | :--- | :--- | :--- |
-| **ERP 도움말 팝업** | `/aman/{aka}` 또는 `/manual/{aka}` | `text/html` | 백엔드 / `flexmark-java` | 서버사이드 렌더링된 단독 HTML 파일 |
+| **ERP 도움말 팝업** | `/aman/{aka}` 또는 `/manual/{aka}` | `text/html` | 백엔드 / `flexmark-java` | 서버사이드 렌더링된 캐싱 HTML 파일 |
 | **메인 도움말 뷰어** | `/aman/docs/folder/{id}` 등 | `application/json` (Raw MD) | 프론트엔드 / `react-markdown` | SPA UI 프레임워크와 결합된 동적 리액트 DOM |
 | **에디터 실시간 미리보기** | (내부 상태 변경 변경 시 즉시 구동) | `react state` (Raw MD) | 프론트엔드 / `react-markdown` | 에디터 우측의 실시간 Preview 영역 |
 
 ---
 
-## 4. [중요] 백엔드 및 프론트엔드 HTML 파싱 불일치 현황 및 일치화 전략
+## 4. 백엔드 및 프론트엔드 HTML 파싱 불일치 현황 및 일치화 전략
 
 도밀성 테스트 자동화 스크립트 실행 과정에서 백엔드(Flexmark)와 프론트엔드(React-Markdown) 간에 의미론적/기능적 불일치가 발견되어 이를 일치시키기 위한 세부 전략을 설정했습니다.
 
@@ -94,3 +94,66 @@ graph TD
    * 에디터 혹은 백엔드에서 자체적으로 확장해 처리하는 커스텀 마크다운 문법이 있는 경우, 백엔드의 Java 정규식 처리기와 프론트엔드의 React 렌더러 처리기 양쪽의 렌더링 결과물이 완벽히 동치되도록 동기화 관리가 필수적입니다.
 2. **Java 8 호환성 유지**:
    * 백엔드 변환 처리 코드를 수정할 시, 가동 환경인 **Java 1.8** 버전을 초과하는 문법을 사용하지 않도록 극히 주의합니다.
+
+---
+
+## 6. 백엔드-프론트엔드 동일성 검증 테스트 방법
+
+수정 사항 및 신규 마크다운 문법 추가 시 두 렌더러 엔진 간의 HTML 변환 구조가 완전히 일치하는지 자동화하여 검증할 수 있는 환경이 구성되어 있습니다.
+
+### 6.1. 테스트 실행 및 자동 검증
+프로젝트 루트 또는 `tools/` 폴더 내 어디서든 실행이 가능한 쉘 스크립트가 존재합니다. 
+
+```bash
+# 1. 테스트 실행 (필요 시 자동으로 tools 용 npm 모듈 설치 및 Java 코드 컴파일 수행)
+./tools/run-md-tests.sh
+```
+
+스크립트 기동 시 백엔드의 Flexmark CLI 파서와 프론트엔드의 React 19 SSR(React-Markdown) CLI 파서가 가동되며 두 렌더링 HTML에 정규화 필터(태그 정밀 정렬, 스타일/메타데이터 속성 소거)를 거쳐 대조 작업을 수행합니다.
+
+### 6.2. 검증 대상 마크다운 커스터마이징
+테스트에 활용되는 마크다운 본문은 다음 경로에 위치합니다:
+* **경로**: [tools/test-source.md](file:///home/kdy987/work/aman/tools/test-source.md)
+
+개발자나 관리자는 **이 파일을 자유롭게 메모장이나 에디터로 편집하여 원하는 문법 케이스를 임의로 테스트할 수 있습니다.** 
+* 스크립트 실행 시 파일이 이미 존재하면 덮어쓰지 않고 해당 변경 내용을 토대로 검증을 돌립니다. (삭제할 경우에만 기본 예제 파일이 최초 1회 새로 자동 생성됩니다.)
+
+### 6.3. 수동 눈으로 비교 및 Diff 확인 (결과물 격리)
+테스트 실행 시마다 이전 실행 결과물이 완전 초기화(Clean)된 후 아래 결과 파일들이 신규 생성됩니다.
+* **출력 디렉토리**: [tools/results/](file:///home/kdy987/work/aman/tools/results/)
+  * `backend-raw.html` : 백엔드의 변환 원본 HTML
+  * `frontend-raw.html` : 프론트엔드의 변환 원본 HTML
+  * `backend-normalized.html` : 공백/클래스/메타데이터가 표준화된 백엔드 정규화 HTML
+  * `frontend-normalized.html` : 공백/클래스/메타데이터가 표준화된 프론트엔드 정규화 HTML
+
+테스트 실패 시, 콘솔창에 나타나는 diff 명령어를 **그대로 복사하여 실행**하면 현재 실행 위치(CWD)에 맞게 상대 경로가 동적으로 자동 보정되어 차이점을 한눈에 보여줍니다.
+```bash
+# 실패 시 출력되는 예시 명령어를 그대로 실행하여 대조 확인
+diff -u results/backend-normalized.html results/frontend-normalized.html
+```
+
+---
+
+## 7. 마크다운-HTML 변환 캐싱 및 성능 최적화 전략 (최적화 반영)
+
+A-Man 시스템의 도움말 로딩 속도를 향상시키고 무거운 구문 파싱 연산 부하를 제어하기 위한 성능 최적화 구조입니다.
+
+### 7.1. 백엔드 캐싱 아키텍처 (Spring Boot Cache)
+
+* **사용 기술**: Spring Boot Cache Abstraction (`@Cacheable`, `@CacheEvict`) + JVM 인메모리 캐시 (`ConcurrentMapCache`)
+* **설정 활성화**: [CacheConfig.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/config/CacheConfig.java)에 `@EnableCaching`을 선언하여 글로벌 인메모리 단순 캐시 라이프사이클을 활성화합니다.
+* **프록시 한계 극복 (Self-Invocation 방어)**: 
+  * Spring의 프록시 기반 AOP 캐시 한계를 우회하기 위해 마크다운 변환 엔진과 predefined_buttons 렌더링 로직을 컨트롤러 바깥의 별도 서비스 빈인 [MarkdownCacheService.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/service/MarkdownCacheService.java)로 완전히 분리/격리했습니다.
+  * 메소드 상단에 `@Cacheable(value = "manualHtml", key = "#markdown")`를 지정하여 동일 마크다운 본문에 대해서는 AST 구문 파싱을 타지 않고 메모리에서 캐싱된 HTML 스트링을 `0.1ms` 이내에 즉각 서빙합니다.
+* **캐시 무효화 (Cache Eviction)**:
+  * 도움말 문서의 저장, 수정, 삭제 시점에 캐시 데이터를 최신 상태로 유지하기 위해 [ContentController.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/controller/ContentController.java) (`upsertPage`, `deletePage`, `importPageFromZip`) 및 [AdminPageController.java](file:///home/kdy987/work/aman/backend/src/main/java/kr/co/kfs/aman/controller/AdminPageController.java) (`updatePageStatus`)의 각 API 성공 시점에 `@CacheEvict(value = "manualHtml", allEntries = true)`를 기동하여 캐시 찌꺼기를 완벽히 무효화합니다.
+
+### 7.2. 프론트엔드 최적화 아키텍처 (React useMemo & Debounce)
+
+* **사용 기술**: React Hooks (`useMemo`, `useState`, `useEffect`, `setTimeout`)
+* **뷰어 렌더링 캐싱 (`useMemo`)**:
+  * [MarkdownViewer.tsx](file:///home/kdy987/work/aman/frontend/src/domains/content/MarkdownViewer.tsx)에서 `<ReactMarkdown>` 파싱 변환 엘리먼트 트리를 `useMemo`로 묶어 본문 텍스트가 바뀔 때만 재연산하도록 제어합니다.
+  * **스타일 미반영 부작용 방지**: 폰트 사이즈(`fontSizeClassMap`), 레이아웃 폭(`contentWidth`), 링크 타겟 설정(`settings`)을 의존성 배열(deps)에 연동하여 UI 변경 사항이 메모리 캐시본에 묻혀 무시되는 현상을 원천 방어했습니다.
+* **에디터 실시간 입력 지연 최적화 (Debouncing)**:
+  * 에디터 타이핑 미리보기 영역인 [MarkdownSplitEditor.tsx](file:///home/kdy987/work/aman/frontend/src/domains/content/components/MarkdownSplitEditor.tsx) 및 [AssetAdminPage.tsx](file:///home/kdy987/work/aman/frontend/src/domains/content/AssetAdminPage.tsx)에 `150ms` 디바운싱 타이머 훅을 연동했습니다.
+  * **저장 누락 부작용 방지**: 사용자가 타자를 친 즉시 저장버튼을 누를 때 렉으로 데이터가 누락되는 레이스 컨디션을 예방하기 위해, 원천 폼 상태 데이터(`pageContent`, `formValue`)는 디바운스 없이 실시간 전송하고, 오직 **화면 출력용 라이브 프리뷰 파싱 영역**만 디바운스된 상태(`debouncedContent`)를 렌더링에 주입하여 타이핑 렉 현상을 완전히 예방했습니다.

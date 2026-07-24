@@ -3,6 +3,7 @@
         "version": "1.5.1",
         "date": "2026-07-24",
         "description": [
+            "backend,frontend 캐쉬 적용",
             "markdown render 버그 수정-source태그에서의 rendering오류 수정"
         ]
     },

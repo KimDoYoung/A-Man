@@ -5,6 +5,7 @@ import kr.co.kfs.aman.model.Page;
 import kr.co.kfs.aman.repository.FolderRepository;
 import kr.co.kfs.aman.repository.PageRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,6 +44,7 @@ public class ContentController {
     }
 
     @PostMapping
+    @CacheEvict(value = "manualHtml", allEntries = true)
     public ResponseEntity<?> upsertPage(@RequestBody Map<String, Object> body) {
         Long folderId = Long.valueOf(body.get("folderId").toString());
         String title = body.get("title").toString();
@@ -175,6 +177,7 @@ public class ContentController {
     }
 
     @DeleteMapping("/{page_id}")
+    @CacheEvict(value = "manualHtml", allEntries = true)
     public ResponseEntity<?> deletePage(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
         if (!pageOpt.isPresent()) {
@@ -426,6 +429,7 @@ public class ContentController {
     }
 
     @PostMapping("/import")
+    @CacheEvict(value = "manualHtml", allEntries = true)
     public ResponseEntity<?> importPageFromZip(
             @RequestParam("file") MultipartFile file,
             @RequestParam("folderId") Long folderId,

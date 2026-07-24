@@ -2,6 +2,7 @@ package kr.co.kfs.aman.controller;
 
 import kr.co.kfs.aman.model.Page;
 import kr.co.kfs.aman.repository.PageRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,6 +44,7 @@ public class AdminPageController {
     }
 
     @PostMapping("/{page_id}/status")
+    @CacheEvict(value = "manualHtml", allEntries = true)
     public ResponseEntity<?> updatePageStatus(
             @PathVariable("page_id") Long pageId,
             @RequestBody Map<String, String> body) {

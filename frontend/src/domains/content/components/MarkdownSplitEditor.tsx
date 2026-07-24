@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import EditorToolbar from '@/components/shared/EditorToolbar';
 import MdTextarea from '@/components/shared/MdTextarea';
 import { renderMarkdownToHtml } from '@/utils/markdownRenderer';
@@ -57,7 +57,17 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
   readOnly = false,
   onImportSuccess,
 }) => {
+  const [debouncedContent, setDebouncedContent] = useState(pageContent);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedContent(pageContent);
+    }, 150);
+    return () => clearTimeout(handler);
+  }, [pageContent]);
+
   if (!page) return null;
+
 
   return (
     <div
@@ -120,7 +130,7 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
           </div>
           <div ref={previewContainerRef} className="flex-1 p-1 overflow-y-auto custom-scroll bg-slate-50/50">
             <div className="prose max-w-none bg-white p-2 pb-[50vh] border border-gray-100 rounded-md shadow-xs leading-relaxed min-h-full markdown-content">
-              {renderMarkdownToHtml(pageContent, settings)}
+              {renderMarkdownToHtml(debouncedContent, settings)}
             </div>
           </div>
         </div>

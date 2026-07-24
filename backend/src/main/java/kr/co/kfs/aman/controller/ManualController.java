@@ -374,12 +374,15 @@ public class ManualController {
     private final PageRepository pageRepository;
     private final FolderRepository folderRepository;
     private final SystemSettings systemSettings;
+    private final kr.co.kfs.aman.service.MarkdownCacheService markdownCacheService;
 
-    public ManualController(PageRepository pageRepository, FolderRepository folderRepository, SystemSettings systemSettings) {
+    public ManualController(PageRepository pageRepository, FolderRepository folderRepository, SystemSettings systemSettings, kr.co.kfs.aman.service.MarkdownCacheService markdownCacheService) {
         this.pageRepository = pageRepository;
         this.folderRepository = folderRepository;
         this.systemSettings = systemSettings;
+        this.markdownCacheService = markdownCacheService;
     }
+
 
     @GetMapping(value = "/new-aka", produces = "text/plain;charset=UTF-8")
     public ResponseEntity<String> generateNewAka(
@@ -441,7 +444,8 @@ public class ManualController {
 
         Page page = pageOpt.get();
         String title = page.getTitle();
-        String parsedBody = parseMarkdownToHtml(page.getContent());
+        String parsedBody = markdownCacheService.parseMarkdownToHtml(page.getContent());
+
 
         // 1. Build breadcrumbs
         java.util.List<Folder> hierarchy = new java.util.ArrayList<>();
