@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const TOOLS_DIR = __dirname;
 const RESULTS_DIR = path.join(TOOLS_DIR, 'results');
-const TEST_SOURCE_FILE = path.join(RESULTS_DIR, 'test-source.md');
+const TEST_SOURCE_FILE = path.join(TOOLS_DIR, 'test-source.md');
 
 // Ensure directories exist
 if (!fs.existsSync(RESULTS_DIR)) {
@@ -56,21 +56,26 @@ const testMarkdownContent = `# 도움말 제목
 자세한 정보는 [AssetERP 홈페이지](https://www.kfs.co.kr)를 참고하세요.
 `;
 
-fs.writeFileSync(TEST_SOURCE_FILE, testMarkdownContent, 'utf8');
-console.log(`[TestRunner] Created test markdown source at: ${TEST_SOURCE_FILE}`);
+if (!fs.existsSync(TEST_SOURCE_FILE)) {
+  fs.writeFileSync(TEST_SOURCE_FILE, testMarkdownContent, 'utf8');
+  console.log(`[TestRunner] 마크다운 테스트 예제 파일을 생성했습니다: ${TEST_SOURCE_FILE}`);
+} else {
+  console.log(`[TestRunner] 기존 마크다운 테스트 소스 파일을 사용합니다: ${TEST_SOURCE_FILE}`);
+}
 
 // Helper to run backend parser via Gradle
 function runBackendParser(markdown) {
   const backendDir = path.resolve(TOOLS_DIR, '../backend');
   const gradlew = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
   
-  console.log('[TestRunner] Running Java Flexmark Parser via Gradle...');
+  console.log('[TestRunner] Gradle을 통해 Java Flexmark 파서 구동 중...');
   const result = spawnSync(gradlew, ['-q', 'runParserCLI'], {
     input: markdown,
     cwd: backendDir,
     encoding: 'utf8',
     maxBuffer: 10 * 1024 * 1024
   });
+
 
 
   if (result.error) {
@@ -87,8 +92,9 @@ function runBackendParser(markdown) {
 
 // Helper to run frontend parser via Node.js
 function runFrontendParser(markdown) {
-  console.log('[TestRunner] Running React-Markdown Parser...');
+  console.log('[TestRunner] Node.js를 통해 React-Markdown 파서 구동 중...');
   const result = spawnSync('node', [path.join(TOOLS_DIR, 'md-parser-cli.mjs')], {
+
     input: markdown,
     cwd: TOOLS_DIR,
     encoding: 'utf8',
@@ -173,6 +179,7 @@ function normalizeHtml(htmlString) {
     .replace(/&nbsp;/g, ' ')           // Unify nbsp into standard space
     .replace(/\s+/g, ' ')             // collapse spaces
     .replace(/>\s*</g, '>\n<')        // put newline between tags for easy diffing
+    .replace(/checked="checked"\s+disabled="disabled"/g, 'disabled="disabled" checked="checked"')
     .replace(/<br\s*\/?>/gi, '<br>')   // unify break tags
     .replace(/<input([^>]*?)\s*\/?>/gi, '<input$1>') // unify input self-closing
     .replace(/<img([^>]*?)\s*\/?>/gi, '<img$1>')     // unify img self-closing
@@ -181,6 +188,7 @@ function normalizeHtml(htmlString) {
     
   return cleanHtml;
 }
+
 
 
 async function runComparison() {
@@ -193,7 +201,7 @@ async function runComparison() {
   // Write raw outputs to results folder
   fs.writeFileSync(path.join(RESULTS_DIR, 'backend-raw.html'), backendRaw, 'utf8');
   fs.writeFileSync(path.join(RESULTS_DIR, 'frontend-raw.html'), frontendRaw, 'utf8');
-  console.log('[TestRunner] Exported raw HTML outputs to tools/results/');
+  console.log('[TestRunner] 원본 HTML 결과물들을 tools/results/ 에 저장했습니다.');
 
   // 2. Normalize html
   const backendNormalized = normalizeHtml(backendRaw);
@@ -202,18 +210,19 @@ async function runComparison() {
   // Write normalized outputs to results folder
   fs.writeFileSync(path.join(RESULTS_DIR, 'backend-normalized.html'), backendNormalized, 'utf8');
   fs.writeFileSync(path.join(RESULTS_DIR, 'frontend-normalized.html'), frontendNormalized, 'utf8');
-  console.log('[TestRunner] Exported normalized HTML outputs to tools/results/');
+  console.log('[TestRunner] 정규화된 HTML 결과물들을 tools/results/ 에 저장했습니다.');
 
   // 3. Assert Equivalence
   if (backendNormalized === frontendNormalized) {
-    console.log('\n\x1b[32m[PASS] HTML Equivalence Verified! Both parsers output semantically identical HTML structures.\x1b[0m\n');
+    console.log('\n\x1b[32m[통과] HTML 동일성 검증 완료! 두 파서의 결과가 구조적/의미론적으로 100% 일치합니다.\x1b[0m\n');
     process.exit(0);
   } else {
-    console.error('\n\x1b[31m[FAIL] HTML Mismatch Detected! Parsers did not output equivalent semantic HTML.\x1b[0m');
-    console.log('[TestRunner] Please run the following command to check differences:');
+    console.error('\n\x1b[31m[실패] HTML 구조 불일치 감지! 두 파서의 변환 결과가 다릅니다.\x1b[0m');
+    console.log('[TestRunner] 아래 명령어를 입력하여 정교한 차이점(diff)을 비교해 보세요:');
     console.log(`\x1b[33mdiff -u tools/results/backend-normalized.html tools/results/frontend-normalized.html\x1b[0m\n`);
     process.exit(1);
   }
+
 }
 
 runComparison().catch(err => {
