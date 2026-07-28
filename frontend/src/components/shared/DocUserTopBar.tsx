@@ -164,7 +164,16 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             >
               이미지 편집
             </button>
-          )}          
+          )}
+          {!isImageEditorOpen && (
+            <button
+              onClick={() => setIsRecentPagesOpen(true)}
+              className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
+              title="최근 작업 문서 이력 보기 (Alt + H)"
+            >
+              작업이력
+            </button>
+          )}                    
           {user?.role === 'admin' && (
             <>
               <button
@@ -202,15 +211,6 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               title="도움말 페이지 관리 화면으로 이동"
             >
               페이지 관리
-            </button>
-          )}
-          {user?.role !== 'admin' && !isImageEditorOpen && (
-            <button
-              onClick={() => setIsRecentPagesOpen(true)}
-              className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 rounded-md transition-all cursor-pointer text-[11px] font-bold"
-              title="최근 작업 문서 이력 보기 (Alt + H)"
-            >
-              작업이력
             </button>
           )}
           {user?.role === 'admin' && (
