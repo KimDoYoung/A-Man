@@ -103,6 +103,9 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
                   handleConfirm()
                 } else if (e.key === 'Escape') {
                   handleCancel()
+                  const target = e.target as HTMLElement
+                  target.blur()
+                  window.dispatchEvent(new CustomEvent('editor-escape'))
                 }
               }}
             />
@@ -155,6 +158,13 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
             value={value}
             onChange={(e) => onChangeValue(Number(e.target.value))}
             className="flex-1 h-1 bg-gray-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-650"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                const target = e.target as HTMLElement
+                target.blur()
+                window.dispatchEvent(new CustomEvent('editor-escape'))
+              }
+            }}
           />
           
           {button_inc_dev_enable && (

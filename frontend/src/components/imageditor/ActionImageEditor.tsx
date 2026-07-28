@@ -1533,6 +1533,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     return () => window.removeEventListener('paste', handlePaste)
   }, [isOpen, bgImage, zoom, items])
 
+  // 컨트롤(RangeSlider, 다음번호 등)에서 ESC를 눌러 포커스 해제 시 에디터 모드를 'pointer'로 전환
+  useEffect(() => {
+    const handleEditorEscape = () => {
+      setSelectedItemId(null)
+      setActiveTool('pointer')
+    }
+    window.addEventListener('editor-escape', handleEditorEscape)
+    return () => window.removeEventListener('editor-escape', handleEditorEscape)
+  }, [])
+
   // Ctrl + S 임시저장 단축키 리스너
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2497,6 +2507,142 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           activeEl.getAttribute('contenteditable') === 'true')
       ) {
         return
+      }
+
+      // 'a' 키를 누르면 선택된 화살표 아이템 자동 수정 (수평/수직 정렬 및 꺾임 꼬리 제거)
+      if (selectedItemId && e.key.toLowerCase() === 'a') {
+        const targetItem = items.find(item => item.id === selectedItemId)
+        if (targetItem && targetItem.type === 'arrow') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          
+          let newW = w
+          let newH = h
+          
+          if (Math.abs(w) >= Math.abs(h)) {
+            // 수평 보정 (세로 변화량을 0으로)
+            newH = 0
+          } else {
+            // 수직 보정 (가로 변화량을 0으로)
+            newW = 0
+          }
+          
+          if (w !== newW || h !== newH) {
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  width: newW,
+                  height: newH
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+        
+        if (targetItem && targetItem.type === 'orthogonal-arrow') {
+          e.preventDefault()
+          const fromX = targetItem.x
+          const fromY = targetItem.y
+          const toX = fromX + (targetItem.width ?? 0)
+          const toY = fromY + (targetItem.height ?? 0)
+          
+          const midX = targetItem.style.midX !== undefined ? targetItem.style.midX : toX
+          const midY = targetItem.style.midY !== undefined ? targetItem.style.midY : (fromY + toY) / 2
+
+          const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
+          const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
+          const xOutside = Math.max(0, minX - midX, midX - maxX)
+          const yOutside = Math.max(0, minY - midY, midY - maxY)
+          const useHorizontal = xOutside >= yOutside
+
+          let newMidX = midX
+          let newMidY = midY
+
+          if (useHorizontal) {
+            // H-V-H 경로: midX를 시작점(fromX) 또는 끝점(toX) 중 가까운 쪽으로 스냅하여 꼬리 제거
+            if (Math.abs(midX - fromX) < Math.abs(midX - toX)) {
+              newMidX = fromX
+            } else {
+              newMidX = toX
+            }
+          } else {
+            // V-H-V 경로: midY를 시작점(fromY) 또는 끝점(toY) 중 가까운 쪽으로 스냅하여 꼬리 제거
+            if (Math.abs(midY - fromY) < Math.abs(midY - toY)) {
+              newMidY = fromY
+            } else {
+              newMidY = toY
+            }
+          }
+
+          if (midX !== newMidX || midY !== newMidY) {
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  style: {
+                    ...item.style,
+                    midX: newMidX,
+                    midY: newMidY
+                  }
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+      }
+
+      // 'r' 키를 누르면 선택된 화살표 아이템 방향 반전 (Reverse)
+      if (selectedItemId && e.key.toLowerCase() === 'r') {
+        const targetItem = items.find(item => item.id === selectedItemId)
+        if (targetItem && targetItem.type === 'arrow') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return {
+                ...item,
+                x: item.x + w,
+                y: item.y + h,
+                width: -w,
+                height: -h
+              }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+
+        if (targetItem && targetItem.type === 'orthogonal-arrow') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return {
+                ...item,
+                x: item.x + w,
+                y: item.y + h,
+                width: -w,
+                height: -h
+              }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
       }
 
       // Ctrl + 키보드 화살표 키를 이용한 box 요소의 크기 미세 조절 (Resize - 1px)

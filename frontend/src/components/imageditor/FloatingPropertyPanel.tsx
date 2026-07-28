@@ -862,6 +862,13 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                       value={Number(selectedItem.text) || 1}
                       onChange={(e) => handleCircleNumberChange(parseInt(e.target.value) || 1)}
                       className="w-20 px-2 py-1.5 text-center bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-850 dark:text-slate-100 font-bold focus:outline-hidden focus:border-indigo-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          const target = e.target as HTMLElement
+                          target.blur()
+                          window.dispatchEvent(new CustomEvent('editor-escape'))
+                        }
+                      }}
                     />
                   </div>
 
@@ -1409,6 +1416,13 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                             value={circleCounter}
                             onChange={(e) => setCircleCounter(Math.max(1, parseInt(e.target.value) || 1))}
                             className="w-20 px-2 py-1.5 text-center bg-gray-50 dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-md text-xs text-gray-850 dark:text-slate-100 font-bold focus:outline-hidden focus:border-indigo-500"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                const target = e.target as HTMLElement
+                                target.blur()
+                                window.dispatchEvent(new CustomEvent('editor-escape'))
+                              }
+                            }}
                           />
                         </div>                        
                       </>
