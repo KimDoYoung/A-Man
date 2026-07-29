@@ -4,6 +4,7 @@ import kr.co.kfs.aman.model.Folder;
 import kr.co.kfs.aman.model.Page;
 import kr.co.kfs.aman.repository.FolderRepository;
 import kr.co.kfs.aman.repository.PageRepository;
+import kr.co.kfs.aman.repository.WorkStackRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,10 +25,12 @@ public class FolderController {
 
     private final FolderRepository folderRepository;
     private final PageRepository pageRepository;
+    private final WorkStackRepository workStackRepository;
 
-    public FolderController(FolderRepository folderRepository, PageRepository pageRepository) {
+    public FolderController(FolderRepository folderRepository, PageRepository pageRepository, WorkStackRepository workStackRepository) {
         this.folderRepository = folderRepository;
         this.pageRepository = pageRepository;
+        this.workStackRepository = workStackRepository;
     }
 
     @PostMapping
@@ -134,6 +137,9 @@ public class FolderController {
         if (pages != null && !pages.isEmpty()) {
             pageRepository.deleteAll(pages);
         }
+        
+        // 1.5. 작업 이력(WorkStack) 삭제
+        workStackRepository.deleteByFolderId(folder.getId());
         
         // 2. 자식 폴더들 재귀 삭제
         for (Folder child : folder.getChildren()) {

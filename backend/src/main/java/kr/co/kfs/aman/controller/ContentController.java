@@ -161,7 +161,7 @@ public class ContentController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/{page_id}")
+    @GetMapping("/{page_id:\\d+}")
     public ResponseEntity<?> getPageDetail(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
         if (!pageOpt.isPresent()) {
@@ -176,7 +176,7 @@ public class ContentController {
         return ResponseEntity.ok(pages);
     }
 
-    @DeleteMapping("/{page_id}")
+    @DeleteMapping("/{page_id:\\d+}")
     @CacheEvict(value = "manualHtml", allEntries = true)
     public ResponseEntity<?> deletePage(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
@@ -200,7 +200,7 @@ public class ContentController {
         return ResponseEntity.ok("페이지가 영구 삭제되었습니다.");
     }
 
-    @PostMapping("/{page_id}/lock")
+    @PostMapping("/{page_id:\\d+}/lock")
     public ResponseEntity<?> lockPage(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
         if (!pageOpt.isPresent()) {
@@ -238,7 +238,7 @@ public class ContentController {
         return ResponseEntity.ok(savedPage);
     }
 
-    @PostMapping("/{page_id}/unlock")
+    @PostMapping("/{page_id:\\d+}/unlock")
     public ResponseEntity<?> unlockPage(@PathVariable("page_id") Long pageId) {
         Optional<Page> pageOpt = pageRepository.findById(pageId);
         if (!pageOpt.isPresent()) {
