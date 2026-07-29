@@ -1,5 +1,12 @@
 [
     { 
+        "version": "1.5.2",
+        "date": "2026-07-29",
+        "description": [
+            "사소한 버그 수정"
+        ]
+    },
+    { 
         "version": "1.5.1",
         "date": "2026-07-24",
         "description": [
