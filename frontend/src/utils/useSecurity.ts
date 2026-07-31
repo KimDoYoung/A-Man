@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger, no-extra-semi, no-empty */
 import { useEffect } from 'react'
 
 export function useSecurity(enabled: boolean = true) {
