@@ -10,6 +10,7 @@ import remarkBreaks from 'remark-breaks'
 
 import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
 import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
+import { useSecurity } from '@/utils/useSecurity'
 
 const extractText = (node: any): string => {
   if (!node) return ''
@@ -32,6 +33,9 @@ const generateAnchorId = (text: string, index: number): string => {
 const MarkdownViewer: React.FC = () => {
   const { page_id, folder_id } = useParams<{ page_id?: string; folder_id?: string }>()
   const { setTocData } = useOutletContext<OutletContextType>()
+
+  // 화면 보안(우클릭, 복사, 드래그 방지 및 단축키 차단) 활성화
+  useSecurity(true)
   const { fontSize, contentWidth } = useUserLocalSettingStore()
   const [page, setPage] = useState<PageData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -371,15 +375,15 @@ const MarkdownViewer: React.FC = () => {
   }[contentWidth] || 'max-w-5xl'
 
   return (
-    <div className={`mx-auto ${contentWidthClass}`}>
+    <div className={`mx-auto ${contentWidthClass} select-none`}>
       <FolderBreadcrumbs folderHierarchy={folderHierarchy} />
-      <article className={`prose dark:prose-invert ${fontSizeClass} max-w-none mt-4 pb-[60vh]`}>
+      <article className={`prose dark:prose-invert ${fontSizeClass} max-w-none mt-4 pb-[60vh] select-none`}>
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-slate-100 pb-4 border-b border-gray-200 dark:border-slate-800 mb-6">
           {page.title}
         </h1>
         
         {/* 렌더링된 본문 데이터 뷰 영역 */}
-        <div className="markdown-content">
+        <div className="markdown-content select-none">
           {renderMarkdownToHtml(page.content)}
         </div>
 

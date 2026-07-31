@@ -1,5 +1,12 @@
 [
     { 
+        "version": "1.5.4",
+        "date": "2026-07-31",
+        "description": [
+            "브라우저 보안 강화"
+        ]
+    },
+    { 
         "version": "1.5.3",
         "date": "2026-07-31",
         "description": [

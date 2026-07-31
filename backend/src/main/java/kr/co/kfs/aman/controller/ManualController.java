@@ -670,6 +670,68 @@ public class ManualController {
             "        })();\n" +
             "    </script>\n";
 
+        String securityScript = 
+            "    <script>\n" +
+            "        (function() {\n" +
+            "            // 1. 우클릭 및 텍스트 선택 시작 방지\n" +
+            "            document.addEventListener('contextmenu', function(e) { e.preventDefault(); });\n" +
+            "            document.addEventListener('selectstart', function(e) { e.preventDefault(); });\n" +
+            "            document.addEventListener('copy', function(e) {\n" +
+            "                e.preventDefault();\n" +
+            "                alert('보안 정책상 매뉴얼 텍스트를 복사할 수 없습니다.');\n" +
+            "            });\n" +
+            "            // 2. 단축키 제한 (F12, Ctrl+Shift+I/C/J, Ctrl+S/P/U)\n" +
+            "            document.addEventListener('keydown', function(e) {\n" +
+            "                if (e.keyCode === 123) { e.preventDefault(); }\n" +
+            "                if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) { e.preventDefault(); }\n" +
+            "                if (e.ctrlKey && (e.keyCode === 83 || e.keyCode === 80 || e.keyCode === 85)) { e.preventDefault(); }\n" +
+            "            });\n" +
+            "            // 3. F12 개발자 도구 활성화 감시 (도킹창 크기 비교)\n" +
+            "            var threshold = 160;\n" +
+            "            function checkDevTools() {\n" +
+            "                var widthDev = window.outerWidth - window.innerWidth > threshold;\n" +
+            "                var heightDev = window.outerHeight - window.innerHeight > threshold;\n" +
+            "                if (widthDev || heightDev) {\n" +
+            "                    var errorHtml = \n" +
+            "                        \"<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#ef4444;background:#fafafa;padding:20px;text-align:center;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999999;'>\" +\n" +
+            "                        \"<h2>⚠️ 보안 경고</h2>\" +\n" +
+            "                        \"<p>개발자 도구(F12)가 활성화되어 있어 시스템 접근이 제한됩니다.</p>\" +\n" +
+            "                        \"<p>개발자 도구를 완전히 종료하신 후 페이지를 새로고침해 주십시오.</p>\" +\n" +
+            "                        \"</div>\";\n" +
+            "                    if (document.body) {\n" +
+            "                        document.body.innerHTML = errorHtml;\n" +
+            "                    } else {\n" +
+            "                        document.write(errorHtml);\n" +
+            "                        try { window.stop(); } catch(e) {}\n" +
+            "                        try { document.execCommand('Stop'); } catch(e) {}\n" +
+            "                    }\n" +
+            "                    throw new Error(\"DevTools detected.\");\n" +
+            "                }\n" +
+            "            }\n" +
+            "            // 4. 무한 디버거(Anti-Debugging) 기동\n" +
+            "            function startAntiDebug() {\n" +
+            "                function debuggerTimer() {\n" +
+            "                    try {\n" +
+            "                        (function a(i) {\n" +
+            "                            if ((\"\" + i / i).length !== 1 || i % 20 === 0) {\n" +
+            "                                (function() {}).constructor(\"debugger\")();\n" +
+            "                            } else {\n" +
+            "                                debugger;\n" +
+            "                            }\n" +
+            "                            a(++i);\n" +
+            "                        })(0);\n" +
+            "                    } catch (e) {}\n" +
+            "                    setTimeout(debuggerTimer, 200);\n" +
+            "                }\n" +
+            "                debuggerTimer();\n" +
+            "            }\n" +
+            "            window.addEventListener('resize', checkDevTools);\n" +
+            "            checkDevTools();\n" +
+            "            startAntiDebug();\n" +
+            "            setInterval(checkDevTools, 500);\n" +
+            "        })();\n" +
+            "    </script>\n";
+
         String fullHtml = 
             "<!DOCTYPE html>\n" +
             "<html lang=\"ko\">\n" +
@@ -680,6 +742,10 @@ public class ManualController {
             "    <title>" + escapeHtml(title) + "</title>\n" +
             "    <style>\n" +
             "        body {\n" +
+            "            user-select: none;\n" +
+            "            -webkit-user-select: none;\n" +
+            "            -ms-user-select: none;\n" +
+            "            -moz-user-select: none;\n" +
             "            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n" +
             "            padding: 30px;\n" +
             "            margin: 0;\n" +
@@ -1233,9 +1299,15 @@ public class ManualController {
             "            vertical-align: middle;\n" +
             "        }\n" +
             TOC_CSS +
+            "        @media print {\n" +
+            "            body, .container, .navigation-footer {\n" +
+            "                display: none !important;\n" +
+            "            }\n" +
+            "        }\n" +
             "    </style>\n" +
             targetBlankScript +
             settingsScript +
+            securityScript +
             TOC_SCRIPT +
             "</head>\n" +
             "<body>\n" +
