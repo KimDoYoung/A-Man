@@ -66,24 +66,32 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
 
     // 2. 현재 포커스 노드로부터 상위 부모 ID 탐색
     const parentIds: number[] = [];
-    let current = flatList.find(item => item.id === targetId);
-    while (current) {
-      const parentId = current.parentId;
+    const current = flatList.find(item => item.id === targetId);
+    
+    // 타겟 노드가 1, 2레벨 폴더인 경우 자기 자신도 펼침 목록에 포함
+    if (current && current.level !== 3) {
+      parentIds.push(targetId);
+    }
+
+    let temp = current;
+    while (temp) {
+      const parentId = temp.parentId;
       if (parentId) {
         parentIds.push(parentId);
-        current = flatList.find(item => item.id === parentId);
+        temp = flatList.find(item => item.id === parentId);
       } else {
         break;
       }
     }
 
-    // 3. 해당 부모 폴더들만 true로 설정하여 펼침 상태 업데이트 (기타 폴더는 자동 접힘)
-    const newExpanded: Record<number, boolean> = {};
-    parentIds.forEach(pId => {
-      newExpanded[pId] = true;
+    // 3. 기존에 펼쳐진 폴더 상태를 유지하면서, 현재 노드와 부모 폴더들을 추가로 펼침
+    setExpandedFolders(prev => {
+      const merged = { ...prev };
+      parentIds.forEach(pId => {
+        merged[pId] = true;
+      });
+      return merged;
     });
-
-    setExpandedFolders(newExpanded);
   }, [location.pathname, folders])
 
   // 마지막 활성화된 폴더 ID 캐싱
@@ -396,13 +404,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
     return roots.sort((a, b) => a.sortOrder - b.sortOrder)
   };
 
-  // 접기/펼치기 기능만 수행 (문서 로드 없음)
-  const handleToggleExpandOnly = (folderId: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const isOpen = !!expandedFolders[folderId]
-    setExpandedFolders(prev => ({ ...prev, [folderId]: !isOpen }))
-  }
-
   // 문서 불러오기 기능만 수행 (접기/펼치기 없음)
   const handleNavigateOnly = (folderId: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -413,6 +414,21 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
       navigate(`/docs/folder/${folderId}`)
     }
   }
+
+  // 접기/펼치기와 문서 이동을 동시에 수행 (1, 2레벨 폴더용) - 항상 펼쳐짐
+  const handleToggleAndNavigate = (folderId: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedFolders(prev => ({ ...prev, [folderId]: true }))
+
+    const isAdmin = location.pathname.startsWith('/admin')
+    if (isAdmin) {
+      navigate(`/admin/folder/${folderId}`)
+    } else {
+      navigate(`/docs/folder/${folderId}`)
+    }
+  }
+
+
 
   // 폴더 전체 열기 / 전체 닫기 헬퍼
   const expandAll = () => {
@@ -448,7 +464,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
           id={`folder-node-${node.id}`}
           onClick={(e) => {
             setFocusedFolderId(node.id)
-            node.level === 3 ? handleNavigateOnly(node.id, e) : handleToggleExpandOnly(node.id, e)
+            node.level === 3 ? handleNavigateOnly(node.id, e) : handleToggleAndNavigate(node.id, e)
           }}
           onContextMenu={(contextMenuEnable && !isContextMenuDisabled) ? (e) => handleContextMenu(e, node.id, node.name, depth) : undefined}
           className={`flex items-center justify-between p-1.5 rounded-md border cursor-pointer transition-colors ${
@@ -483,7 +499,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
               </span>
             ) : (
               <span 
-                onClick={(e) => handleNavigateOnly(node.id, e)}
                 className={`hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 inline-flex items-center ${isDocUser && node.isUse === false ? 'text-gray-400 line-through' : ''}`}
               >
                 {formatNodeName(node)}
@@ -495,11 +510,18 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
               </span>
             )}
           </div>
+
           {hasChildren && (
             <ChevronDown 
               className={`w-3 h-3 text-gray-400 transition-transform ${isExpanded ? '' : '-rotate-90'}`} 
+              onClick={(e) => {
+                e.stopPropagation()
+                const isOpen = !!expandedFolders[node.id]
+                setExpandedFolders(prev => ({ ...prev, [node.id]: !isOpen }))
+              }}
             />
           )}
+
         </div>
 
         {isExpanded && (
