@@ -50,5 +50,33 @@ public class SystemController {
         }
         return java.util.Collections.emptyList();
     }
+
+    @GetMapping("/ip")
+    public Map<String, String> getClientIp(javax.servlet.http.HttpServletRequest request) {
+        String[] headers = {
+            "X-Forwarded-For",
+            "Proxy-Client-IP",
+            "WL-Proxy-Client-IP",
+            "HTTP_CLIENT_IP",
+            "HTTP_X_FORWARDED_FOR"
+        };
+        String ip = null;
+        for (String header : headers) {
+            ip = request.getHeader(header);
+            if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+                break;
+            }
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+        Map<String, String> result = new HashMap<>();
+        result.put("ip", ip);
+        return result;
+    }
 }
+
 

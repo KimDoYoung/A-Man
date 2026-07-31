@@ -1,9 +1,22 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { FolderTree, SquarePen, TableOfContents, ShieldAlert } from 'lucide-react'
 import { useUserLocalSettingStore } from '@/store/useUserLocalSettingStore'
+import { apiClient } from '@/lib/apiClient'
 
 const NormalUserIntro: React.FC = () => {
   const { fontSize, contentWidth } = useUserLocalSettingStore()
+  const [clientIp, setClientIp] = useState<string | null>(null)
+
+  useEffect(() => {
+    apiClient.get<{ ip: string }>('/ip')
+      .then((res) => {
+        setClientIp(res.ip)
+      })
+      .catch((err) => {
+        console.error('접속 IP 조회 실패:', err)
+      })
+  }, [])
+
 
   const fontSizeClassMap = {
     sm: {
@@ -112,6 +125,17 @@ const NormalUserIntro: React.FC = () => {
             <li>최 상단 툴바에서 <strong>글자 크기와 문서의 폭</strong>을 조절할 수 있습니다. 모니터에 따라서 최적의 읽기 상태를 만들 수 있습니다.</li>
           </ul>
         </div>
+
+        {clientIp && (
+          <div className="mt-8 pt-4 border-t border-gray-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-gray-400 dark:text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              연결 상태: 정상
+            </span>
+            <span>접속 IP: <code className="font-mono bg-gray-50 dark:bg-slate-900/50 px-1.5 py-0.5 rounded text-gray-500 dark:text-slate-400 border border-gray-100 dark:border-slate-800/50">{clientIp}</code></span>
+          </div>
+        )}
+
       </div>
     </article>
   )
