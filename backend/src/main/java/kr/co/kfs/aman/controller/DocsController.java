@@ -4,6 +4,8 @@ import kr.co.kfs.aman.model.Folder;
 import kr.co.kfs.aman.model.Page;
 import kr.co.kfs.aman.repository.FolderRepository;
 import kr.co.kfs.aman.repository.PageRepository;
+import kr.co.kfs.aman.util.SecurityUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,18 +25,65 @@ public class DocsController {
     private final FolderRepository folderRepository;
     private final PageRepository pageRepository;
 
+    @Value("${aman.security.encrypt.salt:A-Man-Default-Salt-Key-2026!}")
+    private String encryptSalt;
+
     public DocsController(FolderRepository folderRepository, PageRepository pageRepository) {
         this.folderRepository = folderRepository;
         this.pageRepository = pageRepository;
     }
 
+    @GetMapping("/security/handshake")
+    public ResponseEntity<?> handshake(HttpServletRequest request) {
+        try {
+            String clientIp = SecurityUtil.getClientIp(request);
+            long currentBlock = System.currentTimeMillis() / (1000 * 60 * 10); // 10 minutes block
+            
+            // Calculate dynamic key for current block
+            String dynamicKey = SecurityUtil.generateDynamicKey(encryptSalt, clientIp, currentBlock);
+            
+            // Encrypt dynamic key using STATIC_CLIENT_KEY
+            String encryptedKey = SecurityUtil.encrypt(dynamicKey, SecurityUtil.STATIC_CLIENT_KEY);
+            
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("encryptedKey", encryptedKey);
+            response.put("block", currentBlock);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Handshake failed");
+        }
+    }
+
     @GetMapping("/{page_id:\\d+}")
-    public ResponseEntity<?> getPageDetail(@PathVariable("page_id") Long pageId) {
+    public ResponseEntity<?> getPageDetail(@PathVariable("page_id") Long pageId, HttpServletRequest request) {
+        String blockHeader = request.getHeader("X-Handshake-Block");
+        if (blockHeader == null || blockHeader.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Handshake block header missing");
+        }
+
         Optional<Page> pageOpt = pageRepository.findById(pageId);
         if (!pageOpt.isPresent() || !"PUBLISHED".equals(pageOpt.get().getStatus())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 페이지입니다.");
         }
-        return ResponseEntity.ok(pageOpt.get());
+
+        try {
+            long blockVal = Long.parseLong(blockHeader);
+            long currentBlock = System.currentTimeMillis() / (1000 * 60 * 10);
+            if (blockVal < currentBlock - 1 || blockVal > currentBlock + 1) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid or expired handshake block");
+            }
+
+            String clientIp = SecurityUtil.getClientIp(request);
+            String key = SecurityUtil.generateDynamicKey(encryptSalt, clientIp, blockVal);
+
+            java.util.Map<String, Object> encryptedPage = convertToEncryptedMap(pageOpt.get(), key);
+            return ResponseEntity.ok(encryptedPage);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid handshake block format");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Encryption failed");
+        }
     }
 
     @GetMapping("/folders")
@@ -81,9 +131,58 @@ public class DocsController {
     }
 
     @GetMapping("/folders/{folder_id}/pages")
-    public ResponseEntity<?> getFolderPages(@PathVariable("folder_id") Long folderId) {
-        // 편의를 위해 특정 폴더 하위의 페이지 리스트 조회 추가
-        List<Page> pages = pageRepository.findByFolderIdAndStatusOrderBySortOrderAsc(folderId, "PUBLISHED");
-        return ResponseEntity.ok(pages);
+    public ResponseEntity<?> getFolderPages(@PathVariable("folder_id") Long folderId, HttpServletRequest request) {
+        String blockHeader = request.getHeader("X-Handshake-Block");
+        if (blockHeader == null || blockHeader.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Handshake block header missing");
+        }
+
+        try {
+            long blockVal = Long.parseLong(blockHeader);
+            long currentBlock = System.currentTimeMillis() / (1000 * 60 * 10);
+            if (blockVal < currentBlock - 1 || blockVal > currentBlock + 1) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid or expired handshake block");
+            }
+
+            String clientIp = SecurityUtil.getClientIp(request);
+            String key = SecurityUtil.generateDynamicKey(encryptSalt, clientIp, blockVal);
+
+            List<Page> pages = pageRepository.findByFolderIdAndStatusOrderBySortOrderAsc(folderId, "PUBLISHED");
+            java.util.List<java.util.Map<String, Object>> encryptedPages = new java.util.ArrayList<>();
+            for (Page p : pages) {
+                encryptedPages.add(convertToEncryptedMap(p, key));
+            }
+            return ResponseEntity.ok(encryptedPages);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid handshake block format");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Encryption failed");
+        }
+    }
+
+    private java.util.Map<String, Object> convertToEncryptedMap(Page page, String key) throws Exception {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("id", page.getId());
+        map.put("title", page.getTitle());
+        map.put("content", SecurityUtil.encrypt(page.getContent(), key));
+        map.put("aka", page.getAka());
+        map.put("sortOrder", page.getSortOrder());
+        map.put("status", page.getStatus());
+        map.put("lockUser", page.getLockUser());
+        map.put("lockTime", page.getLockTime() != null ? page.getLockTime().toString() : null);
+        map.put("lockRole", page.getLockRole());
+        map.put("createdAt", page.getCreatedAt() != null ? page.getCreatedAt().toString() : null);
+        map.put("updatedAt", page.getUpdatedAt() != null ? page.getUpdatedAt().toString() : null);
+        
+        if (page.getFolder() != null) {
+            java.util.Map<String, Object> folderMap = new java.util.HashMap<>();
+            folderMap.put("id", page.getFolder().getId());
+            folderMap.put("nums", page.getFolder().getNums());
+            folderMap.put("name", page.getFolder().getName());
+            folderMap.put("level", page.getFolder().getLevel());
+            map.put("folder", folderMap);
+        }
+        
+        return map;
     }
 }

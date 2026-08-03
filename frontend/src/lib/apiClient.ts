@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { decryptPayload, STATIC_CLIENT_KEY } from '@/utils/crypto'
 
 // 개발/배포 공통: Vite proxy 설정에 의해 브라우저와 동일한 origin인 /aman으로 요청합니다.
 // 개발 환경(http://localhost:5173)에서는 vite.config.ts의 proxy 설정이 http://localhost:8686으로 프록시합니다.
@@ -7,7 +8,48 @@ const instance = axios.create({
   withCredentials: true,
 })
 
-instance.interceptors.request.use((config) => {
+let cachedHandshake: {
+  key: string;
+  block: number;
+} | null = null;
+
+let handshakePromise: Promise<{ key: string; block: number }> | null = null;
+
+async function getOrFetchHandshake(): Promise<{ key: string; block: number }> {
+  const currentBlock = Math.floor(Date.now() / (1000 * 60 * 10)); // 10 minutes block
+  
+  if (cachedHandshake && cachedHandshake.block >= currentBlock - 1 && cachedHandshake.block <= currentBlock + 1) {
+    return cachedHandshake;
+  }
+  
+  if (handshakePromise) {
+    return handshakePromise;
+  }
+  
+  const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/aman';
+  handshakePromise = (async () => {
+    try {
+      const resp = await axios.get<any>(`${baseURL}/docs/security/handshake`, { withCredentials: true });
+      if (!resp.data || typeof resp.data !== 'object' || !resp.data.encryptedKey) {
+        throw new Error('핸드셰이크 응답 오류: 백엔드 서버가 재시작되지 않았거나 잘못된 데이터가 리턴되었습니다.');
+      }
+      const { encryptedKey, block } = resp.data;
+      
+      const key = await decryptPayload(encryptedKey, STATIC_CLIENT_KEY);
+      cachedHandshake = { key, block };
+      return cachedHandshake;
+    } catch (e) {
+      console.error('Handshake failed:', e);
+      throw e;
+    } finally {
+      handshakePromise = null;
+    }
+  })();
+  
+  return handshakePromise;
+}
+
+instance.interceptors.request.use(async (config) => {
   const userStr = localStorage.getItem('aman_user')
   if (userStr) {
     try {
@@ -19,7 +61,21 @@ instance.interceptors.request.use((config) => {
       console.error('인증 헤더 설정 에러:', e)
     }
   }
+
+  // Inject handshake block for /docs endpoints (except /docs/security/handshake)
+  const isDocsRequest = config.url && config.url.startsWith('/docs') && !config.url.includes('/docs/security/handshake');
+  if (isDocsRequest) {
+    try {
+      const handshake = await getOrFetchHandshake();
+      config.headers['X-Handshake-Block'] = String(handshake.block);
+    } catch (err) {
+      console.error('Failed to attach handshake block:', err);
+    }
+  }
+
   return config
+}, (error) => {
+  return Promise.reject(error);
 })
 
 // 토큰 갱신 진행 여부 및 대기 큐 정의
@@ -41,11 +97,60 @@ const processQueue = (error: any, token: string | null = null) => {
 }
 
 instance.interceptors.response.use(
-  (response) => response.data,
+  async (response) => {
+    const config = response.config;
+    const isDocsRequest = config.url && config.url.startsWith('/docs') && !config.url.includes('/docs/security/handshake');
+    
+    if (isDocsRequest && response.data) {
+      try {
+        const handshake = await getOrFetchHandshake();
+        const key = handshake.key;
+        
+        const decryptPage = async (page: any) => {
+          if (page && typeof page.content === 'string') {
+            try {
+              page.content = await decryptPayload(page.content, key);
+            } catch (err) {
+              console.error('Error decrypting page content:', err);
+            }
+          }
+        };
+
+        if (Array.isArray(response.data)) {
+          await Promise.all(response.data.map(decryptPage));
+        } else {
+          await decryptPage(response.data);
+        }
+      } catch (err) {
+        console.error('Decryption interceptor failed:', err);
+      }
+    }
+    
+    return response.data;
+  },
   async (error) => {
     const originalRequest = error.config
     const isLoginRequest = originalRequest?.url?.includes('/auth/login')
     const isRefreshRequest = originalRequest?.url?.includes('/auth/refresh')
+    const isDocsRequest = originalRequest?.url?.startsWith('/docs') && !originalRequest?.url?.includes('/docs/security/handshake');
+
+    // 403 Forbidden이고 /docs 요청이고 handshake block이 만료되었을 수 있는 경우 재시도
+    if (
+      error.response &&
+      error.response.status === 403 &&
+      isDocsRequest &&
+      !originalRequest._retryHandshake
+    ) {
+      originalRequest._retryHandshake = true;
+      cachedHandshake = null; // force a new handshake
+      try {
+        const handshake = await getOrFetchHandshake();
+        originalRequest.headers['X-Handshake-Block'] = String(handshake.block);
+        return instance(originalRequest);
+      } catch (handshakeError) {
+        return Promise.reject(handshakeError);
+      }
+    }
 
     // 401 또는 403 에러이고 로그인이나 리프레시 요청이 아니며, 아직 재시도하지 않은 요청인 경우
     if (

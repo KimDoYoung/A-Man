@@ -94,7 +94,10 @@ const MarkdownViewer: React.FC = () => {
         if (error.response?.status === 404) {
           setErrorMsg('존재하지 않거나 아직 작성이 완료되지 않은(DRAFT) 도움말 문서입니다.')
         } else {
-          setErrorMsg('도움말 문서를 가져오는 도중 오류가 발생했습니다.')
+          const detail = error.response 
+            ? ` (Status: ${error.response.status}, Data: ${JSON.stringify(error.response.data)})` 
+            : ` (${error.message})`;
+          setErrorMsg('도움말 문서를 가져오는 도중 오류가 발생했습니다.' + detail)
         }
       } finally {
         setLoading(false)
