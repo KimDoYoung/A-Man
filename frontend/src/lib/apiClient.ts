@@ -198,10 +198,15 @@ instance.interceptors.response.use(
         }
       } catch (refreshError) {
         processQueue(refreshError, null)
-        // 리프레시 실패 시 로그아웃 및 강제 리다이렉트
+        // 리프레시 실패 시 로그아웃 및 경로별 강제 리다이렉트
         localStorage.removeItem('aman_user')
-        alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
-        window.location.href = '/aman/login'
+        const isAdminPath = window.location.pathname.includes('/admin')
+        if (isAdminPath) {
+          alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
+          window.location.href = '/aman/login'
+        } else {
+          window.location.href = '/aman/expired'
+        }
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

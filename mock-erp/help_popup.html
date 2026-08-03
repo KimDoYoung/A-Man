@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AssetERP 도움말 팝업</title>
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <iframe id="helpIframe" src=""></iframe>
+    <script>
+        // URL 파라미터 전달 받기
+        const params = new URLSearchParams(window.location.search);
+        const aka = params.get('aka') || '';
+        const personId = params.get('personId') || '';
+        const amanUrl = params.get('amanUrl') || '';
+
+        // user_manual.jsp 주소 조립
+        const jspUrl = 'user_manual.jsp?aka=' + encodeURIComponent(aka) + 
+                       '&personId=' + encodeURIComponent(personId) + 
+                       '&amanUrl=' + encodeURIComponent(amanUrl);
+
+        // iframe src로 설정
+        document.getElementById('helpIframe').src = jspUrl;
+    </script>
+</body>
+</html>

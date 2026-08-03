@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
 
@@ -184,5 +185,20 @@ public class DocsController {
         }
         
         return map;
+    }
+
+    @GetMapping("/security/ip")
+    public ResponseEntity<?> getClientIp(HttpServletRequest request) {
+        String ip = SecurityUtil.getClientIp(request);
+        return ResponseEntity.ok(java.util.Collections.singletonMap("ip", ip));
+    }
+
+    @GetMapping("/security/logout")
+    public ResponseEntity<?> forceLogout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        return ResponseEntity.ok(java.util.Collections.singletonMap("success", true));
     }
 }

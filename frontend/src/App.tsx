@@ -4,6 +4,7 @@ import NormalUserMain from '@/domains/docs/NormalUserMain'
 import NormalUserIntro from '@/domains/docs/NormalUserIntro'
 import MarkdownViewer from '@/domains/content/MarkdownViewer'
 import LoginPage from '@/domains/auth/LoginPage'
+import SessionExpireWarning from '@/domains/auth/SessionExpireWarning'
 import DocUserMain from '@/domains/content/DocUserMain'
 import AssetAdminPage from '@/domains/content/AssetAdminPage'
 import UserManagePage from '@/domains/user/UserManagePage'
@@ -57,6 +58,10 @@ const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />
+  },
+  {
+    path: '/expired',
+    element: <SessionExpireWarning />
   },
   {
     path: '/admin',
