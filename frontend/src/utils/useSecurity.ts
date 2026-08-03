@@ -52,6 +52,9 @@ export function useSecurity(enabled: boolean = true) {
     // 3. F12 개발자 도구 강제 활성화 감시 (도킹창 크기 비교 감지)
     const threshold = 160
     const checkDevTools = () => {
+      const isIframe = window.self !== window.top
+      if (isIframe) return
+      
       const widthDev = window.outerWidth - window.innerWidth > threshold
       const heightDev = window.outerHeight - window.innerHeight > threshold
       if (widthDev || heightDev) {

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Mock AssetERP (Test Console)</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background-color: #f1f5f9; color: #334155; }
+        .card { background: white; padding: 24px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 600px; margin: 0 auto; }
+        h2 { border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0; }
+        .btn { display: inline-block; padding: 10px 20px; background-color: #4f46e5; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px; border: none; cursor: pointer; }
+        .btn-secondary { background-color: #0d9488; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🖥️ Mock AssetERP 테스트 화면</h2>
+    <p>이 화면은 로그인된 AssetERP 메인 화면을 가상으로 흉내 낸 테스트 콘솔입니다.</p>
+    
+    <div class="form-group">
+        <label for="personId">접속자 사번 (personId):</label>
+        <input type="text" id="personId" value="tester-999">
+    </div>
+    
+    <div class="form-group">
+        <label for="amanUrl">A-Man 가동 주소 (로컬 개발 서버 등):</label>
+        <input type="text" id="amanUrl" value="http://localhost:5173/aman">
+    </div>
+
+    <div style="margin-top: 25px;">
+        <!-- 전체 도움말 테스트 -->
+        <button onclick="openManual('')" class="btn">📚 전체 도움말 열기</button>
+        
+        <!-- 화면별 도움말 테스트 -->
+        <button onclick="openManual('asset_register')" class="btn btn-secondary">💡 자산등록 도움말 열기</button>
+    </div>
+</div>
+
+<script>
+    function openManual(aka) {
+        var personId = document.getElementById('personId').value;
+        var amanUrl = document.getElementById('amanUrl').value;
+        
+        // user_manual.jsp를 호출하면서 파라미터를 넘깁니다.
+        var url = 'user_manual.jsp?personId=' + personId + '&amanUrl=' + encodeURIComponent(amanUrl);
+        if (aka) {
+            url += '&aka=' + aka;
+        }
+        
+        var setting = 'width=1200,height=800,menubars=0,toolbars=0,location=0,scrollbars=yes';
+        window.open(url, 'helpwin', setting);
+    }
+</script>
+
+</body>
+</html>

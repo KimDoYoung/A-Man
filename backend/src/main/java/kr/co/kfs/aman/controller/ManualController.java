@@ -689,6 +689,8 @@ public class ManualController {
             "            // 3. F12 개발자 도구 활성화 감시 (도킹창 크기 비교)\n" +
             "            var threshold = 160;\n" +
             "            function checkDevTools() {\n" +
+            "                var isIframe = window.self !== window.top;\n" +
+            "                if (isIframe) return;\n" +
             "                var widthDev = window.outerWidth - window.innerWidth > threshold;\n" +
             "                var heightDev = window.outerHeight - window.innerHeight > threshold;\n" +
             "                if (widthDev || heightDev) {\n" +
