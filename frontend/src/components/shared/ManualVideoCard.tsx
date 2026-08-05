@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { extractYouTubeId } from '@/utils/youtube'
 
 interface ManualVideoCardProps {
   src: string
@@ -12,17 +13,10 @@ const ManualVideoCard: React.FC<ManualVideoCardProps> = ({ src, alt }) => {
     setIsHidden(!isHidden)
   }
 
-  const getYouTubeVideoId = (url: string) => {
-    if (!url) return null
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-    const match = url.match(regExp)
-    return (match && match[2].length === 11) ? match[2] : null
-  }
-
-  const ytId = getYouTubeVideoId(src)
+  const ytId = extractYouTubeId(src)
 
   return (
-    <div className="manual-video-card bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 my-6 transition-all duration-300">
+    <div className="manual-video-card bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 my-6 max-w-[1200px] mx-auto transition-all duration-300">
       <div className="manual-video-header flex items-center justify-between gap-3">
         <div className="manual-video-title flex items-center gap-2 font-bold text-sm text-slate-800 dark:text-slate-200">
           {ytId ? (
@@ -31,7 +25,7 @@ const ManualVideoCard: React.FC<ManualVideoCardProps> = ({ src, alt }) => {
               className="w-4.5 h-4.5 text-red-600 fill-current" 
               viewBox="0 0 24 24"
             >
-              <path d="M23.498 6.163c-.272-1.02-.1.272-1.02-1.02-2.31 0-4.62-.272-1.02-1.02-2.31 0-4.62 0-6.93 0s-4.62 0-6.93 0c-1.02 0-2.31 0-4.62.272-1.02.272-1.02.272-1.02 1.02-.272 1.02-.272 2.1-.272 3.19s0 2.17.272 3.19c.272 1.02.272 1.02 1.02 1.02 2.31.272 4.62.272 6.93.272s4.62 0 6.93-.272c1.02 0 1.02 0 1.02-1.02.272-1.02.272-2.1.272-3.19s-.026-2.17-.272-3.19zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
             </svg>
           ) : (
             // 일반 비디오 아이콘
@@ -98,7 +92,7 @@ const ManualVideoCard: React.FC<ManualVideoCardProps> = ({ src, alt }) => {
       </div>
       <div
         className={`transition-all duration-500 ease-in-out overflow-hidden bg-transparent rounded-lg mt-3 flex justify-center items-center ${
-          isHidden ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'
+          isHidden ? 'max-h-0 opacity-0' : 'max-h-[700px] opacity-100'
         }`}
       >
         {!isHidden && (
@@ -113,7 +107,7 @@ const ManualVideoCard: React.FC<ManualVideoCardProps> = ({ src, alt }) => {
               src={src}
               controls
               autoPlay
-              className="w-auto max-w-full h-auto max-h-[480px] rounded-lg display-block outline-none shadow-md"
+              className="w-auto max-w-full h-auto max-h-[700px] rounded-lg display-block outline-none shadow-md"
             />
           )
         )}

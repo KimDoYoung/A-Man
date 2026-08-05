@@ -7,6 +7,7 @@ import remarkBreaks from 'remark-breaks'
 
 import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
 import ManualVideoCard from '@/components/shared/ManualVideoCard'
+import { isVideoSource } from '@/utils/youtube'
 
 export const parseInlineStyles = (text: string): React.ReactNode => {
   // 하위 호환성을 위해 남겨두되, 이제 사용되지 않습니다.
@@ -107,7 +108,7 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
           );
         },
         img: ({ src, alt, node, ...props }) => {
-          const isVideo = src && /\.(mp4|webm|ogg)$/i.test(src)
+          const isVideo = isVideoSource(src)
           if (isVideo) {
             return <ManualVideoCard src={src!} alt={alt} />
           }

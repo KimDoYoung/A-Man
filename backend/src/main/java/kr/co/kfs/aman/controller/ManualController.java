@@ -375,7 +375,8 @@ public class ManualController {
         "            border: 1px solid #e2e8f0;\n" +
         "            border-radius: 10px;\n" +
         "            padding: 16px 20px;\n" +
-        "            margin: 20px 0;\n" +
+        "            margin: 20px auto;\n" +
+        "            max-width: 1200px;\n" +
         "            transition: all 0.2s ease;\n" +
         "        }\n" +
         "        .manual-video-header {\n" +
@@ -423,7 +424,7 @@ public class ManualController {
         "            color: #1e293b;\n" +
         "        }\n" +
         "        .manual-video-body {\n" +
-        "            max-height: 520px;\n" +
+        "            max-height: 700px;\n" +
         "            opacity: 1;\n" +
         "            overflow: hidden;\n" +
         "            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin-top 0.3s ease;\n" +
@@ -443,7 +444,7 @@ public class ManualController {
         "            width: auto;\n" +
         "            max-width: 100%;\n" +
         "            height: auto;\n" +
-        "            max-height: 500px;\n" +
+        "            max-height: 700px;\n" +
         "            display: block;\n" +
         "            outline: none;\n" +
         "            border-radius: 8px;\n" +

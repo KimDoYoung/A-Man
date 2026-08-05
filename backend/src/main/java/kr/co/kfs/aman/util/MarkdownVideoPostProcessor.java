@@ -91,8 +91,8 @@ public class MarkdownVideoPostProcessor {
                    "            <span id=\"manualVideoBtnText_" + id + "\">동영상 보기</span>\n" +
                    "        </button>\n" +
                    "    </div>\n" +
-                   "    <div id=\"manualVideoBody_" + id + "\" class=\"manual-video-body is-hidden\" style=\"aspect-ratio:16/9;\">\n" +
-                   "        <iframe id=\"manualVideoPlayer_" + id + "\" src=\"https://www.youtube.com/embed/" + ytId + "?enablejsapi=1\" style=\"width:100%; height:100%; border:none; border-radius:8px;\" allowfullscreen></iframe>\n" +
+                   "    <div id=\"manualVideoBody_" + id + "\" class=\"manual-video-body is-hidden\">\n" +
+                   "        <iframe id=\"manualVideoPlayer_" + id + "\" src=\"https://www.youtube.com/embed/" + ytId + "?enablejsapi=1\" style=\"width:100%; aspect-ratio:16/9; border:none; border-radius:8px; box-shadow:0 4px 12px rgba(0, 0, 0, 0.15);\" allowfullscreen></iframe>\n" +
                    "    </div>\n" +
                    "</div>";
         } else {
@@ -129,7 +129,7 @@ public class MarkdownVideoPostProcessor {
         if (url == null) {
             return null;
         }
-        String regex = "(?:youtube(?:-nocookie)?\\.com\\/(?:[^\\/\\n\\s]+\\/\\S+\\/|(?:v|e)?(?:mbed)?\\/|\\S*?[?&]v=)|youtu\\.be\\/)([a-zA-Z0-9_-]{11})";
+        String regex = "(?:youtube(?:-nocookie)?\\.com\\/(?:shorts\\/|[^\\/\\n\\s]+\\/\\S+\\/|(?:v|e)?(?:mbed)?\\/|\\S*?[?&]v=)|youtu\\.be\\/)([a-zA-Z0-9_-]{11})";
         Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(url);
         if (matcher.find()) {

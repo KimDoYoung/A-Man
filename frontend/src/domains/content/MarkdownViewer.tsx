@@ -11,6 +11,7 @@ import remarkBreaks from 'remark-breaks'
 import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
 import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
 import ManualVideoCard from '@/components/shared/ManualVideoCard'
+import { isVideoSource } from '@/utils/youtube'
 
 const extractText = (node: any): string => {
   if (!node) return ''
@@ -303,7 +304,7 @@ const MarkdownViewer: React.FC = () => {
             )
           },
           img: ({ src, alt, ...props }) => {
-            const isVideo = src && (/\.(mp4|webm|ogg)$/i.test(src) || /youtube\.com|youtu\.be/i.test(src))
+            const isVideo = isVideoSource(src)
             if (isVideo) {
               return <ManualVideoCard src={src!} alt={alt} />
             }
