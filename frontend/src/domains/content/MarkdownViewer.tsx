@@ -303,7 +303,7 @@ const MarkdownViewer: React.FC = () => {
             )
           },
           img: ({ src, alt, ...props }) => {
-            const isVideo = src && /\.(mp4|webm|ogg)$/i.test(src)
+            const isVideo = src && (/\.(mp4|webm|ogg)$/i.test(src) || /youtube\.com|youtu\.be/i.test(src))
             if (isVideo) {
               return <ManualVideoCard src={src!} alt={alt} />
             }

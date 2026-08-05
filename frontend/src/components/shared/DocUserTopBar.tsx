@@ -190,6 +190,17 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
                 자산 관리
               </button>
               <button
+                onClick={() => navigate('/admin/videos')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
+                  isAdminVideosPage 
+                    ? 'bg-purple-600 text-white border-purple-600' 
+                    : 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20'
+                }`}
+                title="동영상 관리 화면으로 이동"
+              >
+                비디오 관리
+              </button>
+              <button
                 onClick={() => navigate('/admin/folders')}
                 className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
                   isAdminFoldersPage 
@@ -254,19 +265,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
               백업 관리
             </button>
           )}
-          {user?.role === 'admin' && (
-            <button
-              onClick={() => navigate('/admin/videos')}
-              className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] font-bold border ${
-                isAdminVideosPage 
-                  ? 'bg-purple-600 text-white border-purple-600' 
-                  : 'bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20'
-              }`}
-              title="동영상 가이드 관리 화면으로 이동"
-            >
-              비디오 관리
-            </button>
-          )}
+
           {user?.role === 'admin' && (
             <button
               onClick={() => navigate('/admin/logs')}

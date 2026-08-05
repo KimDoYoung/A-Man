@@ -838,8 +838,8 @@ const DocUserMain: React.FC = () => {
                   isOpen={videoModalOpen}
                   onClose={() => setVideoModalOpen(false)}
                   onSelect={(video) => {
-                    const contextPath = window.location.pathname.startsWith('/aman') ? '/aman' : ''
-                    const tag = `![${video.name.split('.')[0]}](${contextPath}/videos/${video.name})`
+                    const safeUrl = video.url.replace(/ /g, '%20')
+                    const tag = `![${video.name.split('.')[0]}](${safeUrl})`
                     insertMarkdown(tag)
                   }}
                 />

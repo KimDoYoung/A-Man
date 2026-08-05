@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -135,6 +136,59 @@ public class VideoController {
             return ResponseEntity.ok("동영상이 성공적으로 삭제되었습니다.");
         } else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("동영상 파일 삭제에 실패했습니다.");
+        }
+    }
+
+    @PostMapping("/rename")
+    public ResponseEntity<String> renameVideo(@RequestBody Map<String, String> payload) {
+        String oldName = payload.get("oldName");
+        String newName = payload.get("newName");
+        
+        if (oldName == null || newName == null || oldName.trim().isEmpty() || newName.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("기존 파일명과 변경할 파일명은 필수입니다.");
+        }
+        
+        if (oldName.contains("..") || newName.contains("..") || oldName.contains("/") || newName.contains("/") || oldName.contains("\\") || newName.contains("\\")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 파일명 형식입니다.");
+        }
+        
+        // 원본 파일 확장자 추출
+        String oldExt = "";
+        int oldDot = oldName.lastIndexOf('.');
+        if (oldDot > 0) {
+            oldExt = oldName.substring(oldDot);
+        }
+        
+        // 입력 이름에서 동영상 확장자가 붙어있을 경우 제거하여 순수 파일명(Base) 획득
+        String newBase = newName;
+        int newDot = newName.lastIndexOf('.');
+        if (newDot > 0) {
+            String tempExt = newName.substring(newDot).toLowerCase();
+            if (tempExt.equals(".mp4") || tempExt.equals(".webm") || tempExt.equals(".ogg")) {
+                newBase = newName.substring(0, newDot);
+            }
+        }
+        
+        // 원본 확장자를 뒤에 강제 병합하여 최종 저장 파일명 설정
+        String finalNewName = newBase + oldExt;
+        
+        File dir = new File(videoDir);
+        File source = new File(dir, oldName);
+        File dest = new File(dir, finalNewName);
+        
+        if (!source.exists() || !source.isFile()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("원본 동영상 파일을 찾을 수 없습니다.");
+        }
+        
+        if (dest.exists()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 동일한 이름의 동영상 파일이 존재합니다.");
+        }
+        
+        boolean success = source.renameTo(dest);
+        if (success) {
+            return ResponseEntity.ok("이름 변경 성공");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 이름 변경에 실패했습니다.");
         }
     }
 

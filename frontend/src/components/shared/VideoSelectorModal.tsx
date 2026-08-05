@@ -88,7 +88,7 @@ const VideoSelectorModal: React.FC<VideoSelectorModalProps> = ({
           <div className="flex items-center gap-2">
             <Video className="w-5 h-5 text-indigo-500" />
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              도움말 동영상 가이드 삽입
+              도움말 동영상 삽입
             </h3>
             <span className="text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded font-mono font-semibold">
               Ctrl+Shift+V
@@ -212,7 +212,7 @@ const VideoSelectorModal: React.FC<VideoSelectorModalProps> = ({
                 <div className="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50">
                   <p className="font-semibold text-slate-500 dark:text-slate-400">💡 태그 렌더링 규칙</p>
                   <p className="mt-1 font-mono text-[9px] text-indigo-650 bg-white dark:bg-slate-950 p-1.5 rounded border border-indigo-100/50 dark:border-slate-850 truncate select-all">
-                    {`![${selectedVideo.name.split('.')[0]}](/aman/videos/${selectedVideo.name})`}
+                    {`![${selectedVideo.name.split('.')[0]}](${selectedVideo.url.replace(/ /g, '%20')})`}
                   </p>
                   <p className="mt-1">에디터 본문에 위 형태의 이미지 코드로 삽입되며, 뷰어에서 자동으로 토글 비디오 플레이어로 변환됩니다.</p>
                 </div>

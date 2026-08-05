@@ -429,7 +429,10 @@ public class ManualController {
         "            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin-top 0.3s ease;\n" +
         "            margin-top: 14px;\n" +
         "            border-radius: 8px;\n" +
-        "            background-color: #000000;\n" +
+        "            background-color: transparent;\n" +
+        "            display: flex;\n" +
+        "            justify-content: center;\n" +
+        "            align-items: center;\n" +
         "        }\n" +
         "        .manual-video-body.is-hidden {\n" +
         "            max-height: 0;\n" +
@@ -437,11 +440,14 @@ public class ManualController {
         "            margin-top: 0;\n" +
         "        }\n" +
         "        .manual-video-body video {\n" +
-        "            width: 100%;\n" +
+        "            width: auto;\n" +
+        "            max-width: 100%;\n" +
+        "            height: auto;\n" +
         "            max-height: 500px;\n" +
         "            display: block;\n" +
         "            outline: none;\n" +
         "            border-radius: 8px;\n" +
+        "            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);\n" +
         "        }\n" +
         "        /* 다크모드 대응 */\n" +
         "        .dark-mode .manual-video-card {\n" +
@@ -477,25 +483,31 @@ public class ManualController {
         "            var isHidden = body.classList.contains('is-hidden');\n" +
         "            if (isHidden) {\n" +
         "                body.classList.remove('is-hidden');\n" +
-        "                if (btnText) btnText.innerHTML = '가이드 접기';\n" +
+        "                if (btnText) btnText.innerHTML = '동영상 접기';\n" +
         "                if (btnIcon) {\n" +
         "                    btnIcon.className = 'fas fa-eye-slash';\n" +
         "                }\n" +
         "                btn.classList.remove('collapsed');\n" +
-        "                if (video) {\n" +
+        "                if (video && video.tagName === 'VIDEO') {\n" +
         "                    video.play().catch(function(e) {\n" +
         "                        console.log('Auto-play blocked:', e);\n" +
         "                    });\n" +
         "                }\n" +
         "            } else {\n" +
         "                body.classList.add('is-hidden');\n" +
-        "                if (btnText) btnText.innerHTML = '동영상 가이드 보기';\n" +
+        "                if (btnText) btnText.innerHTML = '동영상 보기';\n" +
         "                if (btnIcon) {\n" +
         "                    btnIcon.className = 'fas fa-video';\n" +
         "                }\n" +
         "                btn.classList.add('collapsed');\n" +
         "                if (video) {\n" +
-        "                    video.pause();\n" +
+        "                    if (video.tagName === 'VIDEO') {\n" +
+        "                        video.pause();\n" +
+        "                    } else if (video.tagName === 'IFRAME') {\n" +
+        "                        var currentSrc = video.src;\n" +
+        "                        video.src = '';\n" +
+        "                        video.src = currentSrc;\n" +
+        "                    }\n" +
         "                }\n" +
         "            }\n" +
         "        }\n" +

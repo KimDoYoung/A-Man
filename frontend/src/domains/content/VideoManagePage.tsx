@@ -104,7 +104,7 @@ const VideoManagePage: React.FC = () => {
   }
 
   const handleDelete = async (fileName: string) => {
-    if (!confirm(`[${fileName}] 동영상 가이드를 정말로 삭제하시겠습니까?\n이 동영상을 링크한 모든 매뉴얼에서 재생이 되지 않습니다.`)) return
+    if (!confirm(`[${fileName}] 동영상을 정말로 삭제하시겠습니까?\n이 동영상을 링크한 모든 매뉴얼에서 재생이 되지 않습니다.`)) return
     
     try {
       await apiClient.delete(`/admin/video/${fileName}`)
@@ -121,11 +121,8 @@ const VideoManagePage: React.FC = () => {
 
   // 복사 기능 (마크다운 태그 복사)
   const handleCopyMarkdown = (item: VideoItem) => {
-    // 풀 URL 대신 상대 경로 형태 (/videos/filename.mp4) 또는 전체 경로를 복사
-    // 사용자 매뉴얼에서 편하게 쓰려면 풀 URL보다는 /videos/filename.mp4 형태로 저장하는 것이 호스트 변경 대응에 우수함
-    // 하지만 브라우저가 다루는 경로 기준 /aman/videos/... 가 맞음 (contextPath가 /aman이므로)
-    const contextPath = window.location.pathname.startsWith('/aman') ? '/aman' : ''
-    const mdTag = `![${item.name.split('.')[0]}](${contextPath}/videos/${item.name})`
+    const safeUrl = item.url.replace(/ /g, '%20')
+    const mdTag = `![${item.name.split('.')[0]}](${safeUrl})`
     
     navigator.clipboard.writeText(mdTag)
       .then(() => showStatus('success', '마크다운 삽입 태그가 복사되었습니다.'))
@@ -151,6 +148,48 @@ const VideoManagePage: React.FC = () => {
     } catch (err) {
       console.error('다운로드 오류:', err)
       window.open(url, '_blank')
+    }
+  }
+
+  const handleRename = async (oldName: string) => {
+    const dotIdx = oldName.lastIndexOf('.')
+    const baseName = dotIdx > 0 ? oldName.substring(0, dotIdx) : oldName
+    const ext = dotIdx > 0 ? oldName.substring(dotIdx) : ''
+
+    const newBaseName = prompt('변경할 동영상 파일 이름을 입력해 주세요 (확장자 제외):', baseName)
+    if (newBaseName === null) return
+    
+    const trimmedBase = newBaseName.trim()
+    if (!trimmedBase) {
+      showStatus('error', '파일명은 비어 둘 수 없습니다.')
+      return
+    }
+    
+    // 사용자가 확장자를 명시적으로 써 넣은 경우 보정
+    let processedBase = trimmedBase
+    const newDotIdx = trimmedBase.lastIndexOf('.')
+    if (newDotIdx > 0) {
+      const lower = trimmedBase.toLowerCase()
+      if (lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.ogg')) {
+        processedBase = trimmedBase.substring(0, newDotIdx)
+      }
+    }
+
+    if (processedBase === baseName) return
+    
+    const finalNewName = processedBase + ext
+    
+    try {
+      await apiClient.post('/admin/video/rename', {
+        oldName,
+        newName: finalNewName
+      })
+      showStatus('success', `동영상 파일 이름이 [${finalNewName}]으로 변경되었습니다.`)
+      fetchVideos()
+    } catch (err: any) {
+      console.error('동영상 이름 변경 실패:', err)
+      const errorMsg = err.response?.data || '이름 변경에 실패했습니다.'
+      showStatus('error', errorMsg)
     }
   }
 
@@ -200,7 +239,7 @@ const VideoManagePage: React.FC = () => {
     },
     {
       headerName: '액션',
-      width: 250,
+      width: 300,
       cellClass: 'flex items-center justify-center gap-2 h-full',
       cellRenderer: (params: any) => {
         const item = params.data
@@ -212,6 +251,13 @@ const VideoManagePage: React.FC = () => {
               title="마크다운 에디터용 태그 복사"
             >
               태그복사
+            </button>
+            <button
+              onClick={() => handleRename(item.name)}
+              className="px-2 py-1 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-amber-600 rounded text-[11px] font-bold cursor-pointer transition-all inline-flex items-center gap-1"
+              title="동영상 파일명 변경"
+            >
+              이름변경
             </button>
             <button
               onClick={() => handleDownload(item.url, item.name)}
@@ -254,10 +300,10 @@ const VideoManagePage: React.FC = () => {
           <div className="space-y-1">
             <h1 className="text-xl font-bold text-slate-850 dark:text-slate-100 flex items-center gap-2">
               <Video className="w-5 h-5 text-indigo-500" />
-              동영상 가이드 관리
+              동영상 관리
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              도움말 매뉴얼에 첨부할 비디오 가이드(.mp4, .webm, .ogg) 파일을 업로드하고 관리합니다.
+              도움말 매뉴얼에 첨부할 비디오(.mp4, .webm, .ogg) 파일을 업로드하고 관리합니다.
             </p>
           </div>
 
@@ -354,7 +400,7 @@ const VideoManagePage: React.FC = () => {
                 '<span class="ag-overlay-loading-center">데이터를 불러오는 중입니다...</span>'
               }
               overlayNoRowsTemplate={
-                '<span class="ag-overlay-no-rows-center">등록된 동영상 가이드 파일이 없습니다.</span>'
+                '<span class="ag-overlay-no-rows-center">등록된 동영상 파일이 없습니다.</span>'
               }
             />
           </div>
