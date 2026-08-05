@@ -11,6 +11,7 @@ import MarkdownSplitEditor from './components/MarkdownSplitEditor'
 import { useRecentPagesStore } from '@/store/useRecentPagesStore'
 import ActionImageEditor from '@/components/imageditor/ActionImageEditor'
 import { measureLineTops } from '@/utils/textareaLinePositions'
+import VideoSelectorModal from '@/components/shared/VideoSelectorModal'
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   if (navigator.clipboard && window.isSecureContext) {
@@ -74,6 +75,7 @@ const DocUserMain: React.FC = () => {
   const [copied, setCopied] = useState(false)
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [currentUser, setCurrentUser] = useState<{ username: string; role: string } | null>(null)
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
 
   const isDirty = page ? (
     pageContent !== (page.content || '') || 
@@ -293,6 +295,9 @@ const DocUserMain: React.FC = () => {
       } else if (e.key === 'F9') {
         e.preventDefault()
         setPreviewOpen((prev) => !prev)
+      } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault()
+        setVideoModalOpen(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -814,6 +819,7 @@ const DocUserMain: React.FC = () => {
                   insertBullet={insertBullet}
                   insertNumber={insertNumber}
                   selectAndUploadImage={selectAndUploadImage}
+                  openVideoSelector={() => setVideoModalOpen(true)}
                   handleSave={handleSave}
                   textareaRef={textareaRef}
                   containerRef={containerRef}
@@ -825,6 +831,16 @@ const DocUserMain: React.FC = () => {
                     setTimeout(() => {
                       isLeavingRef.current = false;
                     }, 100);
+                  }}
+                />
+
+                <VideoSelectorModal
+                  isOpen={videoModalOpen}
+                  onClose={() => setVideoModalOpen(false)}
+                  onSelect={(video) => {
+                    const contextPath = window.location.pathname.startsWith('/aman') ? '/aman' : ''
+                    const tag = `![${video.name.split('.')[0]}](${contextPath}/videos/${video.name})`
+                    insertMarkdown(tag)
                   }}
                 />
 

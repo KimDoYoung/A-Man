@@ -6,6 +6,7 @@ import rehypeRaw from 'rehype-raw'
 import remarkBreaks from 'remark-breaks'
 
 import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
+import ManualVideoCard from '@/components/shared/ManualVideoCard'
 
 export const parseInlineStyles = (text: string): React.ReactNode => {
   // 하위 호환성을 위해 남겨두되, 이제 사용되지 않습니다.
@@ -105,11 +106,17 @@ export const renderMarkdownToHtml = (md: string, settings?: Record<string, strin
             </code>
           );
         },
-        img: ({ src, alt, node, ...props }) => (
-          <span data-source-line={node?.position?.start.line} className="my-4 flex justify-center">
-            <img src={src} alt={alt} className="max-w-full h-auto border border-gray-200 shadow-sm" {...props} />
-          </span>
-        ),
+        img: ({ src, alt, node, ...props }) => {
+          const isVideo = src && /\.(mp4|webm|ogg)$/i.test(src)
+          if (isVideo) {
+            return <ManualVideoCard src={src!} alt={alt} />
+          }
+          return (
+            <span data-source-line={node?.position?.start.line} className="my-4 flex justify-center">
+              <img src={src} alt={alt} className="max-w-full h-auto border border-gray-200 shadow-sm" {...props} />
+            </span>
+          )
+        },
         a: ({ href, children, ...props }) => {
           const isBlank = !settings || settings.LINK_BLANK !== 'false';
           return (

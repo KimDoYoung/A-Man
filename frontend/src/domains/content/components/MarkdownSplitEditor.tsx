@@ -23,6 +23,7 @@ interface MarkdownSplitEditorProps {
   insertBullet: () => void;
   insertNumber: () => void;
   selectAndUploadImage: () => void;
+  openVideoSelector: () => void;
   handleSave: (silent?: boolean) => Promise<boolean>;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   containerRef: React.RefObject<HTMLDivElement>;
@@ -50,6 +51,7 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
   insertBullet,
   insertNumber,
   selectAndUploadImage,
+  openVideoSelector,
   handleSave,
   textareaRef,
   containerRef,
@@ -78,6 +80,7 @@ const MarkdownSplitEditor: React.FC<MarkdownSplitEditorProps> = ({
             insertBullet={insertBullet}
             insertNumber={insertNumber}
             selectAndUploadImage={selectAndUploadImage}
+            openVideoSelector={openVideoSelector}
             aka={pageAka}
             onAkaChange={setPageAka}
             previewOpen={previewOpen}

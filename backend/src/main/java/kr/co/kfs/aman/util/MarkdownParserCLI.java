@@ -57,7 +57,8 @@ public class MarkdownParserCLI {
         HtmlRenderer renderer = HtmlRenderer.builder(options).build();
 
         com.vladsch.flexmark.util.ast.Node document = parser.parse(markdown);
-        return renderer.render(document);
+        String html = renderer.render(document);
+        return kr.co.kfs.aman.util.MarkdownVideoPostProcessor.process(html);
     }
 
     // --- 백틱 파싱 확장 관련 자바 구현 (ManualController.java에서 복제) ---

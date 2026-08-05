@@ -368,6 +368,139 @@ public class ManualController {
         "        });\n" +
         "    </script>\n";
 
+    private static final String VIDEO_CSS =
+        "        /* 🎬 비디오 플레이어 전용 UI 스타일 */\n" +
+        "        .manual-video-card {\n" +
+        "            background-color: #f8fafc;\n" +
+        "            border: 1px solid #e2e8f0;\n" +
+        "            border-radius: 10px;\n" +
+        "            padding: 16px 20px;\n" +
+        "            margin: 20px 0;\n" +
+        "            transition: all 0.2s ease;\n" +
+        "        }\n" +
+        "        .manual-video-header {\n" +
+        "            display: flex;\n" +
+        "            align-items: center;\n" +
+        "            justify-content: space-between;\n" +
+        "            gap: 12px;\n" +
+        "        }\n" +
+        "        .manual-video-title {\n" +
+        "            display: flex;\n" +
+        "            align-items: center;\n" +
+        "            gap: 8px;\n" +
+        "            font-weight: 600;\n" +
+        "            font-size: 14px;\n" +
+        "            color: #1e293b;\n" +
+        "        }\n" +
+        "        .manual-video-title i {\n" +
+        "            color: #6366f1;\n" +
+        "        }\n" +
+        "        .manual-video-btn {\n" +
+        "            display: inline-flex;\n" +
+        "            align-items: center;\n" +
+        "            gap: 6px;\n" +
+        "            padding: 6px 12px;\n" +
+        "            background-color: #4f46e5;\n" +
+        "            color: #ffffff;\n" +
+        "            border: none;\n" +
+        "            border-radius: 6px;\n" +
+        "            font-size: 12px;\n" +
+        "            font-weight: 600;\n" +
+        "            cursor: pointer;\n" +
+        "            transition: all 0.2s ease;\n" +
+        "            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);\n" +
+        "        }\n" +
+        "        .manual-video-btn:hover {\n" +
+        "            background-color: #4338ca;\n" +
+        "        }\n" +
+        "        .manual-video-btn.collapsed {\n" +
+        "            background-color: #f1f5f9;\n" +
+        "            color: #475569;\n" +
+        "            border: 1px solid #cbd5e1;\n" +
+        "        }\n" +
+        "        .manual-video-btn.collapsed:hover {\n" +
+        "            background-color: #e2e8f0;\n" +
+        "            color: #1e293b;\n" +
+        "        }\n" +
+        "        .manual-video-body {\n" +
+        "            max-height: 520px;\n" +
+        "            opacity: 1;\n" +
+        "            overflow: hidden;\n" +
+        "            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin-top 0.3s ease;\n" +
+        "            margin-top: 14px;\n" +
+        "            border-radius: 8px;\n" +
+        "            background-color: #000000;\n" +
+        "        }\n" +
+        "        .manual-video-body.is-hidden {\n" +
+        "            max-height: 0;\n" +
+        "            opacity: 0;\n" +
+        "            margin-top: 0;\n" +
+        "        }\n" +
+        "        .manual-video-body video {\n" +
+        "            width: 100%;\n" +
+        "            max-height: 500px;\n" +
+        "            display: block;\n" +
+        "            outline: none;\n" +
+        "            border-radius: 8px;\n" +
+        "        }\n" +
+        "        /* 다크모드 대응 */\n" +
+        "        .dark-mode .manual-video-card {\n" +
+        "            background-color: #0f172a;\n" +
+        "            border-color: #334155;\n" +
+        "        }\n" +
+        "        .dark-mode .manual-video-title {\n" +
+        "            color: #f1f5f9;\n" +
+        "        }\n" +
+        "        .dark-mode .manual-video-title i {\n" +
+        "            color: #818cf8;\n" +
+        "        }\n" +
+        "        .dark-mode .manual-video-btn.collapsed {\n" +
+        "            background-color: #1e293b;\n" +
+        "            color: #cbd5e1;\n" +
+        "            border-color: #334155;\n" +
+        "        }\n" +
+        "        .dark-mode .manual-video-btn.collapsed:hover {\n" +
+        "            background-color: #334155;\n" +
+        "            color: #f1f5f9;\n" +
+        "        }\n";
+
+    private static final String VIDEO_SCRIPT = 
+        "    <script>\n" +
+        "        function toggleManualVideo(id) {\n" +
+        "            var body = document.getElementById('manualVideoBody_' + id);\n" +
+        "            var btn = document.getElementById('manualVideoBtn_' + id);\n" +
+        "            var btnText = document.getElementById('manualVideoBtnText_' + id);\n" +
+        "            var btnIcon = document.getElementById('manualVideoBtnIcon_' + id);\n" +
+        "            var video = document.getElementById('manualVideoPlayer_' + id);\n" +
+        "            if (!body || !btn) return;\n" +
+        "            \n" +
+        "            var isHidden = body.classList.contains('is-hidden');\n" +
+        "            if (isHidden) {\n" +
+        "                body.classList.remove('is-hidden');\n" +
+        "                if (btnText) btnText.innerHTML = '가이드 접기';\n" +
+        "                if (btnIcon) {\n" +
+        "                    btnIcon.className = 'fas fa-eye-slash';\n" +
+        "                }\n" +
+        "                btn.classList.remove('collapsed');\n" +
+        "                if (video) {\n" +
+        "                    video.play().catch(function(e) {\n" +
+        "                        console.log('Auto-play blocked:', e);\n" +
+        "                    });\n" +
+        "                }\n" +
+        "            } else {\n" +
+        "                body.classList.add('is-hidden');\n" +
+        "                if (btnText) btnText.innerHTML = '동영상 가이드 보기';\n" +
+        "                if (btnIcon) {\n" +
+        "                    btnIcon.className = 'fas fa-video';\n" +
+        "                }\n" +
+        "                btn.classList.add('collapsed');\n" +
+        "                if (video) {\n" +
+        "                    video.pause();\n" +
+        "                }\n" +
+        "            }\n" +
+        "        }\n" +
+        "    </script>\n";
+
     @Value("${spring.application.version:1.0.0}")
     private String appVersion;
 
@@ -1233,10 +1366,12 @@ public class ManualController {
             "            vertical-align: middle;\n" +
             "        }\n" +
             TOC_CSS +
+            VIDEO_CSS +
             "    </style>\n" +
             targetBlankScript +
             settingsScript +
             TOC_SCRIPT +
+            VIDEO_SCRIPT +
             "</head>\n" +
             "<body>\n" +
             "    <div class=\"container\">\n" +
@@ -1426,7 +1561,8 @@ public class ManualController {
         HtmlRenderer renderer = HtmlRenderer.builder(options).build();
 
         com.vladsch.flexmark.util.ast.Node document = parser.parse(markdown);
-        return renderer.render(document);
+        String html = renderer.render(document);
+        return kr.co.kfs.aman.util.MarkdownVideoPostProcessor.process(html);
     }
 
     // --- 백틱 파싱 확장 관련 자바 구현 ---

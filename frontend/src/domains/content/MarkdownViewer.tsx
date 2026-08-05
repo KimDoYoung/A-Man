@@ -10,6 +10,7 @@ import remarkBreaks from 'remark-breaks'
 
 import FolderBreadcrumbs from '@/components/shared/FolderBreadcrumbs'
 import AssetKbdRenderer from '@/components/shared/AssetKbdRenderer'
+import ManualVideoCard from '@/components/shared/ManualVideoCard'
 
 const extractText = (node: any): string => {
   if (!node) return ''
@@ -301,11 +302,17 @@ const MarkdownViewer: React.FC = () => {
               </code>
             )
           },
-          img: ({ src, alt, ...props }) => (
-            <span className="my-4 flex justify-center">
-              <img src={src} alt={alt} className="max-w-full h-auto border border-gray-200 dark:border-slate-800 shadow-sm" {...props} />
-            </span>
-          ),
+          img: ({ src, alt, ...props }) => {
+            const isVideo = src && /\.(mp4|webm|ogg)$/i.test(src)
+            if (isVideo) {
+              return <ManualVideoCard src={src!} alt={alt} />
+            }
+            return (
+              <span className="my-4 flex justify-center">
+                <img src={src} alt={alt} className="max-w-full h-auto border border-gray-200 dark:border-slate-800 shadow-sm" {...props} />
+              </span>
+            )
+          },
           a: ({ href, children, ...props }) => {
             const isBlank = settings.LINK_BLANK !== 'false';
             return (

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-Man 비디오 플레이어 테스트 (video1.html)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #333; padding: 30px; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    h1 { font-size: 22px; margin-bottom: 20px; color: #2c3e50; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+    
+    /* 툴바 레이아웃 */
+    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef; flex-wrap: wrap; gap: 10px; }
+    .toolbar-left { display: flex; align-items: center; gap: 10px; }
+    select { padding: 8px 12px; border-radius: 4px; border: 1px solid #ced4da; font-size: 14px; font-weight: bold; cursor: pointer; }
+    
+    /* 토글 버튼 스타일 */
+    .btn-toggle {
+      padding: 8px 16px;
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn-toggle:hover { background-color: #5a6268; }
+    
+    /* 비디오 컨테이너 슬라이드 접기 애니메이션 */
+    .video-wrapper {
+      max-height: 500px;
+      opacity: 1;
+      overflow: hidden;
+      transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out, margin-top 0.3s ease-in-out;
+      margin-top: 10px;
+    }
+    
+    /* 숨김 상태 클래스 */
+    .video-wrapper.collapsed {
+      max-height: 0;
+      opacity: 0;
+      margin-top: 0;
+    }
+
+    .video-container { background: #000; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    video { width: 100%; max-height: 500px; display: block; }
+    
+    /* 아래쪽 더미 본문 영역 (UI 확인용) */
+    .content-area { margin-top: 25px; padding: 20px; background: #e9ecef; border-radius: 6px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎬 A-Man 동영상 재생 테스트</h1>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <label for="sampleVideoSelect"><b>테스트 샘플 선택:</b></label>
+      <select id="sampleVideoSelect" onchange="changeVideoSample(this.value)">
+        <option value="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4">샘플 1: MDN 꽃 비디오 (MP4)</option>
+        <option value="https://vjs.zencdn.net/v/oceans.mp4">샘플 2: 바다 풍경 비디오 (MP4)</option>
+        <option value="https://www.w3schools.com/html/mov_bbb.mp4">샘플 3: W3Schools 토끼 비디오 (MP4)</option>
+      </select>
+    </div>
+    
+    <!-- 동영상 접기/펴기 버튼 -->
+    <button id="toggleBtn" class="btn-toggle" onclick="toggleVideo()">🙈 동영상 숨기기</button>
+  </div>
+
+  <!-- 비디오 감싸는 영억 (collapsed 클래스로 제어) -->
+  <div id="videoWrapper" class="video-wrapper">
+    <div class="video-container">
+      <video id="videoPlayer" controls width="100%">
+        <source id="videoSource" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+        브라우저가 HTML5 비디오 태그를 지원하지 않습니다.
+      </video>
+    </div>
+  </div>
+
+  <!-- 매뉴얼 본문 텍스트 예시 -->
+  <div class="content-area">
+    <h3>📄 매뉴얼 본문 영역</h3>
+    <p>동영상을 접으면 이 본문 영역이 위로 부드럽게 올라와서 텍스트와 이미지 가이드를 훨씬 넓은 화면으로 읽을 수 있습니다.</p>
+  </div>
+</div>
+
+<script>
+  function changeVideoSample(url) {
+    const video = document.getElementById('videoPlayer');
+    const source = document.getElementById('videoSource');
+    source.src = url;
+    video.load();
+    video.play();
+  }
+
+  // 동영상 접기 / 보이기 토글 함수
+  function toggleVideo() {
+    const wrapper = document.getElementById('videoWrapper');
+    const btn = document.getElementById('toggleBtn');
+    const video = document.getElementById('videoPlayer');
+
+    if (wrapper.classList.contains('collapsed')) {
+      // 보이기
+      wrapper.classList.remove('collapsed');
+      btn.textContent = '🙈 동영상 숨기기';
+      btn.style.backgroundColor = '#6c757d';
+    } else {
+      // 숨기기
+      wrapper.classList.add('collapsed');
+      btn.textContent = '🎬 동영상 보이기';
+      btn.style.backgroundColor = '#007bff';
+      
+      // 영상이 숨겨질 때 소리가 계속 나지 않도록 자동으로 일시정지
+      video.pause();
+    }
+  }
+</script>
+
+</body>
+</html>
