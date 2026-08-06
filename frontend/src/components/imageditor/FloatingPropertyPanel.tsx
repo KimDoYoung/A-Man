@@ -47,6 +47,8 @@ interface FloatingPropertyPanelProps {
   setBoxOpacity: (val: number) => void
   boxBorderRadius: number
   setBoxBorderRadius: (val: number) => void
+  boxShape: 'circle' | 'rect'
+  setBoxShape: (shape: 'circle' | 'rect') => void
 
   // 3. 화살표 (arrow) 관련 속성
   arrowColor: string
@@ -170,6 +172,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setBoxOpacity,
   boxBorderRadius,
   setBoxBorderRadius,
+  boxShape,
+  setBoxShape,
   arrowColor,
   setArrowColor,
   arrowLineWidth,
@@ -427,6 +431,38 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 배경색 및 투명도: box 타입일 때만 */}
                   {selectedItem.type === 'box' && (
                     <>
+                      {/* 모양 선택 */}
+                      <div className="space-y-2">
+                        <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                        <div className="flex gap-2">
+                          {(['rect', 'circle'] as const).map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                setBoxShape(s)
+                                const updated = items.map(item =>
+                                  item.id === selectedItemId
+                                    ? { ...item, style: { ...item.style, shape: s } }
+                                    : item
+                                )
+                                pushToUndo(updated)
+                              }}
+                              className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                (selectedItem.style.shape || 'rect') === s
+                                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                  : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                              }`}
+                              title={s === 'rect' ? '사각형' : '원형'}
+                            >
+                              {s === 'rect'
+                                ? <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                                : <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="8" cy="8" r="6"/></svg>
+                              }
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* 배경색 */}
                       <ColorPicker
                         label="배경색"
@@ -463,24 +499,26 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         }}
                       />
 
-                      {/* 모서리 둥글기 */}
-                      <RangeSlider
-                        label="모서리 둥글기"
-                        value={selectedItem.style.borderRadius !== undefined ? selectedItem.style.borderRadius : boxBorderRadius}
-                        min={0}
-                        max={40}
-                        unit="px"
-                        onChangeValue={(val) => {
-                          setBoxBorderRadius(val)
-                          const updated = items.map(item => {
-                            if (item.id === selectedItemId) {
-                              return { ...item, style: { ...item.style, borderRadius: val } }
-                            }
-                            return item
-                          })
-                          pushToUndo(updated)
-                        }}
-                      />
+                      {/* 모서리 둥글기: 사각형일 때만 의미 있음 */}
+                      {(selectedItem.style.shape || 'rect') === 'rect' && (
+                        <RangeSlider
+                          label="모서리 둥글기"
+                          value={selectedItem.style.borderRadius !== undefined ? selectedItem.style.borderRadius : boxBorderRadius}
+                          min={0}
+                          max={40}
+                          unit="px"
+                          onChangeValue={(val) => {
+                            setBoxBorderRadius(val)
+                            const updated = items.map(item => {
+                              if (item.id === selectedItemId) {
+                                return { ...item, style: { ...item.style, borderRadius: val } }
+                              }
+                              return item
+                            })
+                            pushToUndo(updated)
+                          }}
+                        />
+                      )}
                     </>
                   )}
 
@@ -1438,6 +1476,28 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         />
                         {activeTool === 'box' && (
                           <>
+                            <div className="space-y-2">
+                              <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                              <div className="flex gap-2">
+                                {(['rect', 'circle'] as const).map((s) => (
+                                  <button
+                                    key={s}
+                                    onClick={() => setBoxShape(s)}
+                                    className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                      boxShape === s
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                        : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                                    }`}
+                                    title={s === 'rect' ? '사각형' : '원형'}
+                                  >
+                                    {s === 'rect'
+                                      ? <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                                      : <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="8" cy="8" r="6"/></svg>
+                                    }
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <ColorPicker
                               label="배경색"
                               selectedColor={boxBgColor}
@@ -1452,14 +1512,16 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               unit="%"
                               onChangeValue={setBoxOpacity}
                             />
-                            <RangeSlider
-                              label="모서리 둥글기"
-                              value={boxBorderRadius}
-                              min={0}
-                              max={40}
-                              unit="px"
-                              onChangeValue={setBoxBorderRadius}
-                            />
+                            {boxShape === 'rect' && (
+                              <RangeSlider
+                                label="모서리 둥글기"
+                                value={boxBorderRadius}
+                                min={0}
+                                max={40}
+                                unit="px"
+                                onChangeValue={setBoxBorderRadius}
+                              />
+                            )}
                           </>
                         )}
                         {/* 선 종류 */}

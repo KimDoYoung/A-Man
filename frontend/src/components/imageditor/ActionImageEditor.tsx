@@ -65,6 +65,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [boxBgColor, setBoxBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBgColor)
   const [boxOpacity, setBoxOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxOpacity)
   const [boxBorderRadius, setBoxBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+  const [boxShape, setBoxShape] = useState<'circle' | 'rect'>(SYSTEM_ITEM_DEFAULTS.boxShape)
 
   // 3. 화살표 (arrow) 관련 속성
   const [arrowColor, setArrowColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.arrowColor)
@@ -154,6 +155,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor: string
     boxOpacity: number
     boxBorderRadius: number
+    boxShape: 'circle' | 'rect'
     arrowColor: string
     arrowLineWidth: number
     arrowLineStyle: 'solid' | 'dashed'
@@ -202,12 +204,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
     circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
     circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    circleNumberShape: SYSTEM_ITEM_DEFAULTS.circleNumberShape,
     boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
     boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
     boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
     boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
     boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
     boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    boxShape: SYSTEM_ITEM_DEFAULTS.boxShape,
     arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
     arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
     arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
@@ -373,6 +377,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor !== lastSavedState.boxBgColor ||
     boxOpacity !== lastSavedState.boxOpacity ||
     boxBorderRadius !== lastSavedState.boxBorderRadius ||
+    boxShape !== lastSavedState.boxShape ||
     arrowColor !== lastSavedState.arrowColor ||
     arrowLineWidth !== lastSavedState.arrowLineWidth ||
     arrowLineStyle !== lastSavedState.arrowLineStyle ||
@@ -407,7 +412,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }, [
     items, bgImageSrc, imageScale, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, // imageScale 추가
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
-    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
     imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption,
     calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize
@@ -706,31 +711,43 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         ctx.restore()
       } 
       else if (item.type === 'box') {
-        // 사각형 강조 박스 (둥글기 borderRadius 반영)
-        const radius = Math.min(item.style.borderRadius || 0, Math.min(Math.abs(item.width || 0), Math.abs(item.height || 0)) / 2)
-        
-        ctx.save()
-        // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
-        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent' && item.style.backgroundColor !== '') {
-          ctx.save()
-          ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
-          ctx.fillStyle = item.style.backgroundColor
-          if (radius > 0) {
+        // 강조 박스: 사각형(둥글기 borderRadius 반영) / 원
+        const shape = item.style.shape || 'rect'
+        const w = item.width || 0
+        const h = item.height || 0
+        const radius = Math.min(item.style.borderRadius || 0, Math.min(Math.abs(w), Math.abs(h)) / 2)
+
+        // 도형별 경로 구성 (배경 채우기/테두리 그리기에서 동일 경로 재사용)
+        const buildBoxPath = () => {
+          if (shape === 'circle') {
+            ctx.beginPath()
+            ctx.ellipse(item.x + w / 2, item.y + h / 2, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, 2 * Math.PI)
+          } else if (radius > 0) {
             ctx.beginPath()
             if (typeof ctx.roundRect === 'function') {
-              ctx.roundRect(item.x, item.y, item.width || 0, item.height || 0, radius)
+              ctx.roundRect(item.x, item.y, w, h, radius)
             } else {
-              const x = item.x, y = item.y, w = item.width || 0, h = item.height || 0
+              const x = item.x, y = item.y
               ctx.moveTo(x + radius, y)
               ctx.arcTo(x + w, y, x + w, y + h, radius)
               ctx.arcTo(x + w, y + h, x, y + h, radius)
               ctx.arcTo(x, y + h, x, y, radius)
               ctx.arcTo(x, y, x + w, y, radius)
             }
-            ctx.fill()
           } else {
-            ctx.fillRect(item.x, item.y, item.width || 0, item.height || 0)
+            ctx.beginPath()
+            ctx.rect(item.x, item.y, w, h)
           }
+        }
+
+        ctx.save()
+        // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
+        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent' && item.style.backgroundColor !== '') {
+          ctx.save()
+          ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
+          ctx.fillStyle = item.style.backgroundColor
+          buildBoxPath()
+          ctx.fill()
           ctx.restore()
         }
 
@@ -742,23 +759,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         } else {
           ctx.setLineDash([])
         }
-        
-        if (radius > 0) {
-          ctx.beginPath()
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(item.x, item.y, item.width || 0, item.height || 0, radius)
-          } else {
-            const x = item.x, y = item.y, w = item.width || 0, h = item.height || 0
-            ctx.moveTo(x + radius, y)
-            ctx.arcTo(x + w, y, x + w, y + h, radius)
-            ctx.arcTo(x + w, y + h, x, y + h, radius)
-            ctx.arcTo(x, y + h, x, y, radius)
-            ctx.arcTo(x, y, x + w, y, radius)
-          }
-          ctx.stroke()
-        } else {
-          ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
-        }
+        buildBoxPath()
+        ctx.stroke()
         ctx.restore()
 
         // 선택 영역 하이라이트 및 4꼭지점 조절 핸들
@@ -999,22 +1001,28 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         ctx.setLineDash([4, 4])
         const w = dragCurrent.x - dragStart.x
         const h = dragCurrent.y - dragStart.y
-        const radius = Math.min(boxBorderRadius, Math.min(Math.abs(w), Math.abs(h)) / 2)
-        if (radius > 0) {
+        if (boxShape === 'circle') {
           ctx.beginPath()
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(dragStart.x, dragStart.y, w, h, radius)
-          } else {
-            const x = dragStart.x, y = dragStart.y
-            ctx.moveTo(x + radius, y)
-            ctx.arcTo(x + w, y, x + w, y + h, radius)
-            ctx.arcTo(x + w, y + h, x, y + h, radius)
-            ctx.arcTo(x, y + h, x, y, radius)
-            ctx.arcTo(x, y, x + w, y, radius)
-          }
+          ctx.ellipse(dragStart.x + w / 2, dragStart.y + h / 2, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, 2 * Math.PI)
           ctx.stroke()
         } else {
-          ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+          const radius = Math.min(boxBorderRadius, Math.min(Math.abs(w), Math.abs(h)) / 2)
+          if (radius > 0) {
+            ctx.beginPath()
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(dragStart.x, dragStart.y, w, h, radius)
+            } else {
+              const x = dragStart.x, y = dragStart.y
+              ctx.moveTo(x + radius, y)
+              ctx.arcTo(x + w, y, x + w, y + h, radius)
+              ctx.arcTo(x + w, y + h, x, y + h, radius)
+              ctx.arcTo(x, y + h, x, y, radius)
+              ctx.arcTo(x, y, x + w, y, radius)
+            }
+            ctx.stroke()
+          } else {
+            ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+          }
         }
       } else if (activeTool === 'arrow') {
         drawArrow(
@@ -1098,7 +1106,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }, [
     bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
-    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
     cacheTrigger, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft
   ])
@@ -1131,6 +1139,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.boxBgColor !== undefined) setBoxBgColor(config.boxBgColor)
         if (config.boxOpacity !== undefined) setBoxOpacity(config.boxOpacity)
         if (config.boxBorderRadius !== undefined) setBoxBorderRadius(config.boxBorderRadius)
+        if (config.boxShape !== undefined) setBoxShape(config.boxShape)
 
         // 3. 화살표
         if (config.arrowColor !== undefined) setArrowColor(config.arrowColor)
@@ -1195,6 +1204,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor,
     boxOpacity,
     boxBorderRadius,
+    boxShape,
     arrowColor,
     arrowLineWidth,
     arrowLineStyle,
@@ -1256,6 +1266,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setBoxBgColor(cfg.boxBgColor)
     setBoxOpacity(cfg.boxOpacity)
     setBoxBorderRadius(cfg.boxBorderRadius)
+    setBoxShape(cfg.boxShape)
     setArrowColor(cfg.arrowColor)
     setArrowLineWidth(cfg.arrowLineWidth)
     setArrowLineStyle(cfg.arrowLineStyle)
@@ -1306,6 +1317,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor: data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor,
     boxOpacity: data.boxOpacity ?? SYSTEM_ITEM_DEFAULTS.boxOpacity,
     boxBorderRadius: data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    boxShape: data.boxShape ?? SYSTEM_ITEM_DEFAULTS.boxShape,
     arrowColor: data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor,
     arrowLineWidth: data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
     arrowLineStyle: data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
@@ -2286,7 +2298,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               lineStyle: boxLineStyle,
               backgroundColor: boxBgColor,
               opacity: boxOpacity / 100,
-              borderRadius: boxBorderRadius
+              borderRadius: boxBorderRadius,
+              shape: boxShape
             }
           }
           pushToUndo([...items, newItem])
@@ -2589,6 +2602,33 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                     midX: newMidX,
                     midY: newMidY
                   }
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+
+        // box는 가로/세로를 같게 맞춰 정사각형(원 모양이면 정원)으로 스냅 (중심 고정)
+        if (targetItem && targetItem.type === 'box') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          const size = Math.max(w, h)
+
+          if (w !== size || h !== size) {
+            const cx = targetItem.x + w / 2
+            const cy = targetItem.y + h / 2
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  x: cx - size / 2,
+                  y: cy - size / 2,
+                  width: size,
+                  height: size
                 }
               }
               return item
@@ -3540,7 +3580,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             {[
               { id: 'pointer', label: 'ESC:선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
               { id: 'circle-number', label: '1:원숫자 마크', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
-              { id: 'box', label: '2:강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
+              { id: 'box', label: '2:강조 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'arrow', label: '3:화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
               { id: 'orthogonal-arrow', label: '4:꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
 
@@ -3686,6 +3726,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setBoxOpacity={setBoxOpacity}
                 boxBorderRadius={boxBorderRadius}
                 setBoxBorderRadius={setBoxBorderRadius}
+                boxShape={boxShape}
+                setBoxShape={setBoxShape}
                 arrowColor={arrowColor}
                 setArrowColor={setArrowColor}
                 arrowLineWidth={arrowLineWidth}

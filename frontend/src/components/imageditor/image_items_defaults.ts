@@ -14,6 +14,7 @@ export const SYSTEM_ITEM_DEFAULTS = {
   boxBgColor: 'transparent',
   boxOpacity: 100,
   boxBorderRadius: 7,
+  boxShape: 'rect' as 'circle' | 'rect',
 
   // 3. 화살표 (arrow) 전용 속성
   arrowColor: '#ef4444',
