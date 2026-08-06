@@ -1184,6 +1184,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.borderColor !== undefined) setBorderColor(config.borderColor)
         if (config.borderWidth !== undefined) setBorderWidth(config.borderWidth)
         if (config.borderStyle !== undefined) setBorderStyle(config.borderStyle)
+
+        // 선택된 아이템이 있으면 그 아이템에도 불러온 설정을 즉시 반영
+        applyConfigToSelectedItem({ ...SYSTEM_ITEM_DEFAULTS, ...config })
       }
     } catch (e) {
       console.log('No user settings found or error fetching settings:', e)
@@ -1302,6 +1305,86 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setBorderStyle(cfg.borderStyle)
   }
 
+  // 타입별 스타일 설정(cfg)을 해당 타입의 item.style 필드로 매핑 (아이템 생성 시 매핑과 동일한 대응 관계)
+  const buildItemStyleFromConfig = (type: CanvasItem['type'], cfg: StyleConfig): Partial<CanvasItem['style']> => {
+    switch (type) {
+      case 'circle-number':
+        return {
+          backgroundColor: cfg.circleNumberBgColor,
+          borderColor: cfg.circleNumberBorderColor,
+          borderWidth: cfg.circleNumberBorderWidth,
+          textColor: cfg.circleNumberTextColor,
+          fontSize: cfg.circleNumberFontSize,
+          shape: cfg.circleNumberShape
+        }
+      case 'box':
+        return {
+          borderColor: cfg.boxBorderColor,
+          borderWidth: cfg.boxLineWidth,
+          lineStyle: cfg.boxLineStyle,
+          backgroundColor: cfg.boxBgColor,
+          opacity: cfg.boxOpacity / 100,
+          borderRadius: cfg.boxBorderRadius,
+          shape: cfg.boxShape
+        }
+      case 'arrow':
+      case 'orthogonal-arrow':
+      case 'bracket-arrow':
+        return {
+          borderColor: cfg.arrowColor,
+          borderWidth: cfg.arrowLineWidth,
+          lineStyle: cfg.arrowLineStyle
+        }
+      case 'text':
+        return {
+          textColor: cfg.textTextColor,
+          fontSize: cfg.textFontSize,
+          backgroundColor: cfg.textBgColor,
+          fontStyle: cfg.textFontStyle,
+          textDecoration: cfg.textTextDecoration
+        }
+      case 'symbol': {
+        const scaleMapping = [20, 32, 48, 64, 80]
+        return { fontSize: scaleMapping[cfg.symbolScale - 1] || 48 }
+      }
+      case 'block-arrow-stamp':
+        return { borderColor: cfg.arrowColor, stampDirection: cfg.stampDirection }
+      case 'callout':
+        return {
+          calloutShape: cfg.calloutShape,
+          backgroundColor: cfg.calloutBgColor,
+          borderColor: cfg.calloutBorderColor,
+          borderWidth: cfg.calloutBorderWidth,
+          lineStyle: cfg.calloutLineStyle,
+          opacity: cfg.calloutOpacity / 100,
+          borderRadius: cfg.calloutBorderRadius,
+          textColor: cfg.calloutTextColor,
+          fontSize: cfg.calloutFontSize
+        }
+      case 'image':
+        return {
+          borderColor: cfg.imageSrcBorderColor,
+          borderWidth: cfg.imageSrcBorderWidth,
+          lineStyle: cfg.imageSrcBorderStyle,
+          hasBorder: cfg.imageSrcHasBorder,
+          hasCaption: cfg.imageSrcHasCaption
+        }
+      default:
+        return {}
+    }
+  }
+
+  // '나의 설정 가져오기'/'시스템설정' 클릭 시 선택된 아이템이 있으면 그 아이템에도 즉시 반영
+  const applyConfigToSelectedItem = (cfg: StyleConfig) => {
+    if (!selectedItemId) return
+    const updated = items.map((item) =>
+      item.id === selectedItemId
+        ? { ...item, style: { ...item.style, ...buildItemStyleFromConfig(item.type, cfg) } }
+        : item
+    )
+    pushToUndo(updated)
+  }
+
   // 구버전 jsonData/사용자설정 로드시 레거시 키 하위호환 폴백 체인
   // (docs/설계_이미지에디터_속성분리.md §2.1과 동일한 우선순위 유지)
   const resolveWorkStyleConfigFromLegacyData = (data: any): WorkStyleConfig => ({
@@ -1407,38 +1490,20 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
-  // 사용자 지정 기본값 삭제 (Delete)
+  // 현재 설정을 시스템 기본값으로 복원 ('시스템설정' 버튼) - DB에 저장된 나의 설정은 삭제하지 않음
   const handleDeleteUserSettings = async () => {
     try {
-      const userStr = localStorage.getItem('aman_user')
-      const user = userStr ? JSON.parse(userStr) : null
-      const userId = user?.id
-      if (!userId) {
-        showSaveMessage('사용자 정보를 획득할 수 없어 삭제할 수 없습니다.', 'error')
-        return
-      }
-
-      const key = `image_editor_defaults_user_${userId}`
-      
-      // 백엔드 DELETE API 호출
-      try {
-        await apiClient.delete(`/admin/user-settings/${key}`)
-      } catch (err: any) {
-        // 이미 해당 키가 존재하지 않아 404가 발생한 경우 에러를 무시하고 로컬 리셋을 진행합니다.
-        if (err?.response?.status !== 404) {
-          throw err
-        }
-      }
-
       // 설정을 시스템 디폴트 설정으로 복원 (handleResetToEmpty와 동일한 방식)
       applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
       // arrowHeadSize는 StyleConfig에 포함되지 않아 applyStyleConfig가 리셋하지 않으므로 별도 처리
       setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+      // 선택된 아이템이 있으면 그 아이템에도 시스템 기본값을 즉시 반영
+      applyConfigToSelectedItem(SYSTEM_ITEM_DEFAULTS)
 
-      showSaveMessage('개인 설정을 삭제하고 시스템 기본값으로 복원했습니다.', 'success')
+      showSaveMessage('현재 설정을 시스템 기본값으로 복원했습니다.', 'success')
     } catch (e) {
-      console.error('Failed to delete user settings:', e)
-      showSaveMessage('기본 설정 삭제 중 오류가 발생했습니다.', 'error')
+      console.error('Failed to reset to system defaults:', e)
+      showSaveMessage('시스템 기본값 복원 중 오류가 발생했습니다.', 'error')
     }
   }
 

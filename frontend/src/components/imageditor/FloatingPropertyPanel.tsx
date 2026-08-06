@@ -407,9 +407,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               {/* box 또는 arrow 타입 인스펙터 */}
               {(selectedItem.type === 'box' || selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow' || selectedItem.type === 'bracket-arrow') && (
                 <div className="space-y-4 animate-in fade-in duration-150">
-                  {/* 강조선 색상 */}
+                  {/* 강조선/테두리 색상 */}
                   <ColorPicker
-                    label="강조선 색상"
+                    label={selectedItem.type === 'box' ? '테두리 색상' : '강조선 색상'}
                     selectedColor={selectedItem.style.borderColor || (selectedItem.type === 'box' ? boxBorderColor : arrowColor)}
                     onChangeColor={(col) => {
                       if (selectedItem.type === 'box') {
@@ -1469,7 +1469,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     {(activeTool === 'box' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow' || activeTool === 'bracket-arrow') && (
                       <>
                         <ColorPicker
-                          label="강조선 색상"
+                          label={activeTool === 'box' ? '테두리 색상' : '강조선 색상'}
                           selectedColor={activeTool === 'box' ? boxBorderColor : arrowColor}
                           onChangeColor={activeTool === 'box' ? setBoxBorderColor : setArrowColor}
                           colors={BOX_ARROW_BORDER_COLORS}
@@ -1959,27 +1959,27 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               <div className="flex items-center space-x-1.5">
                 <button
                   onClick={onSaveDefaults}
-                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  disabled={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption')}
                   className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 rounded-md font-bold cursor-pointer transition-colors border border-indigo-100 dark:border-indigo-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-50 dark:disabled:hover:bg-indigo-950/20"
-                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 저장할 수 없습니다." : "현재 지정된 설정을 개인 기본값으로 저장합니다."}
+                  title={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption') ? "'기본도구' 탭에서 도구를 선택하거나 요소를 선택한 상태에서만 저장할 수 있습니다." : "현재 지정된 설정을 개인 기본값으로 저장합니다."}
                 >
-                  설정
+                  설정 저장
                 </button>
                 <button
                   onClick={onLoadDefaults}
-                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  disabled={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption')}
                   className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-650 dark:text-emerald-400 rounded-md font-bold cursor-pointer transition-colors border border-emerald-100 dark:border-emerald-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-50 dark:disabled:hover:bg-emerald-950/20"
-                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 불러올 수 없습니다." : "저장된 나의 기본 설정을 불러와 적용합니다."}
+                  title={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption') ? "'기본도구' 탭에서 도구를 선택하거나 요소를 선택한 상태에서만 불러올 수 있습니다." : "저장된 나의 기본 설정을 불러와 적용합니다."}
                 >
                   가져오기
                 </button>
                 <button
                   onClick={onDeleteDefaults}
-                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  disabled={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption')}
                   className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-650 dark:text-rose-400 rounded-md font-bold cursor-pointer transition-colors border border-rose-100 dark:border-rose-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-50 dark:disabled:hover:bg-rose-950/20"
-                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 삭제할 수 없습니다." : "저장된 나의 설정을 삭제하고 시스템 디폴트 설정으로 복원합니다."}
+                  title={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption') ? "'기본도구' 탭에서 도구를 선택하거나 요소를 선택한 상태에서만 복원할 수 있습니다." : "현재 설정을 시스템 기본값으로 되돌립니다. (저장된 나의 설정은 유지됩니다)"}
                 >
-                  삭제
+                  시스템설정
                 </button>
               </div>
             </div>
