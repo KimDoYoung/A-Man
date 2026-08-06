@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
-import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square } from 'lucide-react'
+import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square, MoveUpRight, Pointer } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ReorderController from './ReorderController'
 import ColorPicker from './ColorPicker'
@@ -125,6 +125,8 @@ interface FloatingPropertyPanelProps {
   setStampScale: (scale: number) => void
   stampDirection: string
   setStampDirection: (dir: string) => void
+  stampShape: 'arrow' | 'hand'
+  setStampShape: (shape: 'arrow' | 'hand') => void
 
   // 8. 말풍선/설명선 (callout) 관련 속성
   calloutShape: 'speech-rect' | 'speech-oval' | 'line'
@@ -226,6 +228,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setStampScale,
   stampDirection,
   setStampDirection,
+  stampShape,
+  setStampShape,
   calloutShape,
   setCalloutShape,
   calloutBgColor,
@@ -684,6 +688,35 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               {/* block-arrow-stamp 타입 인스펙터 */}
               {selectedItem.type === 'block-arrow-stamp' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 스탬프 모양 */}
+                  <div className="space-y-2">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 모양</span>
+                    <div className="flex gap-2">
+                      {(['arrow', 'hand'] as const).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setStampShape(s)
+                            const updated = items.map(item =>
+                              item.id === selectedItemId
+                                ? { ...item, style: { ...item.style, stampShape: s } }
+                                : item
+                            )
+                            pushToUndo(updated)
+                          }}
+                          className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                            (selectedItem.style.stampShape || 'arrow') === s
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                              : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                          }`}
+                          title={s === 'arrow' ? '화살표' : '손가락'}
+                        >
+                          {s === 'arrow' ? <MoveUpRight className="w-4 h-4" /> : <Pointer className="w-4 h-4" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 스탬프 색상 */}
                   <ColorPicker
                     label="스탬프 색상"
@@ -1581,6 +1614,27 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                     {activeTool === 'block-arrow-stamp' && (
                       <>
+                        {/* 0. 스탬프 모양 */}
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 모양</span>
+                          <div className="flex gap-2">
+                            {(['arrow', 'hand'] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => setStampShape(s)}
+                                className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                  stampShape === s
+                                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                    : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                                }`}
+                                title={s === 'arrow' ? '화살표' : '손가락'}
+                              >
+                                {s === 'arrow' ? <MoveUpRight className="w-4 h-4" /> : <Pointer className="w-4 h-4" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         {/* 1. 스탬프 색상 */}
                         <ColorPicker
                           label="스탬프 색상"

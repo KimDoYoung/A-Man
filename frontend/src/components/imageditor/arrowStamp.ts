@@ -79,3 +79,65 @@ export const drawBlockArrowStamp = (
 
   ctx.restore()
 }
+
+/**
+ * 손가락(포인팅 핸드) 스탬프 렌더링 함수 - 주먹(원) + 검지(둥근 캡슐)로 구성된 단색 실루엣
+ * 기본 방향(회전 0도)일 때 손가락 끝이 오른쪽을 가리키도록 설계 - drawBlockArrowStamp와 동일한
+ * STAMP_ANGLES 8방향 회전 기준을 그대로 공유한다.
+ */
+export const drawHandPointerStamp = (
+  ctx: CanvasRenderingContext2D,
+  item: CanvasItem
+) => {
+  const x = item.x
+  const y = item.y
+  const width = item.width ?? 60
+  const height = item.height ?? 60
+  const direction = item.style.stampDirection ?? 'right'
+  const color = item.style.borderColor ?? '#ef4444'
+
+  const cx = x + width / 2
+  const cy = y + height / 2
+  const angle = STAMP_ANGLES[direction] ?? 0
+
+  ctx.save()
+  ctx.globalAlpha = item.style.opacity ?? 1.0
+  ctx.translate(cx, cy)
+  ctx.rotate(angle)
+  ctx.fillStyle = color
+
+  const w2 = width / 2
+  const h2 = height / 2
+
+  // 주먹(fist) - 원
+  const fistR = h2 * 0.55
+  const fistCx = -width * 0.05
+  ctx.beginPath()
+  ctx.arc(fistCx, 0, fistR, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 검지(finger) - 주먹과 겹치는 지점에서 시작해 오른쪽 끝은 둥근 캡으로 마감되는 캡슐
+  const fingerHalf = h2 * 0.22
+  const fingerStartX = fistCx + fistR * 0.3
+  const tipCapX = w2 - fingerHalf
+
+  ctx.beginPath()
+  ctx.moveTo(fingerStartX, -fingerHalf)
+  ctx.lineTo(tipCapX, -fingerHalf)
+  ctx.arc(tipCapX, 0, fingerHalf, -Math.PI / 2, Math.PI / 2)
+  ctx.lineTo(fingerStartX, fingerHalf)
+  ctx.closePath()
+  ctx.fill()
+
+  ctx.restore()
+}
+
+// 스탬프 모양 디스패처 - item.style.stampShape에 따라 알맞은 렌더 함수로 위임 (기본값 'arrow')
+export const drawStamp = (ctx: CanvasRenderingContext2D, item: CanvasItem) => {
+  const shape = item.style.stampShape || 'arrow'
+  if (shape === 'hand') {
+    drawHandPointerStamp(ctx, item)
+  } else {
+    drawBlockArrowStamp(ctx, item)
+  }
+}
