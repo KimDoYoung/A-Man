@@ -79,3 +79,107 @@ export const drawBlockArrowStamp = (
 
   ctx.restore()
 }
+
+/**
+ * 손가락(포인팅 핸드) 스탬프 - 주먹+검지 SVG 아이콘(viewBox 0 0 32 32) 트레이스를 그대로 사용.
+ * 좌표상 손가락 끝은 x≈1 쪽이지만 실측 렌더 결과 각도 0(반전 없음)일 때 오른쪽을 가리켜
+ * STAMP_ANGLES 관례와 맞으므로 반전 없이 그대로 스케일만 적용한다.
+ */
+const HAND_POINTER_PATH_D =
+  'M29,10H19c0-1.654-1.346-3-3-3h-5c-0.656,0-1.301,0.219-1.821,0.617L3.716,11H1' +
+  'c-0.552,0-1,0.448-1,1v12c0,0.552,0.448,1,1,1h2.687l2.972,2.069C7.247,27.613,8.214,28,9,28h9.848c1.582,0,3.006-1.16,3.141-2.737' +
+  'c0.054-0.633-0.089-1.229-0.375-1.735C22.446,22.995,23,22.061,23,21c0-0.535-0.141-1.037-0.387-1.472' +
+  'C23.446,18.995,24,18.061,24,17c0-0.351-0.061-0.687-0.171-1H29c1.657,0,3-1.343,3-3S30.657,10,29,10z M4,23H2V13h2V23z M29,14h-8' +
+  'c-0.552,0-1,0.448-1,1c0,0.552,0.448,1,1,1c0.552,0,1,0.449,1,1s-0.448,1-1,1h-1c-0.552,0-1,0.448-1,1c0,0.552,0.448,1,1,1' +
+  'c0.552,0,1,0.449,1,1s-0.448,1-1,1h-1c-0.552,0-1,0.448-1,1c0,0.552,0.448,1,1,1c0.552,0,1,0.449,1,1s-0.448,1-1,1H9' +
+  'c-0.285,0-0.799-0.213-1-0.414l-3-2.104V12.557l5.277-3.268C10.277,9.289,10.774,9,11,9h5c0.552,0,1,0.449,1,1c0,0.168,0,1,0,1h-4' +
+  'c-0.276,0-0.5,0.224-0.5,0.5c0,0.276,0.224,0.5,0.5,0.5h16c0.552,0,1,0.448,1,1C30,13.552,29.552,14,29,14z'
+
+const HAND_POINTER_PATH = new Path2D(HAND_POINTER_PATH_D)
+
+export const drawHandPointerStamp = (
+  ctx: CanvasRenderingContext2D,
+  item: CanvasItem
+) => {
+  const x = item.x
+  const y = item.y
+  const width = item.width ?? 60
+  const height = item.height ?? 60
+  const direction = item.style.stampDirection ?? 'right'
+  const color = item.style.borderColor ?? '#ef4444'
+
+  const cx = x + width / 2
+  const cy = y + height / 2
+  const angle = STAMP_ANGLES[direction] ?? 0
+  const s = width / 32
+
+  ctx.save()
+  ctx.globalAlpha = item.style.opacity ?? 1.0
+  ctx.translate(cx, cy)
+  ctx.rotate(angle)
+  ctx.scale(s, s)
+  ctx.translate(-16, -16)
+  ctx.fillStyle = color
+  ctx.fill(HAND_POINTER_PATH)
+
+  ctx.restore()
+}
+
+/**
+ * 마우스 커서 화살표 스탬프 - lucide `mouse-pointer-2` 아이콘(viewBox 0 0 24 24) 트레이스를 그대로 사용.
+ * 원본 아이콘의 뾰족한 끝(tip)은 좌상단(4.037,4.688)에 있어 뷰박스 중심(12,12) 기준 위쪽-왼쪽을
+ * 가리키므로, tip 방향 벡터를 상쇄하는 baseOffset을 더해 STAMP_ANGLES 관례(각도 0 = 오른쪽)에 맞춘다.
+ */
+const CURSOR_ARROW_PATH_D =
+  'M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58' +
+  'a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z'
+
+const CURSOR_ARROW_PATH = new Path2D(CURSOR_ARROW_PATH_D)
+
+const CURSOR_ARROW_TIP_X = 4.037
+const CURSOR_ARROW_TIP_Y = 4.688
+const CURSOR_ARROW_VIEWBOX_CENTER = 12
+const CURSOR_ARROW_BASE_OFFSET = -Math.atan2(
+  CURSOR_ARROW_TIP_Y - CURSOR_ARROW_VIEWBOX_CENTER,
+  CURSOR_ARROW_TIP_X - CURSOR_ARROW_VIEWBOX_CENTER
+)
+
+export const drawCursorArrowStamp = (
+  ctx: CanvasRenderingContext2D,
+  item: CanvasItem
+) => {
+  const x = item.x
+  const y = item.y
+  const width = item.width ?? 60
+  const height = item.height ?? 60
+  const direction = item.style.stampDirection ?? 'right'
+  const color = item.style.borderColor ?? '#ef4444'
+
+  const cx = x + width / 2
+  const cy = y + height / 2
+  const angle = (STAMP_ANGLES[direction] ?? 0) + CURSOR_ARROW_BASE_OFFSET
+  const s = width / 24
+
+  ctx.save()
+  ctx.globalAlpha = item.style.opacity ?? 1.0
+  ctx.translate(cx, cy)
+  ctx.rotate(angle)
+  ctx.scale(s, s)
+  ctx.translate(-CURSOR_ARROW_VIEWBOX_CENTER, -CURSOR_ARROW_VIEWBOX_CENTER)
+  ctx.fillStyle = color
+  ctx.fill(CURSOR_ARROW_PATH)
+
+  ctx.restore()
+}
+
+// 스탬프 모양 디스패처 - item.style.stampShape에 따라 알맞은 렌더 함수로 위임 (기본값 'arrow')
+export const drawStamp = (ctx: CanvasRenderingContext2D, item: CanvasItem) => {
+  const shape = item.style.stampShape || 'arrow'
+  if (shape === 'hand') {
+    drawHandPointerStamp(ctx, item)
+  } else if (shape === 'cursor') {
+    drawCursorArrowStamp(ctx, item)
+  } else {
+    drawBlockArrowStamp(ctx, item)
+  }
+}

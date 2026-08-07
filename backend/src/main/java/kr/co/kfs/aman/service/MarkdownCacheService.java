@@ -99,7 +99,8 @@ public class MarkdownCacheService {
         HtmlRenderer renderer = HtmlRenderer.builder(options).build();
 
         com.vladsch.flexmark.util.ast.Node document = parser.parse(markdown);
-        return renderer.render(document);
+        String html = renderer.render(document);
+        return kr.co.kfs.aman.util.MarkdownVideoPostProcessor.process(html);
     }
 
     private String preprocessBackticks(String markdown) {

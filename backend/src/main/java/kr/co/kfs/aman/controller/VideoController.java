@@ -1,0 +1,202 @@
+package kr.co.kfs.aman.controller;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/admin/video")
+public class VideoController {
+
+    @Value("${aman.video-dir}")
+    private String videoDir;
+
+    @GetMapping
+    public ResponseEntity<?> getVideos(HttpServletRequest request) {
+        File dir = new File(videoDir);
+        System.out.println("====== [AMAN_DEBUG] videoDir Path: " + dir.getAbsolutePath() + " ======");
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (!created && !dir.exists()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("동영상 저장 디렉토리를 생성할 수 없습니다.");
+            }
+        }
+
+        File[] files = dir.listFiles();
+        List<Map<String, Object>> list = new ArrayList<>();
+        if (files != null) {
+            // 수정일 역순(최신순) 정렬
+            Arrays.sort(files, (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified()));
+
+            String contextPath = request.getContextPath(); // "/aman"
+            String scheme = request.getScheme();
+            String serverName = request.getServerName();
+            int serverPort = request.getServerPort();
+
+            for (File file : files) {
+                if (file.isFile() && isVideoFile(file.getName())) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("name", file.getName());
+                    map.put("size", file.length());
+                    map.put("lastModified", file.lastModified());
+                    
+                    // 예: http://localhost:8686/aman/videos/filename.mp4
+                    String videoUrl = scheme + "://" + serverName + ":" + serverPort + contextPath + "/videos/" + file.getName();
+                    map.put("url", videoUrl);
+                    
+                    list.add(map);
+                }
+            }
+        }
+
+        return ResponseEntity.ok(list);
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadVideo(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        if (file.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("업로드된 파일이 비어있습니다.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !isVideoFile(originalFilename)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("지원하지 않는 동영상 형식입니다. (mp4, webm, ogg만 가능)");
+        }
+
+        File dir = new File(videoDir);
+        if (!dir.exists() && !dir.mkdirs()) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("동영상 저장 디렉토리를 생성할 수 없습니다.");
+        }
+
+        // 중복 파일명 방지
+        String fileName = originalFilename;
+        File destFile = new File(dir, fileName);
+        if (destFile.exists()) {
+            String nameWithoutExt = fileName;
+            String ext = "";
+            int dotIdx = fileName.lastIndexOf('.');
+            if (dotIdx > 0) {
+                nameWithoutExt = fileName.substring(0, dotIdx);
+                ext = fileName.substring(dotIdx);
+            }
+            fileName = nameWithoutExt + "_" + System.currentTimeMillis() + ext;
+            destFile = new File(dir, fileName);
+        }
+
+        try {
+            file.transferTo(destFile);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("동영상 저장 중 오류가 발생했습니다: " + e.getMessage());
+        }
+
+        String contextPath = request.getContextPath();
+        String scheme = request.getScheme();
+        String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
+        String videoUrl = scheme + "://" + serverName + ":" + serverPort + contextPath + "/videos/" + fileName;
+
+        Map<String, String> result = new HashMap<>();
+        result.put("name", fileName);
+        result.put("url", videoUrl);
+
+        return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/{fileName}")
+    public ResponseEntity<?> deleteVideo(@PathVariable("fileName") String fileName) {
+        // 경로 탈출 공격 방지
+        if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 파일 이름입니다.");
+        }
+
+        File file = new File(videoDir, fileName);
+        if (!file.exists() || !file.isFile()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("존재하지 않는 동영상 파일입니다.");
+        }
+
+        if (file.delete()) {
+            return ResponseEntity.ok("동영상이 성공적으로 삭제되었습니다.");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("동영상 파일 삭제에 실패했습니다.");
+        }
+    }
+
+    @PostMapping("/rename")
+    public ResponseEntity<String> renameVideo(@RequestBody Map<String, String> payload) {
+        String oldName = payload.get("oldName");
+        String newName = payload.get("newName");
+        
+        if (oldName == null || newName == null || oldName.trim().isEmpty() || newName.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("기존 파일명과 변경할 파일명은 필수입니다.");
+        }
+        
+        if (oldName.contains("..") || newName.contains("..") || oldName.contains("/") || newName.contains("/") || oldName.contains("\\") || newName.contains("\\")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 파일명 형식입니다.");
+        }
+        
+        // 원본 파일 확장자 추출
+        String oldExt = "";
+        int oldDot = oldName.lastIndexOf('.');
+        if (oldDot > 0) {
+            oldExt = oldName.substring(oldDot);
+        }
+        
+        // 입력 이름에서 동영상 확장자가 붙어있을 경우 제거하여 순수 파일명(Base) 획득
+        String newBase = newName;
+        int newDot = newName.lastIndexOf('.');
+        if (newDot > 0) {
+            String tempExt = newName.substring(newDot).toLowerCase();
+            if (tempExt.equals(".mp4") || tempExt.equals(".webm") || tempExt.equals(".ogg")) {
+                newBase = newName.substring(0, newDot);
+            }
+        }
+        
+        // 원본 확장자를 뒤에 강제 병합하여 최종 저장 파일명 설정
+        String finalNewName = newBase + oldExt;
+        
+        File dir = new File(videoDir);
+        File source = new File(dir, oldName);
+        File dest = new File(dir, finalNewName);
+        
+        if (!source.exists() || !source.isFile()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("원본 동영상 파일을 찾을 수 없습니다.");
+        }
+        
+        if (dest.exists()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 동일한 이름의 동영상 파일이 존재합니다.");
+        }
+        
+        boolean success = source.renameTo(dest);
+        if (success) {
+            return ResponseEntity.ok("이름 변경 성공");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("파일 이름 변경에 실패했습니다.");
+        }
+    }
+
+    private boolean isVideoFile(String filename) {
+        if (filename == null) {
+            return false;
+        }
+        String lower = filename.toLowerCase();
+        return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".ogg");
+    }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Smile, Type, FileText, Layout, Download, Upload, Palette, Highlighter, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
+import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Video, Smile, Type, FileText, Layout, Download, Upload, Palette, Highlighter, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 
 const TEXT_COLORS = [
@@ -77,6 +77,7 @@ interface EditorToolbarProps {
   insertBullet: () => void
   insertNumber: () => void
   selectAndUploadImage: () => void
+  openVideoSelector: () => void
   aka: string
   onAkaChange: (value: string) => void
   previewOpen: boolean
@@ -93,6 +94,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   insertBullet,
   insertNumber,
   selectAndUploadImage,
+  openVideoSelector,
   aka,
   onAkaChange,
   previewOpen,
@@ -485,6 +487,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         >
           <Image className="w-3.5 h-3.5" />
         </button>
+
+        <button
+          onClick={openVideoSelector}
+          className="p-1 hover:bg-gray-200 rounded text-gray-800 cursor-pointer"
+          title="비디오 삽입 (Ctrl + Shift + V)"
+        >
+          <Video className="w-3.5 h-3.5" />
+        </button>
         
         <span className="w-px h-3.5 bg-gray-300"></span>
 
@@ -754,6 +764,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
                         { name: '배경색 순환 토글 (5색)', keys: ['Ctrl', '/'] },
                         { name: '모든 서식/태그 제거', keys: ['Ctrl', 'Shift', 'Delete'] },
                         { name: '텍스트를 <kbd> 태그로 자동 감싸기', keys: ['Ctrl', 'Shift', 'K'] },
+                        { name: '동영상 삽입 팝업 열기', keys: ['Ctrl', 'Shift', 'V'] },
                       ].map((item) => (
                         <tr key={item.name} className="hover:bg-slate-50/50">
                           <td className="px-3 py-1.5 font-medium text-slate-700">{item.name}</td>

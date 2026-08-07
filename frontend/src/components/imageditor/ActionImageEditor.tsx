@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, ChevronRight } from 'lucide-react'
+import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, ChevronRight, Magnet } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
-import { drawBlockArrowStamp } from './arrowStamp'
+import { drawStamp } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
 import TextItemInput from './TextItemInput'
 import { getDistanceToSegment, getTextBounds, drawArrow, drawOrthogonalArrow, drawSelectionHandles, createRoundedRectPath } from './canvasDrawHelpers'
@@ -21,6 +21,14 @@ import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_ty
 import FloatingPropertyPanel from './FloatingPropertyPanel'
 import WorkHistory from './WorkHistory'
 import ImageEditorFooter from './ImageEditorFooter'
+
+// 아이템의 중심점 계산 (width/height 미보유 타입은 x,y 자체가 중심점으로 취급됨)
+function getItemCenter(item: CanvasItem): { cx: number; cy: number } {
+  return {
+    cx: item.x + (item.width || 0) / 2,
+    cy: item.y + (item.height || 0) / 2
+  }
+}
 import { SYSTEM_ITEM_DEFAULTS, StyleConfig, WorkStyleConfig } from './image_items_defaults'
 
 
@@ -65,6 +73,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [boxBgColor, setBoxBgColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.boxBgColor)
   const [boxOpacity, setBoxOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxOpacity)
   const [boxBorderRadius, setBoxBorderRadius] = useState<number>(SYSTEM_ITEM_DEFAULTS.boxBorderRadius)
+  const [boxShape, setBoxShape] = useState<'circle' | 'rect'>(SYSTEM_ITEM_DEFAULTS.boxShape)
 
   // 3. 화살표 (arrow) 관련 속성
   const [arrowColor, setArrowColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.arrowColor)
@@ -89,6 +98,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 5-2. 화살표 스탬프 관련 속성
   const [stampScale, setStampScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.stampScale)
   const [stampDirection, setStampDirection] = useState<string>(SYSTEM_ITEM_DEFAULTS.stampDirection)
+  const [stampShape, setStampShape] = useState<'arrow' | 'hand' | 'cursor'>(SYSTEM_ITEM_DEFAULTS.stampShape)
 
   // 6. 이미지 아이템 (image) 관련 속성
   const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
@@ -123,6 +133,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 드래그 이동 시작 시점의 items 스냅샷 (undo 기록용)
   const dragMoveStartItemsRef = useRef<CanvasItem[] | null>(null)
 
+  // 스마트 정렬 가이드 (드래그 중 다른 아이템 중심점 스냅)
+  const [smartAlignEnabled, setSmartAlignEnabled] = useState<boolean>(true)
+  const [alignGuides, setAlignGuides] = useState<{ x?: number; y?: number }>({})
+  const SNAP_THRESHOLD = 6
+
   // 마지막 저장 시점 상태 (isDirty 체크용)
   const [lastSavedState, setLastSavedState] = useState<{
     title: string
@@ -154,6 +169,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor: string
     boxOpacity: number
     boxBorderRadius: number
+    boxShape: 'circle' | 'rect'
     arrowColor: string
     arrowLineWidth: number
     arrowLineStyle: 'solid' | 'dashed'
@@ -202,12 +218,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     circleNumberBorderColor: SYSTEM_ITEM_DEFAULTS.circleNumberBorderColor,
     circleNumberBorderWidth: SYSTEM_ITEM_DEFAULTS.circleNumberBorderWidth,
     circleNumberFontSize: SYSTEM_ITEM_DEFAULTS.circleNumberFontSize,
+    circleNumberShape: SYSTEM_ITEM_DEFAULTS.circleNumberShape,
     boxBorderColor: SYSTEM_ITEM_DEFAULTS.boxBorderColor,
     boxLineWidth: SYSTEM_ITEM_DEFAULTS.boxLineWidth,
     boxLineStyle: SYSTEM_ITEM_DEFAULTS.boxLineStyle,
     boxBgColor: SYSTEM_ITEM_DEFAULTS.boxBgColor,
     boxOpacity: SYSTEM_ITEM_DEFAULTS.boxOpacity,
     boxBorderRadius: SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    boxShape: SYSTEM_ITEM_DEFAULTS.boxShape,
     arrowColor: SYSTEM_ITEM_DEFAULTS.arrowColor,
     arrowLineWidth: SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
     arrowLineStyle: SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
@@ -373,6 +391,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor !== lastSavedState.boxBgColor ||
     boxOpacity !== lastSavedState.boxOpacity ||
     boxBorderRadius !== lastSavedState.boxBorderRadius ||
+    boxShape !== lastSavedState.boxShape ||
     arrowColor !== lastSavedState.arrowColor ||
     arrowLineWidth !== lastSavedState.arrowLineWidth ||
     arrowLineStyle !== lastSavedState.arrowLineStyle ||
@@ -407,7 +426,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }, [
     items, bgImageSrc, imageScale, editorTitle, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign, // imageScale 추가
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
-    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
     imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption,
     calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize
@@ -615,7 +634,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ctx.save()
 
       if (item.type === 'block-arrow-stamp') {
-        drawBlockArrowStamp(ctx, item)
+        drawStamp(ctx, item)
         if (isSelected) {
           ctx.save()
           ctx.strokeStyle = '#3b82f6'
@@ -706,31 +725,43 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         ctx.restore()
       } 
       else if (item.type === 'box') {
-        // 사각형 강조 박스 (둥글기 borderRadius 반영)
-        const radius = Math.min(item.style.borderRadius || 0, Math.min(Math.abs(item.width || 0), Math.abs(item.height || 0)) / 2)
-        
-        ctx.save()
-        // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
-        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent' && item.style.backgroundColor !== '') {
-          ctx.save()
-          ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
-          ctx.fillStyle = item.style.backgroundColor
-          if (radius > 0) {
+        // 강조 박스: 사각형(둥글기 borderRadius 반영) / 원
+        const shape = item.style.shape || 'rect'
+        const w = item.width || 0
+        const h = item.height || 0
+        const radius = Math.min(item.style.borderRadius || 0, Math.min(Math.abs(w), Math.abs(h)) / 2)
+
+        // 도형별 경로 구성 (배경 채우기/테두리 그리기에서 동일 경로 재사용)
+        const buildBoxPath = () => {
+          if (shape === 'circle') {
+            ctx.beginPath()
+            ctx.ellipse(item.x + w / 2, item.y + h / 2, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, 2 * Math.PI)
+          } else if (radius > 0) {
             ctx.beginPath()
             if (typeof ctx.roundRect === 'function') {
-              ctx.roundRect(item.x, item.y, item.width || 0, item.height || 0, radius)
+              ctx.roundRect(item.x, item.y, w, h, radius)
             } else {
-              const x = item.x, y = item.y, w = item.width || 0, h = item.height || 0
+              const x = item.x, y = item.y
               ctx.moveTo(x + radius, y)
               ctx.arcTo(x + w, y, x + w, y + h, radius)
               ctx.arcTo(x + w, y + h, x, y + h, radius)
               ctx.arcTo(x, y + h, x, y, radius)
               ctx.arcTo(x, y, x + w, y, radius)
             }
-            ctx.fill()
           } else {
-            ctx.fillRect(item.x, item.y, item.width || 0, item.height || 0)
+            ctx.beginPath()
+            ctx.rect(item.x, item.y, w, h)
           }
+        }
+
+        ctx.save()
+        // 1순위: 배경색 칠하기 (배경색이 투명이 아닐 때만)
+        if (item.style.backgroundColor && item.style.backgroundColor !== 'transparent' && item.style.backgroundColor !== '') {
+          ctx.save()
+          ctx.globalAlpha = item.style.opacity !== undefined ? item.style.opacity : 0.3
+          ctx.fillStyle = item.style.backgroundColor
+          buildBoxPath()
+          ctx.fill()
           ctx.restore()
         }
 
@@ -742,23 +773,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         } else {
           ctx.setLineDash([])
         }
-        
-        if (radius > 0) {
-          ctx.beginPath()
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(item.x, item.y, item.width || 0, item.height || 0, radius)
-          } else {
-            const x = item.x, y = item.y, w = item.width || 0, h = item.height || 0
-            ctx.moveTo(x + radius, y)
-            ctx.arcTo(x + w, y, x + w, y + h, radius)
-            ctx.arcTo(x + w, y + h, x, y + h, radius)
-            ctx.arcTo(x, y + h, x, y, radius)
-            ctx.arcTo(x, y, x + w, y, radius)
-          }
-          ctx.stroke()
-        } else {
-          ctx.strokeRect(item.x, item.y, item.width || 0, item.height || 0)
-        }
+        buildBoxPath()
+        ctx.stroke()
         ctx.restore()
 
         // 선택 영역 하이라이트 및 4꼭지점 조절 핸들
@@ -983,6 +999,27 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       ctx.restore()
     })
 
+    // 스마트 정렬 가이드선 (드래그로 다른 아이템 중심에 스냅됐을 때만 표시)
+    if (smartAlignEnabled && (alignGuides.x !== undefined || alignGuides.y !== undefined)) {
+      ctx.save()
+      ctx.strokeStyle = '#ec4899'
+      ctx.lineWidth = 1
+      ctx.setLineDash([4, 4])
+      if (alignGuides.x !== undefined) {
+        ctx.beginPath()
+        ctx.moveTo(alignGuides.x, 0)
+        ctx.lineTo(alignGuides.x, canvas.height)
+        ctx.stroke()
+      }
+      if (alignGuides.y !== undefined) {
+        ctx.beginPath()
+        ctx.moveTo(0, alignGuides.y)
+        ctx.lineTo(canvas.width, alignGuides.y)
+        ctx.stroke()
+      }
+      ctx.restore()
+    }
+
     // 4. 임시 드로잉 가이드 피드백 (사각형 그리기 도중 또는 크롭 점선)
     if (isDrawing && dragStart && dragCurrent) {
       ctx.save()
@@ -999,22 +1036,28 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         ctx.setLineDash([4, 4])
         const w = dragCurrent.x - dragStart.x
         const h = dragCurrent.y - dragStart.y
-        const radius = Math.min(boxBorderRadius, Math.min(Math.abs(w), Math.abs(h)) / 2)
-        if (radius > 0) {
+        if (boxShape === 'circle') {
           ctx.beginPath()
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(dragStart.x, dragStart.y, w, h, radius)
-          } else {
-            const x = dragStart.x, y = dragStart.y
-            ctx.moveTo(x + radius, y)
-            ctx.arcTo(x + w, y, x + w, y + h, radius)
-            ctx.arcTo(x + w, y + h, x, y + h, radius)
-            ctx.arcTo(x, y + h, x, y, radius)
-            ctx.arcTo(x, y, x + w, y, radius)
-          }
+          ctx.ellipse(dragStart.x + w / 2, dragStart.y + h / 2, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, 2 * Math.PI)
           ctx.stroke()
         } else {
-          ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+          const radius = Math.min(boxBorderRadius, Math.min(Math.abs(w), Math.abs(h)) / 2)
+          if (radius > 0) {
+            ctx.beginPath()
+            if (typeof ctx.roundRect === 'function') {
+              ctx.roundRect(dragStart.x, dragStart.y, w, h, radius)
+            } else {
+              const x = dragStart.x, y = dragStart.y
+              ctx.moveTo(x + radius, y)
+              ctx.arcTo(x + w, y, x + w, y + h, radius)
+              ctx.arcTo(x + w, y + h, x, y + h, radius)
+              ctx.arcTo(x, y + h, x, y, radius)
+              ctx.arcTo(x, y, x + w, y, radius)
+            }
+            ctx.stroke()
+          } else {
+            ctx.strokeRect(dragStart.x, dragStart.y, w, h)
+          }
         }
       } else if (activeTool === 'arrow') {
         drawArrow(
@@ -1098,9 +1141,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   }, [
     bgImage, items, selectedItemId, isDrawing, dragCurrent, activeTool, isOpen, hasBorder, borderColor, borderWidth, borderStyle, hasCaption, captionText, captionAlign,
     circleNumberBgColor, circleNumberTextColor, circleNumberBorderColor, circleNumberBorderWidth, circleNumberFontSize,
-    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius,
+    boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
-    cacheTrigger, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft
+    cacheTrigger, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft,
+    smartAlignEnabled, alignGuides
   ])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
@@ -1131,6 +1175,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.boxBgColor !== undefined) setBoxBgColor(config.boxBgColor)
         if (config.boxOpacity !== undefined) setBoxOpacity(config.boxOpacity)
         if (config.boxBorderRadius !== undefined) setBoxBorderRadius(config.boxBorderRadius)
+        if (config.boxShape !== undefined) setBoxShape(config.boxShape)
 
         // 3. 화살표
         if (config.arrowColor !== undefined) setArrowColor(config.arrowColor)
@@ -1171,10 +1216,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.captionAlign !== undefined) setCaptionAlign(config.captionAlign)
         if (config.stampScale !== undefined) setStampScale(config.stampScale)
         if (config.stampDirection !== undefined) setStampDirection(config.stampDirection)
+        if (config.stampShape !== undefined) setStampShape(config.stampShape)
         if (config.hasBorder !== undefined) setHasBorder(config.hasBorder)
         if (config.borderColor !== undefined) setBorderColor(config.borderColor)
         if (config.borderWidth !== undefined) setBorderWidth(config.borderWidth)
         if (config.borderStyle !== undefined) setBorderStyle(config.borderStyle)
+
+        // 선택된 아이템이 있으면 그 아이템에도 불러온 설정을 즉시 반영
+        applyConfigToSelectedItem({ ...SYSTEM_ITEM_DEFAULTS, ...config })
       }
     } catch (e) {
       console.log('No user settings found or error fetching settings:', e)
@@ -1195,6 +1244,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor,
     boxOpacity,
     boxBorderRadius,
+    boxShape,
     arrowColor,
     arrowLineWidth,
     arrowLineStyle,
@@ -1216,6 +1266,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     captionAlign,
     stampScale,
     stampDirection,
+    stampShape,
     calloutShape,
     calloutBgColor,
     calloutBorderColor,
@@ -1256,6 +1307,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setBoxBgColor(cfg.boxBgColor)
     setBoxOpacity(cfg.boxOpacity)
     setBoxBorderRadius(cfg.boxBorderRadius)
+    setBoxShape(cfg.boxShape)
     setArrowColor(cfg.arrowColor)
     setArrowLineWidth(cfg.arrowLineWidth)
     setArrowLineStyle(cfg.arrowLineStyle)
@@ -1276,6 +1328,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setCaptionAlign(cfg.captionAlign)
     setStampScale(cfg.stampScale !== undefined ? cfg.stampScale : SYSTEM_ITEM_DEFAULTS.stampScale)
     setStampDirection(cfg.stampDirection || SYSTEM_ITEM_DEFAULTS.stampDirection)
+    setStampShape(cfg.stampShape || SYSTEM_ITEM_DEFAULTS.stampShape)
     setCalloutShape(cfg.calloutShape || SYSTEM_ITEM_DEFAULTS.calloutShape)
     setCalloutBgColor(cfg.calloutBgColor || SYSTEM_ITEM_DEFAULTS.calloutBgColor)
     setCalloutBorderColor(cfg.calloutBorderColor || SYSTEM_ITEM_DEFAULTS.calloutBorderColor)
@@ -1289,6 +1342,86 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setBorderColor(cfg.borderColor)
     setBorderWidth(cfg.borderWidth)
     setBorderStyle(cfg.borderStyle)
+  }
+
+  // 타입별 스타일 설정(cfg)을 해당 타입의 item.style 필드로 매핑 (아이템 생성 시 매핑과 동일한 대응 관계)
+  const buildItemStyleFromConfig = (type: CanvasItem['type'], cfg: StyleConfig): Partial<CanvasItem['style']> => {
+    switch (type) {
+      case 'circle-number':
+        return {
+          backgroundColor: cfg.circleNumberBgColor,
+          borderColor: cfg.circleNumberBorderColor,
+          borderWidth: cfg.circleNumberBorderWidth,
+          textColor: cfg.circleNumberTextColor,
+          fontSize: cfg.circleNumberFontSize,
+          shape: cfg.circleNumberShape
+        }
+      case 'box':
+        return {
+          borderColor: cfg.boxBorderColor,
+          borderWidth: cfg.boxLineWidth,
+          lineStyle: cfg.boxLineStyle,
+          backgroundColor: cfg.boxBgColor,
+          opacity: cfg.boxOpacity / 100,
+          borderRadius: cfg.boxBorderRadius,
+          shape: cfg.boxShape
+        }
+      case 'arrow':
+      case 'orthogonal-arrow':
+      case 'bracket-arrow':
+        return {
+          borderColor: cfg.arrowColor,
+          borderWidth: cfg.arrowLineWidth,
+          lineStyle: cfg.arrowLineStyle
+        }
+      case 'text':
+        return {
+          textColor: cfg.textTextColor,
+          fontSize: cfg.textFontSize,
+          backgroundColor: cfg.textBgColor,
+          fontStyle: cfg.textFontStyle,
+          textDecoration: cfg.textTextDecoration
+        }
+      case 'symbol': {
+        const scaleMapping = [20, 32, 48, 64, 80]
+        return { fontSize: scaleMapping[cfg.symbolScale - 1] || 48 }
+      }
+      case 'block-arrow-stamp':
+        return { borderColor: cfg.arrowColor, stampDirection: cfg.stampDirection, stampShape: cfg.stampShape }
+      case 'callout':
+        return {
+          calloutShape: cfg.calloutShape,
+          backgroundColor: cfg.calloutBgColor,
+          borderColor: cfg.calloutBorderColor,
+          borderWidth: cfg.calloutBorderWidth,
+          lineStyle: cfg.calloutLineStyle,
+          opacity: cfg.calloutOpacity / 100,
+          borderRadius: cfg.calloutBorderRadius,
+          textColor: cfg.calloutTextColor,
+          fontSize: cfg.calloutFontSize
+        }
+      case 'image':
+        return {
+          borderColor: cfg.imageSrcBorderColor,
+          borderWidth: cfg.imageSrcBorderWidth,
+          lineStyle: cfg.imageSrcBorderStyle,
+          hasBorder: cfg.imageSrcHasBorder,
+          hasCaption: cfg.imageSrcHasCaption
+        }
+      default:
+        return {}
+    }
+  }
+
+  // '나의 설정 가져오기'/'시스템설정' 클릭 시 선택된 아이템이 있으면 그 아이템에도 즉시 반영
+  const applyConfigToSelectedItem = (cfg: StyleConfig) => {
+    if (!selectedItemId) return
+    const updated = items.map((item) =>
+      item.id === selectedItemId
+        ? { ...item, style: { ...item.style, ...buildItemStyleFromConfig(item.type, cfg) } }
+        : item
+    )
+    pushToUndo(updated)
   }
 
   // 구버전 jsonData/사용자설정 로드시 레거시 키 하위호환 폴백 체인
@@ -1306,6 +1439,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBgColor: data.boxBgColor ?? SYSTEM_ITEM_DEFAULTS.boxBgColor,
     boxOpacity: data.boxOpacity ?? SYSTEM_ITEM_DEFAULTS.boxOpacity,
     boxBorderRadius: data.boxBorderRadius ?? SYSTEM_ITEM_DEFAULTS.boxBorderRadius,
+    boxShape: data.boxShape ?? SYSTEM_ITEM_DEFAULTS.boxShape,
     arrowColor: data.arrowColor ?? data.primaryColor ?? SYSTEM_ITEM_DEFAULTS.arrowColor,
     arrowLineWidth: data.arrowLineWidth ?? data.lineWidth ?? SYSTEM_ITEM_DEFAULTS.arrowLineWidth,
     arrowLineStyle: data.arrowLineStyle ?? data.boxLineStyle ?? SYSTEM_ITEM_DEFAULTS.arrowLineStyle,
@@ -1327,6 +1461,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     captionAlign: data.captionAlign ?? SYSTEM_ITEM_DEFAULTS.captionAlign,
     stampScale: data.stampScale ?? SYSTEM_ITEM_DEFAULTS.stampScale,
     stampDirection: data.stampDirection ?? SYSTEM_ITEM_DEFAULTS.stampDirection,
+    stampShape: data.stampShape ?? SYSTEM_ITEM_DEFAULTS.stampShape,
     calloutShape: data.calloutShape ?? SYSTEM_ITEM_DEFAULTS.calloutShape,
     calloutBgColor: data.calloutBgColor ?? SYSTEM_ITEM_DEFAULTS.calloutBgColor,
     calloutBorderColor: data.calloutBorderColor ?? SYSTEM_ITEM_DEFAULTS.calloutBorderColor,
@@ -1395,38 +1530,20 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     }
   }
 
-  // 사용자 지정 기본값 삭제 (Delete)
+  // 현재 설정을 시스템 기본값으로 복원 ('시스템설정' 버튼) - DB에 저장된 나의 설정은 삭제하지 않음
   const handleDeleteUserSettings = async () => {
     try {
-      const userStr = localStorage.getItem('aman_user')
-      const user = userStr ? JSON.parse(userStr) : null
-      const userId = user?.id
-      if (!userId) {
-        showSaveMessage('사용자 정보를 획득할 수 없어 삭제할 수 없습니다.', 'error')
-        return
-      }
-
-      const key = `image_editor_defaults_user_${userId}`
-      
-      // 백엔드 DELETE API 호출
-      try {
-        await apiClient.delete(`/admin/user-settings/${key}`)
-      } catch (err: any) {
-        // 이미 해당 키가 존재하지 않아 404가 발생한 경우 에러를 무시하고 로컬 리셋을 진행합니다.
-        if (err?.response?.status !== 404) {
-          throw err
-        }
-      }
-
       // 설정을 시스템 디폴트 설정으로 복원 (handleResetToEmpty와 동일한 방식)
       applyStyleConfig(SYSTEM_ITEM_DEFAULTS)
       // arrowHeadSize는 StyleConfig에 포함되지 않아 applyStyleConfig가 리셋하지 않으므로 별도 처리
       setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
+      // 선택된 아이템이 있으면 그 아이템에도 시스템 기본값을 즉시 반영
+      applyConfigToSelectedItem(SYSTEM_ITEM_DEFAULTS)
 
-      showSaveMessage('개인 설정을 삭제하고 시스템 기본값으로 복원했습니다.', 'success')
+      showSaveMessage('현재 설정을 시스템 기본값으로 복원했습니다.', 'success')
     } catch (e) {
-      console.error('Failed to delete user settings:', e)
-      showSaveMessage('기본 설정 삭제 중 오류가 발생했습니다.', 'error')
+      console.error('Failed to reset to system defaults:', e)
+      showSaveMessage('시스템 기본값 복원 중 오류가 발생했습니다.', 'error')
     }
   }
 
@@ -1585,6 +1702,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setArrowHeadSize(SYSTEM_ITEM_DEFAULTS.arrowHeadSize)
     setStampScale(SYSTEM_ITEM_DEFAULTS.stampScale)
     setStampDirection(SYSTEM_ITEM_DEFAULTS.stampDirection)
+    setStampShape(SYSTEM_ITEM_DEFAULTS.stampShape)
     
     setHasBorder(SYSTEM_ITEM_DEFAULTS.hasBorder)
     setBorderColor(SYSTEM_ITEM_DEFAULTS.borderColor)
@@ -2026,7 +2144,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         style: {
           borderColor: arrowColor,
           stampDirection: stampDirection,
-          stampScale: stampScale
+          stampScale: stampScale,
+          stampShape: stampShape
         }
       }
       pushToUndo([...items, newItem])
@@ -2207,12 +2326,44 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
     // 포인터 모드 드래그 이동
     if (activeTool === 'pointer' && selectedItemId && draggedItemOffset) {
+      const draggedItem = items.find((item) => item.id === selectedItemId)
+      let newX = x - draggedItemOffset.x
+      let newY = y - draggedItemOffset.y
+      const nextAlignGuides: { x?: number; y?: number } = {}
+
+      // 스마트 정렬: 다른 아이템의 중심점과 가까우면(SNAP_THRESHOLD 이내) 스냅
+      if (smartAlignEnabled && draggedItem) {
+        const draggedW = draggedItem.width || 0
+        const draggedH = draggedItem.height || 0
+        const draggedCx = newX + draggedW / 2
+        const draggedCy = newY + draggedH / 2
+        let bestDx: number | null = null
+        let bestDy: number | null = null
+
+        items.forEach((other) => {
+          if (other.id === selectedItemId) return
+          const { cx: otherCx, cy: otherCy } = getItemCenter(other)
+
+          const dx = otherCx - draggedCx
+          if (Math.abs(dx) <= SNAP_THRESHOLD && (bestDx === null || Math.abs(dx) < Math.abs(bestDx))) {
+            bestDx = dx
+            nextAlignGuides.x = otherCx
+          }
+          const dy = otherCy - draggedCy
+          if (Math.abs(dy) <= SNAP_THRESHOLD && (bestDy === null || Math.abs(dy) < Math.abs(bestDy))) {
+            bestDy = dy
+            nextAlignGuides.y = otherCy
+          }
+        })
+
+        if (bestDx !== null) newX += bestDx
+        if (bestDy !== null) newY += bestDy
+      }
+
       const updated = items.map((item) => {
         if (item.id === selectedItemId) {
-          const newX = x - draggedItemOffset.x
-          const newY = y - draggedItemOffset.y
           const deltaX = newX - item.x
-          
+
           if (item.type === 'orthogonal-arrow' && item.style.midX !== undefined) {
             const deltaY = newY - item.y
             return {
@@ -2231,6 +2382,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         return item
       })
       setItems(updated)
+      setAlignGuides(nextAlignGuides)
     }
   }
 
@@ -2286,7 +2438,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               lineStyle: boxLineStyle,
               backgroundColor: boxBgColor,
               opacity: boxOpacity / 100,
-              borderRadius: boxBorderRadius
+              borderRadius: boxBorderRadius,
+              shape: boxShape
             }
           }
           pushToUndo([...items, newItem])
@@ -2378,6 +2531,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     dragMoveStartItemsRef.current = null
 
     setDraggedItemOffset(null)
+    setAlignGuides({})
   }
 
   // 이미지 크롭 처리
@@ -2589,6 +2743,33 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                     midX: newMidX,
                     midY: newMidY
                   }
+                }
+              }
+              return item
+            })
+            pushToUndo(updated)
+          }
+          return
+        }
+
+        // box는 가로/세로를 같게 맞춰 정사각형(원 모양이면 정원)으로 스냅 (중심 고정)
+        if (targetItem && targetItem.type === 'box') {
+          e.preventDefault()
+          const w = targetItem.width ?? 0
+          const h = targetItem.height ?? 0
+          const size = Math.max(w, h)
+
+          if (w !== size || h !== size) {
+            const cx = targetItem.x + w / 2
+            const cy = targetItem.y + h / 2
+            const updated = items.map((item) => {
+              if (item.id === selectedItemId) {
+                return {
+                  ...item,
+                  x: cx - size / 2,
+                  y: cy - size / 2,
+                  width: size,
+                  height: size
                 }
               }
               return item
@@ -3540,7 +3721,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             {[
               { id: 'pointer', label: 'ESC:선택 / 이동 (Del로 삭제)', icon: <MousePointer className="w-4 h-4" /> },
               { id: 'circle-number', label: '1:원숫자 마크', icon: <CircleDot className="w-4 h-4 text-indigo-500" /> },
-              { id: 'box', label: '2:강조 사각형 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
+              { id: 'box', label: '2:강조 박스', icon: <Square className="w-4 h-4 text-red-500" /> },
               { id: 'arrow', label: '3:화살표선', icon: <MoveUpRight className="w-4 h-4 text-emerald-500" /> },
               { id: 'orthogonal-arrow', label: '4:꺾임 화살표선', icon: <CornerDownRight className="w-4 h-4 text-teal-500" /> },
 
@@ -3566,6 +3747,21 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 {tool.icon}
               </button>
             ))}
+
+            <span className="w-6 h-px bg-gray-200 dark:bg-slate-800 my-2"></span>
+
+            {/* 스마트 정렬 가이드 토글 */}
+            <button
+              onClick={() => setSmartAlignEnabled((v) => !v)}
+              className={`p-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                smartAlignEnabled
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 shadow-xs ring-1 ring-indigo-200 dark:ring-indigo-900/50'
+                  : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+              }`}
+              title="정렬 가이드 (다른 요소 중심에 스냅)"
+            >
+              <Magnet className="w-4 h-4" />
+            </button>
 
             <span className="w-6 h-px bg-gray-200 dark:bg-slate-800 my-2"></span>
 
@@ -3686,6 +3882,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setBoxOpacity={setBoxOpacity}
                 boxBorderRadius={boxBorderRadius}
                 setBoxBorderRadius={setBoxBorderRadius}
+                boxShape={boxShape}
+                setBoxShape={setBoxShape}
                 arrowColor={arrowColor}
                 setArrowColor={setArrowColor}
                 arrowLineWidth={arrowLineWidth}
@@ -3750,6 +3948,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setStampScale={setStampScale}
                 stampDirection={stampDirection}
                 setStampDirection={setStampDirection}
+                stampShape={stampShape}
+                setStampShape={setStampShape}
                 calloutShape={calloutShape}
                 setCalloutShape={setCalloutShape}
                 calloutBgColor={calloutBgColor}

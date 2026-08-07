@@ -23,6 +23,7 @@ export interface CanvasItem {
     fontStyle?: 'normal' | 'italic'
     textDecoration?: 'none' | 'underline' | 'line-through'
     stampDirection?: string
+    stampShape?: 'arrow' | 'hand' | 'cursor'
     rotation?: number
     calloutShape?: 'speech-rect' | 'speech-oval' | 'line'
     calloutTailX?: number

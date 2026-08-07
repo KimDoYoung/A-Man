@@ -14,6 +14,7 @@ import BackupPages from '@/domains/system/BackupPages'
 import LogPages from '@/domains/system/LogPages'
 import AboutPage from '@/domains/system/AboutPage'
 import PageManagePage from '@/domains/content/PageManagePage'
+import VideoManagePage from '@/domains/content/VideoManagePage'
 import { apiClient } from '@/lib/apiClient'
 
 // JWT 토큰에서 만료 시각(ms)을 가져오는 헬퍼 함수
@@ -74,6 +75,7 @@ const router = createBrowserRouter([
       { path: 'users', element: <UserManagePage /> },
       { path: 'folders', element: <FolderManagePage /> },
       { path: 'pages', element: <PageManagePage /> },
+      { path: 'videos', element: <VideoManagePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'backup', element: <BackupPages /> },
       { path: 'logs', element: <LogPages /> },

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
-import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square } from 'lucide-react'
+import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square, MoveUpRight, Pointer, MousePointer2 } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ReorderController from './ReorderController'
 import ColorPicker from './ColorPicker'
@@ -18,6 +18,13 @@ import {
   IMAGE_BORDER_COLORS,
   SYMBOL_EMOJI_OPTIONS
 } from './image_items_defaults'
+
+const STAMP_SHAPE_OPTIONS = ['arrow', 'hand', 'cursor'] as const
+const STAMP_SHAPE_META: Record<typeof STAMP_SHAPE_OPTIONS[number], { title: string; icon: React.ReactNode }> = {
+  arrow: { title: '화살표', icon: <MoveUpRight className="w-4 h-4" /> },
+  hand: { title: '손가락', icon: <Pointer className="w-4 h-4" /> },
+  cursor: { title: '커서', icon: <MousePointer2 className="w-4 h-4" /> }
+}
 
 interface FloatingPropertyPanelProps {
   // 1. 원숫자 (circle-number) 관련 속성
@@ -47,6 +54,8 @@ interface FloatingPropertyPanelProps {
   setBoxOpacity: (val: number) => void
   boxBorderRadius: number
   setBoxBorderRadius: (val: number) => void
+  boxShape: 'circle' | 'rect'
+  setBoxShape: (shape: 'circle' | 'rect') => void
 
   // 3. 화살표 (arrow) 관련 속성
   arrowColor: string
@@ -123,6 +132,8 @@ interface FloatingPropertyPanelProps {
   setStampScale: (scale: number) => void
   stampDirection: string
   setStampDirection: (dir: string) => void
+  stampShape: 'arrow' | 'hand' | 'cursor'
+  setStampShape: (shape: 'arrow' | 'hand' | 'cursor') => void
 
   // 8. 말풍선/설명선 (callout) 관련 속성
   calloutShape: 'speech-rect' | 'speech-oval' | 'line'
@@ -170,6 +181,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setBoxOpacity,
   boxBorderRadius,
   setBoxBorderRadius,
+  boxShape,
+  setBoxShape,
   arrowColor,
   setArrowColor,
   arrowLineWidth,
@@ -222,6 +235,8 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   setStampScale,
   stampDirection,
   setStampDirection,
+  stampShape,
+  setStampShape,
   calloutShape,
   setCalloutShape,
   calloutBgColor,
@@ -403,9 +418,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               {/* box 또는 arrow 타입 인스펙터 */}
               {(selectedItem.type === 'box' || selectedItem.type === 'arrow' || selectedItem.type === 'orthogonal-arrow' || selectedItem.type === 'bracket-arrow') && (
                 <div className="space-y-4 animate-in fade-in duration-150">
-                  {/* 강조선 색상 */}
+                  {/* 강조선/테두리 색상 */}
                   <ColorPicker
-                    label="강조선 색상"
+                    label={selectedItem.type === 'box' ? '테두리 색상' : '강조선 색상'}
                     selectedColor={selectedItem.style.borderColor || (selectedItem.type === 'box' ? boxBorderColor : arrowColor)}
                     onChangeColor={(col) => {
                       if (selectedItem.type === 'box') {
@@ -427,6 +442,38 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   {/* 배경색 및 투명도: box 타입일 때만 */}
                   {selectedItem.type === 'box' && (
                     <>
+                      {/* 모양 선택 */}
+                      <div className="space-y-2">
+                        <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                        <div className="flex gap-2">
+                          {(['rect', 'circle'] as const).map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                setBoxShape(s)
+                                const updated = items.map(item =>
+                                  item.id === selectedItemId
+                                    ? { ...item, style: { ...item.style, shape: s } }
+                                    : item
+                                )
+                                pushToUndo(updated)
+                              }}
+                              className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                (selectedItem.style.shape || 'rect') === s
+                                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                  : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                              }`}
+                              title={s === 'rect' ? '사각형' : '원형'}
+                            >
+                              {s === 'rect'
+                                ? <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                                : <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="8" cy="8" r="6"/></svg>
+                              }
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       {/* 배경색 */}
                       <ColorPicker
                         label="배경색"
@@ -463,24 +510,26 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         }}
                       />
 
-                      {/* 모서리 둥글기 */}
-                      <RangeSlider
-                        label="모서리 둥글기"
-                        value={selectedItem.style.borderRadius !== undefined ? selectedItem.style.borderRadius : boxBorderRadius}
-                        min={0}
-                        max={40}
-                        unit="px"
-                        onChangeValue={(val) => {
-                          setBoxBorderRadius(val)
-                          const updated = items.map(item => {
-                            if (item.id === selectedItemId) {
-                              return { ...item, style: { ...item.style, borderRadius: val } }
-                            }
-                            return item
-                          })
-                          pushToUndo(updated)
-                        }}
-                      />
+                      {/* 모서리 둥글기: 사각형일 때만 의미 있음 */}
+                      {(selectedItem.style.shape || 'rect') === 'rect' && (
+                        <RangeSlider
+                          label="모서리 둥글기"
+                          value={selectedItem.style.borderRadius !== undefined ? selectedItem.style.borderRadius : boxBorderRadius}
+                          min={0}
+                          max={40}
+                          unit="px"
+                          onChangeValue={(val) => {
+                            setBoxBorderRadius(val)
+                            const updated = items.map(item => {
+                              if (item.id === selectedItemId) {
+                                return { ...item, style: { ...item.style, borderRadius: val } }
+                              }
+                              return item
+                            })
+                            pushToUndo(updated)
+                          }}
+                        />
+                      )}
                     </>
                   )}
 
@@ -646,6 +695,35 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               {/* block-arrow-stamp 타입 인스펙터 */}
               {selectedItem.type === 'block-arrow-stamp' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
+                  {/* 스탬프 모양 */}
+                  <div className="space-y-2">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 모양</span>
+                    <div className="flex gap-2">
+                      {STAMP_SHAPE_OPTIONS.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setStampShape(s)
+                            const updated = items.map(item =>
+                              item.id === selectedItemId
+                                ? { ...item, style: { ...item.style, stampShape: s } }
+                                : item
+                            )
+                            pushToUndo(updated)
+                          }}
+                          className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                            (selectedItem.style.stampShape || 'arrow') === s
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                              : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                          }`}
+                          title={STAMP_SHAPE_META[s].title}
+                        >
+                          {STAMP_SHAPE_META[s].icon}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 스탬프 색상 */}
                   <ColorPicker
                     label="스탬프 색상"
@@ -1431,13 +1509,35 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                     {(activeTool === 'box' || activeTool === 'arrow' || activeTool === 'orthogonal-arrow' || activeTool === 'bracket-arrow') && (
                       <>
                         <ColorPicker
-                          label="강조선 색상"
+                          label={activeTool === 'box' ? '테두리 색상' : '강조선 색상'}
                           selectedColor={activeTool === 'box' ? boxBorderColor : arrowColor}
                           onChangeColor={activeTool === 'box' ? setBoxBorderColor : setArrowColor}
                           colors={BOX_ARROW_BORDER_COLORS}
                         />
                         {activeTool === 'box' && (
                           <>
+                            <div className="space-y-2">
+                              <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">모양</span>
+                              <div className="flex gap-2">
+                                {(['rect', 'circle'] as const).map((s) => (
+                                  <button
+                                    key={s}
+                                    onClick={() => setBoxShape(s)}
+                                    className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                      boxShape === s
+                                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                        : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                                    }`}
+                                    title={s === 'rect' ? '사각형' : '원형'}
+                                  >
+                                    {s === 'rect'
+                                      ? <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><rect x="2" y="2" width="12" height="12" rx="2"/></svg>
+                                      : <svg viewBox="0 0 16 16" className="w-4 h-4" fill="currentColor"><circle cx="8" cy="8" r="6"/></svg>
+                                    }
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <ColorPicker
                               label="배경색"
                               selectedColor={boxBgColor}
@@ -1452,14 +1552,16 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               unit="%"
                               onChangeValue={setBoxOpacity}
                             />
-                            <RangeSlider
-                              label="모서리 둥글기"
-                              value={boxBorderRadius}
-                              min={0}
-                              max={40}
-                              unit="px"
-                              onChangeValue={setBoxBorderRadius}
-                            />
+                            {boxShape === 'rect' && (
+                              <RangeSlider
+                                label="모서리 둥글기"
+                                value={boxBorderRadius}
+                                min={0}
+                                max={40}
+                                unit="px"
+                                onChangeValue={setBoxBorderRadius}
+                              />
+                            )}
                           </>
                         )}
                         {/* 선 종류 */}
@@ -1519,6 +1621,27 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
 
                     {activeTool === 'block-arrow-stamp' && (
                       <>
+                        {/* 0. 스탬프 모양 */}
+                        <div className="space-y-2">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 모양</span>
+                          <div className="flex gap-2">
+                            {STAMP_SHAPE_OPTIONS.map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => setStampShape(s)}
+                                className={`flex items-center justify-center w-9 h-9 rounded-md border transition-colors ${
+                                  stampShape === s
+                                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
+                                    : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
+                                }`}
+                                title={STAMP_SHAPE_META[s].title}
+                              >
+                                {STAMP_SHAPE_META[s].icon}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
                         {/* 1. 스탬프 색상 */}
                         <ColorPicker
                           label="스탬프 색상"
@@ -1897,27 +2020,27 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               <div className="flex items-center space-x-1.5">
                 <button
                   onClick={onSaveDefaults}
-                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  disabled={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption')}
                   className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 rounded-md font-bold cursor-pointer transition-colors border border-indigo-100 dark:border-indigo-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-50 dark:disabled:hover:bg-indigo-950/20"
-                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 저장할 수 없습니다." : "현재 지정된 설정을 개인 기본값으로 저장합니다."}
+                  title={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption') ? "'기본도구' 탭에서 도구를 선택하거나 요소를 선택한 상태에서만 저장할 수 있습니다." : "현재 지정된 설정을 개인 기본값으로 저장합니다."}
                 >
-                  설정
+                  설정 저장
                 </button>
                 <button
                   onClick={onLoadDefaults}
-                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  disabled={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption')}
                   className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-900/30 text-emerald-650 dark:text-emerald-400 rounded-md font-bold cursor-pointer transition-colors border border-emerald-100 dark:border-emerald-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-emerald-50 dark:disabled:hover:bg-emerald-950/20"
-                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 불러올 수 없습니다." : "저장된 나의 기본 설정을 불러와 적용합니다."}
+                  title={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption') ? "'기본도구' 탭에서 도구를 선택하거나 요소를 선택한 상태에서만 불러올 수 있습니다." : "저장된 나의 기본 설정을 불러와 적용합니다."}
                 >
                   가져오기
                 </button>
                 <button
                   onClick={onDeleteDefaults}
-                  disabled={activeTool === 'pointer' && !selectedItemId}
+                  disabled={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption')}
                   className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-900/30 text-rose-650 dark:text-rose-400 rounded-md font-bold cursor-pointer transition-colors border border-rose-100 dark:border-rose-900/50 text-[11px] shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-50 dark:disabled:hover:bg-rose-950/20"
-                  title={activeTool === 'pointer' && !selectedItemId ? "'선택/이동' 상태(선택된 요소 없음)에서는 설정을 삭제할 수 없습니다." : "저장된 나의 설정을 삭제하고 시스템 디폴트 설정으로 복원합니다."}
+                  title={!selectedItemId && (activeTool === 'pointer' || activeTab === 'border' || activeTab === 'caption') ? "'기본도구' 탭에서 도구를 선택하거나 요소를 선택한 상태에서만 복원할 수 있습니다." : "현재 설정을 시스템 기본값으로 되돌립니다. (저장된 나의 설정은 유지됩니다)"}
                 >
-                  삭제
+                  시스템설정
                 </button>
               </div>
             </div>
