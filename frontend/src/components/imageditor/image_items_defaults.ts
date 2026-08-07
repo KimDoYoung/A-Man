@@ -45,7 +45,7 @@ export const SYSTEM_ITEM_DEFAULTS = {
   // 7. 화살표 스탬프 전용 속성
   stampScale: 3,
   stampDirection: 'right',
-  stampShape: 'arrow' as 'arrow' | 'hand',
+  stampShape: 'arrow' as 'arrow' | 'hand' | 'cursor',
 
   // 8. 말풍선/설명선 (callout) 전용 속성
   calloutShape: 'speech-rect' as 'speech-rect' | 'speech-oval' | 'line',

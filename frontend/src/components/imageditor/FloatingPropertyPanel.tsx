@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/apiClient'
-import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square, MoveUpRight, Pointer } from 'lucide-react'
+import { Minimize2, Maximize2, Layout, Type, Palette, CircleDot, Square, MoveUpRight, Pointer, MousePointer2 } from 'lucide-react'
 import { CanvasItem } from './image_editor_types'
 import ReorderController from './ReorderController'
 import ColorPicker from './ColorPicker'
@@ -18,6 +18,13 @@ import {
   IMAGE_BORDER_COLORS,
   SYMBOL_EMOJI_OPTIONS
 } from './image_items_defaults'
+
+const STAMP_SHAPE_OPTIONS = ['arrow', 'hand', 'cursor'] as const
+const STAMP_SHAPE_META: Record<typeof STAMP_SHAPE_OPTIONS[number], { title: string; icon: React.ReactNode }> = {
+  arrow: { title: '화살표', icon: <MoveUpRight className="w-4 h-4" /> },
+  hand: { title: '손가락', icon: <Pointer className="w-4 h-4" /> },
+  cursor: { title: '커서', icon: <MousePointer2 className="w-4 h-4" /> }
+}
 
 interface FloatingPropertyPanelProps {
   // 1. 원숫자 (circle-number) 관련 속성
@@ -125,8 +132,8 @@ interface FloatingPropertyPanelProps {
   setStampScale: (scale: number) => void
   stampDirection: string
   setStampDirection: (dir: string) => void
-  stampShape: 'arrow' | 'hand'
-  setStampShape: (shape: 'arrow' | 'hand') => void
+  stampShape: 'arrow' | 'hand' | 'cursor'
+  setStampShape: (shape: 'arrow' | 'hand' | 'cursor') => void
 
   // 8. 말풍선/설명선 (callout) 관련 속성
   calloutShape: 'speech-rect' | 'speech-oval' | 'line'
@@ -692,7 +699,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                   <div className="space-y-2">
                     <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 모양</span>
                     <div className="flex gap-2">
-                      {(['arrow', 'hand'] as const).map((s) => (
+                      {STAMP_SHAPE_OPTIONS.map((s) => (
                         <button
                           key={s}
                           onClick={() => {
@@ -709,9 +716,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                               ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
                               : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
                           }`}
-                          title={s === 'arrow' ? '화살표' : '손가락'}
+                          title={STAMP_SHAPE_META[s].title}
                         >
-                          {s === 'arrow' ? <MoveUpRight className="w-4 h-4" /> : <Pointer className="w-4 h-4" />}
+                          {STAMP_SHAPE_META[s].icon}
                         </button>
                       ))}
                     </div>
@@ -1618,7 +1625,7 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                         <div className="space-y-2">
                           <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">스탬프 모양</span>
                           <div className="flex gap-2">
-                            {(['arrow', 'hand'] as const).map((s) => (
+                            {STAMP_SHAPE_OPTIONS.map((s) => (
                               <button
                                 key={s}
                                 onClick={() => setStampShape(s)}
@@ -1627,9 +1634,9 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300'
                                     : 'border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:border-gray-400'
                                 }`}
-                                title={s === 'arrow' ? '화살표' : '손가락'}
+                                title={STAMP_SHAPE_META[s].title}
                               >
-                                {s === 'arrow' ? <MoveUpRight className="w-4 h-4" /> : <Pointer className="w-4 h-4" />}
+                                {STAMP_SHAPE_META[s].icon}
                               </button>
                             ))}
                           </div>

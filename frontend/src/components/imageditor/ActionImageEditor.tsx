@@ -98,7 +98,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 5-2. 화살표 스탬프 관련 속성
   const [stampScale, setStampScale] = useState<number>(SYSTEM_ITEM_DEFAULTS.stampScale)
   const [stampDirection, setStampDirection] = useState<string>(SYSTEM_ITEM_DEFAULTS.stampDirection)
-  const [stampShape, setStampShape] = useState<'arrow' | 'hand'>(SYSTEM_ITEM_DEFAULTS.stampShape)
+  const [stampShape, setStampShape] = useState<'arrow' | 'hand' | 'cursor'>(SYSTEM_ITEM_DEFAULTS.stampShape)
 
   // 6. 이미지 아이템 (image) 관련 속성
   const [imageSrcBorderColor, setImageSrcBorderColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.imageSrcBorderColor)
