@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, ChevronRight, Magnet } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
-import { drawStamp } from './arrowStamp'
+import { drawStamp, STAMP_ANGLES } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
 import TextItemInput from './TextItemInput'
 import { getDistanceToSegment, getTextBounds, drawArrow, drawOrthogonalArrow, drawSelectionHandles, createRoundedRectPath } from './canvasDrawHelpers'
@@ -2808,7 +2808,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           e.preventDefault()
           const w = targetItem.width ?? 0
           const h = targetItem.height ?? 0
-          
+
           const updated = items.map((item) => {
             if (item.id === selectedItemId) {
               return {
@@ -2818,6 +2818,24 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 width: -w,
                 height: -h
               }
+            }
+            return item
+          })
+          pushToUndo(updated)
+          return
+        }
+
+        // 스탬프 아이템은 'r'을 누를 때마다 8방향 중 다음 방향으로 순환
+        if (targetItem && targetItem.type === 'block-arrow-stamp') {
+          e.preventDefault()
+          const directions = Object.keys(STAMP_ANGLES)
+          const currentDir = targetItem.style.stampDirection || 'right'
+          const nextDir = directions[(directions.indexOf(currentDir) + 1) % directions.length]
+
+          setStampDirection(nextDir)
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return { ...item, style: { ...item.style, stampDirection: nextDir } }
             }
             return item
           })
