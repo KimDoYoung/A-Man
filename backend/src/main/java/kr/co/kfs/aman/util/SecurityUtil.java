@@ -12,7 +12,8 @@ import java.util.Base64;
 public class SecurityUtil {
 
     private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
-    
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     // 이 키는 프론트엔드 빌드 시 난독화되어 내장될 것입니다.
     public static final String STATIC_CLIENT_KEY = "A-Man-Static-Client-Key-2026!";
 
@@ -48,7 +49,7 @@ public class SecurityUtil {
 
         // 랜덤 16바이트 IV 생성
         byte[] iv = new byte[16];
-        new SecureRandom().nextBytes(iv);
+        SECURE_RANDOM.nextBytes(iv);
         IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
         Cipher cipher = Cipher.getInstance(ALGORITHM);
