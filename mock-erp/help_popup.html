@@ -18,9 +18,7 @@
         const amanUrl = params.get('amanUrl') || '';
 
         // user_manual.jsp 주소 조립
-        const jspUrl = 'user_manual.jsp?aka=' + encodeURIComponent(aka) + 
-                       '&personId=' + encodeURIComponent(personId) + 
-                       '&amanUrl=' + encodeURIComponent(amanUrl);
+        const jspUrl = 'aman_opener.jsp?aka=' + encodeURIComponent(aka)
 
         // iframe src로 설정
         document.getElementById('helpIframe').src = jspUrl;
