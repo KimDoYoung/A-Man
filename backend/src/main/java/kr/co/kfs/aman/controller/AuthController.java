@@ -116,6 +116,14 @@ public class AuthController {
             }
         }
 
+        // 쿠키에 없는 경우 Authorization Header(Bearer)에서 Access Token 추출 시도
+        if (accessToken == null) {
+            String bearerToken = request.getHeader("Authorization");
+            if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+                accessToken = bearerToken.substring(7);
+            }
+        }
+
         // 1. Refresh Token DB에서 파기
         if (refreshToken != null) {
             refreshTokenRepository.deleteByToken(refreshToken);
@@ -133,6 +141,12 @@ public class AuthController {
         // 3. 쿠키 파기 (MaxAge = 0)
         setCookie(response, "access_token", "", 0);
         setCookie(response, "refresh_token", "", 0);
+
+        // 4. Tomcat HttpSession 무효화 (ERP SSO 세션 및 로컬 권한 초기화)
+        javax.servlet.http.HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
 
         return ResponseEntity.ok("로그아웃 되었습니다.");
     }
