@@ -43,7 +43,9 @@ public class SecurityUtil {
 
     // AES-256 Encrypt (IV 포함하여 Base64 인코딩 반환)
     public static String encrypt(String plainText, String keyStr) throws Exception {
-        if (plainText == null) return null;
+        if (plainText == null) {
+            return null;
+        }
         byte[] keyBytes = get256BitKey(keyStr);
         SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 
@@ -66,7 +68,9 @@ public class SecurityUtil {
 
     // AES-256 Decrypt (Base64 디코딩 및 IV 분리하여 복호화)
     public static String decrypt(String encryptedBase64, String keyStr) throws Exception {
-        if (encryptedBase64 == null) return null;
+        if (encryptedBase64 == null) {
+            return null;
+        }
         byte[] combined = Base64.getDecoder().decode(encryptedBase64);
 
         if (combined.length < 16) {

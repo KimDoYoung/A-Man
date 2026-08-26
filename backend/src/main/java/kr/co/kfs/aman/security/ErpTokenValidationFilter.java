@@ -101,7 +101,9 @@ public class ErpTokenValidationFilter extends OncePerRequestFilter {
         }
         for (String pattern : internalIps.split(",")) {
             String trimmedPattern = pattern.trim();
-            if (trimmedPattern.isEmpty()) continue;
+            if (trimmedPattern.isEmpty()) {
+                continue;
+            }
             
             // Exact match or prefix match (e.g. "192.168.10.")
             if (ip.equals(trimmedPattern) || ip.startsWith(trimmedPattern)) {
@@ -156,10 +158,10 @@ public class ErpTokenValidationFilter extends OncePerRequestFilter {
             
             // 검증 3: 대칭키를 활용한 HMAC-SHA256 서명 검증
             String payload = userId + "|" + timestamp + "|" + ipInToken;
-            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            Mac sha256Hmac = Mac.getInstance("HmacSHA256");
             SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-            sha256_HMAC.init(secretKeySpec);
-            byte[] hashBytes = sha256_HMAC.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            sha256Hmac.init(secretKeySpec);
+            byte[] hashBytes = sha256Hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
             String expectedSignature = Base64.getUrlEncoder().withoutPadding().encodeToString(hashBytes);
             
             boolean signatureValid = expectedSignature.equals(signature);
