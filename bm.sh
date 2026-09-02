@@ -71,6 +71,14 @@ resolve_mode() {
 }
 
 check_java() {
+    # Java 8 경로가 시스템에 존재하는 경우 JAVA_HOME 자동 보정
+    if [[ -d "/usr/lib/jvm/java-8-openjdk" && -x "/usr/lib/jvm/java-8-openjdk/bin/java" ]]; then
+        if [[ -z "${JAVA_HOME:-}" || "$("${JAVA_HOME}/bin/java" -version 2>&1 | head -1)" != *'1.8'* ]]; then
+            export JAVA_HOME="/usr/lib/jvm/java-8-openjdk"
+            export PATH="$JAVA_HOME/bin:$PATH"
+        fi
+    fi
+
     if ! command -v java &>/dev/null; then
         error "Java가 설치되어 있지 않습니다. Java 1.8이 필요합니다."
         exit 1

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Type, Square, CircleDot, Check, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, ChevronRight, Magnet } from 'lucide-react'
+import { Undo, Redo, Type, Square, CircleDot, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, Magnet } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { drawStamp, STAMP_ANGLES } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
@@ -3471,16 +3471,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
     })
     return Math.ceil(maxEdge)
-  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandLeft])
-
-  // 상단 및 좌측 축소 가능 여부 계산
-  const canShrinkTop = React.useMemo(() => {
-    return canvasExpandTop > minTopMargin
-  }, [canvasExpandTop, minTopMargin])
-
-  const canShrinkLeft = React.useMemo(() => {
-    return canvasExpandLeft > minLeftMargin
-  }, [canvasExpandLeft, minLeftMargin])
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandTop])
 
   // 4방향 임의 값 확장/축소 실행 함수
   const handleSetCanvasExpand = (direction: 'top' | 'bottom' | 'left' | 'right', targetVal: number) => {

@@ -123,6 +123,11 @@ spotbugsTest {
     }
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:-options"
+    options.encoding = 'UTF-8'
+}
+
 tasks.withType(Checkstyle) {
     group = 'verification'
 }
