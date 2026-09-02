@@ -21,6 +21,7 @@ import { CanvasItem, ImageWork, ActionImageEditorProps } from './image_editor_ty
 import FloatingPropertyPanel from './FloatingPropertyPanel'
 import WorkHistory from './WorkHistory'
 import ImageEditorFooter from './ImageEditorFooter'
+import { EditorSpinBox } from './EditorSpinBox'
 
 // 아이템의 중심점 계산 (width/height 미보유 타입은 x,y 자체가 중심점으로 취급됨)
 function getItemCenter(item: CanvasItem): { cx: number; cy: number } {
@@ -881,7 +882,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           item.style.borderWidth || arrowLineWidth,
           item.style.lineStyle || arrowLineStyle,
           isSelected,
-          item.style.headSize || arrowHeadSize
+          item.style.headSize || arrowHeadSize,
+          item.style.orthogonalRouting
         )
       }
       else if (item.type === 'symbol') {
@@ -1974,8 +1976,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
           const xOut = Math.max(0, minX - midX, midX - maxX)
           const yOut = Math.max(0, minY - rawMidY, rawMidY - maxY)
-          const handleMidX = xOut >= yOut ? midX : (fromX + toX) / 2
-          const handleMidY = xOut >= yOut ? (fromY + toY) / 2 : rawMidY
+          const useHorizontal = selectedItem.style.orthogonalRouting
+            ? selectedItem.style.orthogonalRouting === 'hvh'
+            : xOut >= yOut
+          const handleMidX = useHorizontal ? midX : (fromX + toX) / 2
+          const handleMidY = useHorizontal ? (fromY + toY) / 2 : rawMidY
 
           if (Math.hypot(fromX - x, fromY - y) <= clickRadius) {
             setResizeHandle('arrow-start')
@@ -2076,8 +2081,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           const minY = Math.min(item.y, y2), maxY = Math.max(item.y, y2)
           const xOutside = Math.max(0, minX - midX, midX - maxX)
           const yOutside = Math.max(0, minY - midY, midY - maxY)
+          const useHorizontal = item.style.orthogonalRouting
+            ? item.style.orthogonalRouting === 'hvh'
+            : xOutside >= yOutside
           let dist1: number, dist2: number, dist3: number
-          if (xOutside >= yOutside) {
+          if (useHorizontal) {
             dist1 = getDistanceToSegment(x, y, item.x, item.y, midX, item.y)
             dist2 = getDistanceToSegment(x, y, midX, item.y, midX, y2)
             dist3 = getDistanceToSegment(x, y, midX, y2, x2, y2)
@@ -2286,7 +2294,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
             const newH = y - item.y
             return { ...item, width: newW, height: newH }
           } else if (resizeHandle === 'orthogonal-mid') {
-            return { ...item, style: { ...item.style, midX: x, midY: y } }
+            const fromX = item.x, fromY = item.y
+            const toX = item.x + (item.width || 0), toY = item.y + (item.height || 0)
+            const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
+            const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
+            const xOut = Math.max(0, minX - x, x - maxX)
+            const yOut = Math.max(0, minY - y, y - maxY)
+            const routing = xOut >= yOut ? 'hvh' : 'vhv'
+            return { ...item, style: { ...item.style, midX: x, midY: y, orthogonalRouting: routing } }
           }
         } else if (item.id === selectedItemId && item.type === 'text') {
           if (resizeHandle === 'text-rotate') {
@@ -2712,43 +2727,77 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
           const xOutside = Math.max(0, minX - midX, midX - maxX)
           const yOutside = Math.max(0, minY - midY, midY - maxY)
-          const useHorizontal = xOutside >= yOutside
+          const currentRouting = targetItem.style.orthogonalRouting || (xOutside >= yOutside ? 'hvh' : 'vhv')
+
+          const centerX = (fromX + toX) / 2
+          const centerY = (fromY + toY) / 2
+
+          // 4가지 모드 정의 및 현재 상태 판별 (오차 허용 4px)
+          // 모드 1: 'ㄱ'자 (H-V: 가로 이동 ➔ 수직 진입, routing='hvh', midX=toX)
+          // 모드 2: 'ㄴ'자 (V-H: 세로 이동 ➔ 수평 진입, routing='vhv', midY=toY 또는 routing='hvh', midX=fromX)
+          // 모드 3: 가로 Z자 (H-V-H 50%: 가로 50% ➔ 세로 ➔ 수평 진입, routing='hvh', midX=centerX)
+          // 모드 4: 세로 Z자 (V-H-V 50%: 세로 50% ➔ 수평 ➔ 수직 진입, routing='vhv', midY=centerY)
+
+          const isMode1 = currentRouting === 'hvh' && Math.abs(midX - toX) < 4
+          const isMode2 = (currentRouting === 'vhv' && Math.abs(midY - toY) < 4) || (currentRouting === 'hvh' && Math.abs(midX - fromX) < 4)
+          const isMode3 = currentRouting === 'hvh' && Math.abs(midX - centerX) < 4
+          const isMode4 = currentRouting === 'vhv' && Math.abs(midY - centerY) < 4
+
+          let nextMode = 1
+          if (isMode1) {
+            nextMode = 2
+          } else if (isMode2) {
+            nextMode = 3
+          } else if (isMode3) {
+            nextMode = 4
+          } else if (isMode4) {
+            nextMode = 1
+          } else {
+            // 임의의 상태에서 첫 클릭 시 가장 깔끔한 1번('ㄱ'자)으로 시작
+            nextMode = 1
+          }
 
           let newMidX = midX
           let newMidY = midY
+          let newRouting: 'hvh' | 'vhv' = 'hvh'
 
-          if (useHorizontal) {
-            // H-V-H 경로: midX를 시작점(fromX) 또는 끝점(toX) 중 가까운 쪽으로 스냅하여 꼬리 제거
-            if (Math.abs(midX - fromX) < Math.abs(midX - toX)) {
-              newMidX = fromX
-            } else {
-              newMidX = toX
-            }
-          } else {
-            // V-H-V 경로: midY를 시작점(fromY) 또는 끝점(toY) 중 가까운 쪽으로 스냅하여 꼬리 제거
-            if (Math.abs(midY - fromY) < Math.abs(midY - toY)) {
-              newMidY = fromY
-            } else {
-              newMidY = toY
-            }
+          if (nextMode === 1) {
+            // 모드 1: 'ㄱ'자 (H-V 직각)
+            newMidX = toX
+            newMidY = centerY
+            newRouting = 'hvh'
+          } else if (nextMode === 2) {
+            // 모드 2: 'ㄴ'자 (V-H 직각)
+            newMidX = centerX
+            newMidY = toY
+            newRouting = 'vhv'
+          } else if (nextMode === 3) {
+            // 모드 3: 가로 Z자 (H-V-H 50%)
+            newMidX = centerX
+            newMidY = centerY
+            newRouting = 'hvh'
+          } else if (nextMode === 4) {
+            // 모드 4: 세로 Z자 (V-H-V 50%)
+            newMidX = centerX
+            newMidY = centerY
+            newRouting = 'vhv'
           }
 
-          if (midX !== newMidX || midY !== newMidY) {
-            const updated = items.map((item) => {
-              if (item.id === selectedItemId) {
-                return {
-                  ...item,
-                  style: {
-                    ...item.style,
-                    midX: newMidX,
-                    midY: newMidY
-                  }
+          const updated = items.map((item) => {
+            if (item.id === selectedItemId) {
+              return {
+                ...item,
+                style: {
+                  ...item.style,
+                  midX: newMidX,
+                  midY: newMidY,
+                  orthogonalRouting: newRouting
                 }
               }
-              return item
-            })
-            pushToUndo(updated)
-          }
+            }
+            return item
+          })
+          pushToUndo(updated)
           return
         }
 
@@ -3366,6 +3415,32 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
 
   // 여백 위에 배치된 도형들을 보호하기 위한 최소 여백 값 계산
+  const minTopMargin = React.useMemo(() => {
+    if (!bgImage) return 0
+    let minTop = Infinity
+    items.forEach((item) => {
+      const { top } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      if (top < minTop) {
+        minTop = top
+      }
+    })
+    if (minTop === Infinity) return 0
+    return Math.max(0, Math.ceil(canvasExpandTop - minTop))
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandTop])
+
+  const minLeftMargin = React.useMemo(() => {
+    if (!bgImage) return 0
+    let minLeft = Infinity
+    items.forEach((item) => {
+      const { left } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
+      if (left < minLeft) {
+        minLeft = left
+      }
+    })
+    if (minLeft === Infinity) return 0
+    return Math.max(0, Math.ceil(canvasExpandLeft - minLeft))
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandLeft])
+
   const minBottomMargin = React.useMemo(() => {
     if (!bgImage) return 0
     let maxEdge = 0
@@ -3396,28 +3471,49 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       }
     })
     return Math.ceil(maxEdge)
-  }, [items, bgImage, circleNumberFontSize, canvasExpandLeft])
+  }, [items, bgImage, circleNumberFontSize, textFontSize, canvasExpandLeft])
 
   // 상단 및 좌측 축소 가능 여부 계산
   const canShrinkTop = React.useMemo(() => {
-    if (canvasExpandTop < 100) return false
-    let safe = true
-    items.forEach(item => {
-      const { top } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
-      if (top < 100) safe = false
-    })
-    return safe
-  }, [items, canvasExpandTop, circleNumberFontSize])
+    return canvasExpandTop > minTopMargin
+  }, [canvasExpandTop, minTopMargin])
 
   const canShrinkLeft = React.useMemo(() => {
-    if (canvasExpandLeft < 100) return false
-    let safe = true
-    items.forEach(item => {
-      const { left } = getItemEdgeBounds(item, { circleNumberFontSize, textFontSize })
-      if (left < 100) safe = false
-    })
-    return safe
-  }, [items, canvasExpandLeft, circleNumberFontSize])
+    return canvasExpandLeft > minLeftMargin
+  }, [canvasExpandLeft, minLeftMargin])
+
+  // 4방향 임의 값 확장/축소 실행 함수
+  const handleSetCanvasExpand = (direction: 'top' | 'bottom' | 'left' | 'right', targetVal: number) => {
+    if (direction === 'top') {
+      const clamped = Math.max(minTopMargin, Math.min(1000, targetVal))
+      const delta = clamped - canvasExpandTop
+      if (delta !== 0) {
+        setCanvasExpandTop(clamped)
+        const shifted = items.map(item => shiftItemY(item, delta))
+        pushToUndo(shifted)
+      }
+    } else if (direction === 'bottom') {
+      const clamped = Math.max(minBottomMargin, Math.min(1000, targetVal))
+      if (clamped !== canvasExpandBottom) {
+        setCanvasExpandBottom(clamped)
+        pushToUndo(items)
+      }
+    } else if (direction === 'left') {
+      const clamped = Math.max(minLeftMargin, Math.min(1000, targetVal))
+      const delta = clamped - canvasExpandLeft
+      if (delta !== 0) {
+        setCanvasExpandLeft(clamped)
+        const shifted = items.map(item => shiftItemX(item, delta))
+        pushToUndo(shifted)
+      }
+    } else if (direction === 'right') {
+      const clamped = Math.max(minRightMargin, Math.min(1000, targetVal))
+      if (clamped !== canvasExpandRight) {
+        setCanvasExpandRight(clamped)
+        pushToUndo(items)
+      }
+    }
+  }
 
   // 원본 이미지 크기 조절 실행 함수
   const handleResizeImage = async (targetScale: number) => {
@@ -3482,71 +3578,34 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     resizedImg.src = resizedDataUrl
   }
 
-  // 4방향 확장/축소 실행 함수
-  const handleExpandTop = () => {
-    setCanvasExpandTop(prev => prev + 100)
-    const shifted = items.map(item => shiftItemY(item, 100))
-    pushToUndo(shifted)
-  }
 
-  const handleShrinkTop = () => {
-    if (!canShrinkTop) return
-    setCanvasExpandTop(prev => prev - 100)
-    const shifted = items.map(item => shiftItemY(item, -100))
-    pushToUndo(shifted)
-  }
 
-  const handleExpandBottom = () => {
-    setCanvasExpandBottom(prev => prev + 100)
-    pushToUndo(items)
-  }
-
-  const handleShrinkBottom = () => {
-    const val = Math.max(minBottomMargin, canvasExpandBottom - 100)
-    setCanvasExpandBottom(val)
-    pushToUndo(items)
-  }
-
-  const handleExpandLeft = () => {
-    setCanvasExpandLeft(prev => prev + 100)
-    const shifted = items.map(item => shiftItemX(item, 100))
-    pushToUndo(shifted)
-  }
-
-  const handleShrinkLeft = () => {
-    if (!canShrinkLeft) return
-    setCanvasExpandLeft(prev => prev - 100)
-    const shifted = items.map(item => shiftItemX(item, -100))
-    pushToUndo(shifted)
-  }
-
-  const handleExpandRight = () => {
-    setCanvasExpandRight(prev => prev + 100)
-    pushToUndo(items)
-  }
-
-  const handleShrinkRight = () => {
-    const val = Math.max(minRightMargin, canvasExpandRight - 100)
-    setCanvasExpandRight(val)
-    pushToUndo(items)
-  }
-
-  // 바탕 확장 라디오에서 선택된 방향에 맞는 핸들러/축소가능여부/문구 조회용 맵
-  const EXPAND_DIRECTION_LABELS: Record<typeof expandDirection, string> = {
+  // 바탕 확장 라디오에서 선택된 방향에 맞는 레이블/값/축소가능여부/문구 조회용
+  const EXPAND_DIRECTION_LABELS: Record<'top' | 'bottom' | 'left' | 'right', string> = {
     top: '상단', bottom: '하단', left: '좌측', right: '우측'
   }
-  const expandDirectionActions: Record<typeof expandDirection, {
-    expand: () => void
-    shrink: () => void
-    canShrink: boolean
-    shrinkBlockedTitle: string
-  }> = {
-    top: { expand: handleExpandTop, shrink: handleShrinkTop, canShrink: canShrinkTop, shrinkBlockedTitle: '상단에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
-    bottom: { expand: handleExpandBottom, shrink: handleShrinkBottom, canShrink: canvasExpandBottom > minBottomMargin, shrinkBlockedTitle: '하단에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
-    left: { expand: handleExpandLeft, shrink: handleShrinkLeft, canShrink: canShrinkLeft, shrinkBlockedTitle: '좌측에 도형이 있거나 여백이 없어 축소할 수 없습니다' },
-    right: { expand: handleExpandRight, shrink: handleShrinkRight, canShrink: canvasExpandRight > minRightMargin, shrinkBlockedTitle: '우측에 도형이 있거나 여백이 없어 축소할 수 없습니다' }
+  const currentExpandValue = {
+    top: canvasExpandTop,
+    bottom: canvasExpandBottom,
+    left: canvasExpandLeft,
+    right: canvasExpandRight
+  }[expandDirection]
+
+  const currentMinExpand = {
+    top: minTopMargin,
+    bottom: minBottomMargin,
+    left: minLeftMargin,
+    right: minRightMargin
+  }[expandDirection]
+
+  const canShrinkCurrent = currentExpandValue > currentMinExpand
+
+  const shrinkBlockedTitles: Record<'top' | 'bottom' | 'left' | 'right', string> = {
+    top: '상단에 도형이 있거나 여백이 없어 축소할 수 없습니다',
+    bottom: '하단에 도형이 있거나 여백이 없어 축소할 수 없습니다',
+    left: '좌측에 도형이 있거나 여백이 없어 축소할 수 없습니다',
+    right: '우측에 도형이 있거나 여백이 없어 축소할 수 없습니다'
   }
-  const activeExpandAction = expandDirectionActions[expandDirection]
 
   if (!isOpen) return null
 
@@ -3584,149 +3643,112 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           {/* 우측 상단 컨트롤 그룹 (이미지 크기 + 바탕 확장 + 보기 배율 나란히 배치) */}
           {bgImage && (
             <div className="flex items-center space-x-2 mr-2">
-              {/* 이미지 크기 배율 컨트롤 */}
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowImageScaleControls(!showImageScaleControls)
-                    setShowCanvasExpandControls(false)
-                    setShowZoomControls(false)
-                  }}
-                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
-                    showImageScaleControls 
-                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
-                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="이미지 크기 조절 메뉴 토글"
-                >
-                  <span>이미지 크기: {Math.round(imageScale * 100)}%</span>
-                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showImageScaleControls ? 'rotate-180' : ''}`} />
-                </button>
-                {showImageScaleControls && (
-                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
-                    {[0.3, 0.5, 0.75, 1.0, 1.5, 2.0].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => handleResizeImage(s)}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                          imageScale === s
-                            ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                            : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {Math.round(s * 100)}%
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* 1. 이미지 크기 배율 컨트롤 */}
+              <EditorSpinBox
+                label="이미지 크기"
+                value={Math.round(imageScale * 100)}
+                unit="%"
+                min={10}
+                max={300}
+                step={5}
+                shiftStep={20}
+                presets={[
+                  { label: '30%', value: 30 },
+                  { label: '50%', value: 50 },
+                  { label: '75%', value: 75 },
+                  { label: '100%', value: 100 },
+                  { label: '150%', value: 150 },
+                  { label: '200%', value: 200 }
+                ]}
+                onChange={(newVal) => handleResizeImage(newVal / 100)}
+                isOpen={showImageScaleControls}
+                onToggleOpen={() => {
+                  setShowImageScaleControls(!showImageScaleControls)
+                  setShowCanvasExpandControls(false)
+                  setShowZoomControls(false)
+                }}
+                title="이미지 원본 크기 조절 (Enter/포커스해제 시 적용, ↑/↓ 키로 5% 단위 조절)"
+              />
 
-              {/* 바탕 확장 컨트롤 (방향 라디오 + 공용 증감 버튼) */}
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCanvasExpandControls(!showCanvasExpandControls)
-                    setShowImageScaleControls(false)
-                    setShowZoomControls(false)
-                  }}
-                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
-                    showCanvasExpandControls 
-                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
-                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="바탕 확장 메뉴 토글"
-                >
-                  <span>바탕 확장 ({EXPAND_DIRECTION_LABELS[expandDirection]})</span>
-                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showCanvasExpandControls ? 'rotate-180' : ''}`} />
-                </button>
-                {showCanvasExpandControls && (
-                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
-                    {/* 방향 라디오 (단일 선택) */}
-                    <div role="radiogroup" aria-label="바탕 확장 방향" className="flex items-center space-x-1">
-                      {(['top', 'bottom', 'left', 'right'] as const).map((dir) => (
+              {/* 2. 바탕 확장 컨트롤 */}
+              <EditorSpinBox
+                label="바탕 확장"
+                value={currentExpandValue}
+                unit="px"
+                min={currentMinExpand}
+                max={1000}
+                step={10}
+                shiftStep={50}
+                canShrink={canShrinkCurrent}
+                shrinkBlockedTitle={shrinkBlockedTitles[expandDirection]}
+                customPrefix={
+                  <div role="radiogroup" aria-label="바탕 확장 방향" className="flex items-center space-x-0.5">
+                    {(['top', 'bottom', 'left', 'right'] as const).map((dir) => {
+                      const shortLabels: Record<typeof dir, string> = { top: '상', bottom: '하', left: '좌', right: '우' }
+                      return (
                         <button
                           key={dir}
                           type="button"
                           role="radio"
                           aria-checked={expandDirection === dir}
                           onClick={() => setExpandDirection(dir)}
-                          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
                             expandDirection === dir
-                              ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                              : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
+                              ? 'bg-amber-500 text-white shadow-xs'
+                              : 'bg-transparent text-gray-500 dark:text-slate-400 hover:bg-gray-150 dark:hover:bg-slate-800'
                           }`}
-                          title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 선택`}
+                          title={`${EXPAND_DIRECTION_LABELS[dir]} 방향 여백 선택`}
                         >
-                          {expandDirection === dir && <Check className="w-2.5 h-2.5" />}
-                          {EXPAND_DIRECTION_LABELS[dir]}
+                          {shortLabels[dir]}
                         </button>
-                      ))}
-                    </div>
-
-                    <div className="border-r border-gray-150 dark:border-slate-800 h-3.5 mx-1 shrink-0" />
-
-                    {/* 선택된 방향에 적용되는 공용 증감 버튼 */}
-                    <button
-                      type="button"
-                      onClick={activeExpandAction.expand}
-                      className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all shrink-0"
-                      title={`${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 추가`}
-                    >
-                      +100
-                    </button>
-                    <button
-                      type="button"
-                      onClick={activeExpandAction.shrink}
-                      disabled={!activeExpandAction.canShrink}
-                      className="px-2 py-0.5 text-[10px] font-bold rounded bg-transparent text-gray-500 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all shrink-0"
-                      title={!activeExpandAction.canShrink ? activeExpandAction.shrinkBlockedTitle : `${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 100px 축소`}
-                    >
-                      -100
-                    </button>
+                      )
+                    })}
                   </div>
-                )}
-              </div>
+                }
+                presets={[
+                  { label: '0px', value: 0 },
+                  { label: '+50px', value: 50 },
+                  { label: '+100px', value: 100 },
+                  { label: '+200px', value: 200 }
+                ]}
+                onChange={(newVal) => handleSetCanvasExpand(expandDirection, newVal)}
+                isOpen={showCanvasExpandControls}
+                onToggleOpen={() => {
+                  setShowCanvasExpandControls(!showCanvasExpandControls)
+                  setShowImageScaleControls(false)
+                  setShowZoomControls(false)
+                }}
+                title={`바탕 확장 (${EXPAND_DIRECTION_LABELS[expandDirection]} 여백 조절, Enter/포커스해제 시 적용, ↑/↓ 키로 10px 단위 조절)`}
+              />
 
-              {/* 보기 배율 컨트롤 */}
-              <div className="flex items-center bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-1 space-x-1 shadow-2xs transition-all duration-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowZoomControls(!showZoomControls)
-                    setShowImageScaleControls(false)
-                    setShowCanvasExpandControls(false)
-                  }}
-                  className={`flex items-center space-x-1.5 px-2 py-1 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
-                    showZoomControls 
-                      ? 'text-indigo-650 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20' 
-                      : 'text-gray-650 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                  }`}
-                  title="보기 배율 조절 메뉴 토글"
-                >
-                  <span>보기 배율: {Math.round(zoom * 100)}%</span>
-                  <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showZoomControls ? 'rotate-180' : ''}`} />
-                </button>
-                {showZoomControls && (
-                  <div className="flex items-center space-x-1 pl-1.5 border-l border-gray-150 dark:border-slate-800 ml-1.5 animate-in fade-in slide-in-from-left-1 duration-150">
-                    {[1.2, 1.0, 0.85, 0.7, 0.5, 0.3].map((z) => (
-                      <button
-                        key={z}
-                        onClick={() => setZoom(z)}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
-                          zoom === z
-                            ? 'bg-indigo-650 text-gray-700 shadow-xs'
-                            : 'bg-transparent text-gray-400 dark:text-slate-350 hover:bg-gray-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {Math.round(z * 100)}%
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* 3. 보기 배율 컨트롤 */}
+              <EditorSpinBox
+                label="보기 배율"
+                value={Math.round(zoom * 100)}
+                unit="%"
+                min={20}
+                max={300}
+                step={10}
+                shiftStep={25}
+                presets={[
+                  { label: '30%', value: 30 },
+                  { label: '50%', value: 50 },
+                  { label: '70%', value: 70 },
+                  { label: '85%', value: 85 },
+                  { label: '100%', value: 100 },
+                  { label: '120%', value: 120 },
+                  { label: '150%', value: 150 },
+                  { label: '200%', value: 200 }
+                ]}
+                onChange={(newVal) => setZoom(newVal / 100)}
+                isOpen={showZoomControls}
+                onToggleOpen={() => {
+                  setShowZoomControls(!showZoomControls)
+                  setShowImageScaleControls(false)
+                  setShowCanvasExpandControls(false)
+                }}
+                title="에디터 화면 보기 배율 조절 (Enter/포커스해제 시 적용, ↑/↓ 키로 10% 단위 조절)"
+              />
             </div>
           )}
         </div>

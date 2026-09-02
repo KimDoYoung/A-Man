@@ -156,13 +156,16 @@ export function drawOrthogonalArrow(
   width: number,
   lineStyle: 'solid' | 'dashed',
   isSelected: boolean,
-  headSizeLevel: number = 1
+  headSizeLevel: number = 1,
+  orthogonalRouting?: 'hvh' | 'vhv'
 ) {
   const minX = Math.min(fromX, toX), maxX = Math.max(fromX, toX)
   const minY = Math.min(fromY, toY), maxY = Math.max(fromY, toY)
   const xOutside = Math.max(0, minX - midX, midX - maxX)
   const yOutside = Math.max(0, minY - midY, midY - maxY)
-  const useHorizontal = xOutside >= yOutside
+  const useHorizontal = orthogonalRouting
+    ? orthogonalRouting === 'hvh'
+    : xOutside >= yOutside
 
   const p1x = useHorizontal ? midX : fromX
   const p1y = useHorizontal ? fromY : midY

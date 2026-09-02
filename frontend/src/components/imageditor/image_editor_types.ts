@@ -29,6 +29,7 @@ export interface CanvasItem {
     calloutTailX?: number
     calloutTailY?: number
     shape?: 'circle' | 'rect'
+    orthogonalRouting?: 'hvh' | 'vhv'
   }
 }
 
