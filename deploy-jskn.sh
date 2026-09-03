@@ -8,6 +8,48 @@ REMOTE_DATA="/data/docker/apps/aman/data"
 PROJECT_ROOT="$(cd "$(dirname "$0")/." && pwd)"
 STATIC_DIR="$PROJECT_ROOT/backend/src/main/resources/static"
 
+# 색상 정의
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Java 버전 체크 (Java 8 필수)
+check_java_version() {
+  if ! command -v java &>/dev/null; then
+    echo -e "${RED}[ERROR]${NC} Java 명령어를 찾을 수 없습니다. Java 8 (1.8) 설치가 필요합니다."
+    exit 1
+  fi
+
+  local raw_ver
+  raw_ver=$(java -version 2>&1 | head -n 1)
+  local ver_str
+  ver_str=$(echo "$raw_ver" | sed -E 's/.*version "([^"]+)".*/\1/')
+
+  local major_ver=""
+  if [[ "$ver_str" =~ ^1\.([0-9]+) ]]; then
+    major_ver="${BASH_REMATCH[1]}"
+  elif [[ "$ver_str" =~ ^([0-9]+) ]]; then
+    major_ver="${BASH_REMATCH[1]}"
+  fi
+
+  if [[ "$major_ver" != "8" ]]; then
+    echo ""
+    echo -e "${RED}================================================================${NC}"
+    echo -e "${RED}[ERROR] Java 버전 오류: 배포 작업을 중지합니다.${NC}"
+    echo -e "${YELLOW}[WARN]  현재 감지된 Java 버전 : ${BOLD}${ver_str:-$raw_ver}${NC}"
+    echo -e "${YELLOW}[WARN]  요구되는 Java 버전   : ${BOLD}Java 8 (1.8)${NC}"
+    echo -e "${YELLOW}[WARN]  A-Man 배포 빌드는 반드시 Java 8 환경에서 실행해야 합니다.${NC}"
+    echo -e "${YELLOW}[WARN]  Java 8로 버전을 변경(JAVA_HOME/PATH 설정)한 후 다시 시도해 주세요.${NC}"
+    echo -e "${RED}================================================================${NC}"
+    echo ""
+    exit 1
+  fi
+}
+
+check_java_version
+
 # 기본값: DB 초기화 실행 안 함
 INIT_DB=false
 
