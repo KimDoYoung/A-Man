@@ -42,6 +42,10 @@
   • 회원 관리 컨트롤러: UserController.java
   • 인증 관리 컨트롤러: AuthController.java
 
+## 업그레이드
+
+- application.properties에 버젼이 있음.
+- history.json 에 짧게 기술
 
 ## 배포
 
