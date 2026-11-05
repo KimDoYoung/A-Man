@@ -55,8 +55,11 @@ export function useSecurity(enabled: boolean = true) {
       const isIframe = window.self !== window.top
       if (isIframe) return
       
-      const widthDev = window.outerWidth - window.innerWidth > threshold
-      const heightDev = window.outerHeight - window.innerHeight > threshold
+      // 브라우저 확대(Ctrl+휠, 배율 설정) 시 CSS 픽셀이 커져 inner 크기가 줄어드는 것을 보정
+      // devicePixelRatio = OS 배율 × 브라우저 배율 이므로 실제 브라우저 배율 이상 값 → 오탐 방지 측에 안전
+      const zoom = window.devicePixelRatio || 1
+      const widthDev = window.outerWidth - window.innerWidth * zoom > threshold
+      const heightDev = window.outerHeight - window.innerHeight * zoom > threshold
       if (widthDev || heightDev) {
         document.body.innerHTML = `
           <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#ef4444;background:#fafafa;padding:20px;text-align:center;">
