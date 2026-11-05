@@ -837,8 +837,11 @@ public class ManualController {
             "            function checkDevTools() {\n" +
             "                var isIframe = window.self !== window.top;\n" +
             "                if (isIframe) return;\n" +
-            "                var widthDev = window.outerWidth - window.innerWidth > threshold;\n" +
-            "                var heightDev = window.outerHeight - window.innerHeight > threshold;\n" +
+            "                // 브라우저 확대(Ctrl+휠, 배율 설정) 시 CSS 픽셀이 커져 inner 크기가 줄어드는 것을 보정\n" +
+            "                // devicePixelRatio = OS 배율 × 브라우저 배율 이므로 실제 브라우저 배율 이상 값 → 오탐 방지 측에 안전\n" +
+            "                var zoom = window.devicePixelRatio || 1;\n" +
+            "                var widthDev = window.outerWidth - window.innerWidth * zoom > threshold;\n" +
+            "                var heightDev = window.outerHeight - window.innerHeight * zoom > threshold;\n" +
             "                if (widthDev || heightDev) {\n" +
             "                    var errorHtml = \n" +
             "                        \"<div style='display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#ef4444;background:#fafafa;padding:20px;text-align:center;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999999;'>\" +\n" +
