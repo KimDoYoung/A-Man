@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #============================================================================
-# deploy-dell6280.sh - A-Man 프로젝트 DELL6280 Docker(gxt-demo) 배포 스크립트
+# deploy-dell6820.sh - A-Man 프로젝트 DELL6820 Docker(gxt-demo) 배포 스크립트
 #
 #   - aman.war 를 빌드하여 gxt-demo 컨테이너의 webapps 경로에 복사합니다.
 #   - 접속 URL: http://localhost:8081/aman
-#   - 컨테이너는 AMAN_MODE=dell6280 환경변수로 application-dell6280.properties 를 로드해야 합니다.
+#   - 컨테이너는 AMAN_MODE=dell6820 환경변수로 application-dell6820.properties 를 로드해야 합니다.
 #
 # 사용법:
-#   ./deploy-dell6280.sh            # 빌드 및 배포
-#   ./deploy-dell6280.sh --init-db  # DB 초기화(기존 DB 삭제 후 DDL 재실행) 후 빌드 및 배포
+#   ./deploy-dell6820.sh            # 빌드 및 배포
+#   ./deploy-dell6820.sh --init-db  # DB 초기화(기존 DB 삭제 후 DDL 재실행) 후 빌드 및 배포
 #============================================================================
 
 # 에러 발생 시 즉시 중단 및 정의되지 않은 변수 사용 시 에러 처리
@@ -33,8 +33,8 @@ FRONTEND_DIR="$PROJECT_ROOT/frontend"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 STATIC_DIR="$BACKEND_DIR/src/main/resources/static"
 
-# DELL6280 도커(gxt-demo) 배포 대상 설정
-AMAN_MODE_NAME="dell6280"
+# DELL6820 도커(gxt-demo) 배포 대상 설정
+AMAN_MODE_NAME="dell6820"
 DOCKER_COMPOSE_DIR="/data/docker"
 DOCKER_COMPOSE_FILE="$DOCKER_COMPOSE_DIR/docker-compose.yml"
 CONTAINER_NAME="gxt-demo"
@@ -43,7 +43,7 @@ TARGET_WEBAPPS_DIR="/data/docker/gxt-demo/webapps"
 TARGET_WAR_FILE="$TARGET_WEBAPPS_DIR/aman.war"
 APP_URL="http://localhost:8081/aman"
 
-# application-dell6280.properties 의 aman.base-dir 과 동일해야 함
+# application-dell6820.properties 의 aman.base-dir 과 동일해야 함
 TARGET_BASE_DIR="/data/asseterp/aman"
 TARGET_DB_DIR="$TARGET_BASE_DIR/db"
 TARGET_DB_FILE="$TARGET_DB_DIR/aman.db"
@@ -111,7 +111,7 @@ fi
 VERSION=$(grep '^spring.application.version=' "$PROP_FILE" | cut -d '=' -f2- | tr -d '\r\n[:space:]')
 VERSION=${VERSION:-1.0.0}
 
-header "A-Man DELL6280 Docker 배포 스크립트 (버전: $VERSION)"
+header "A-Man DELL6820 Docker 배포 스크립트 (버전: $VERSION)"
 info "배포 대상 : ${BOLD}$TARGET_WAR_FILE${NC}"
 info "BASE_DIR  : ${BOLD}$TARGET_BASE_DIR${NC}"
 info "접속 URL  : ${BOLD}$APP_URL${NC}"
