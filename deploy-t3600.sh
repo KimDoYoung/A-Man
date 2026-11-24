@@ -24,6 +24,12 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 BACKEND_DIR="$PROJECT_ROOT/backend"
 STATIC_DIR="$BACKEND_DIR/src/main/resources/static"
+TARGET_WEBAPPS_DIR="/data/docker/gxt-demo/webapps"
+TARGET_WAR_NAME="${1:-aman.war}"
+if [[ "$TARGET_WAR_NAME" != *.war ]]; then
+    TARGET_WAR_NAME="${TARGET_WAR_NAME}.war"
+fi
+TARGET_WAR_FILE="$TARGET_WEBAPPS_DIR/$TARGET_WAR_NAME"
 
 # ── Java 버전 체크 (Java 8 필수) ──────────────────────────────────────────
 check_java_version() {
@@ -69,8 +75,10 @@ VERSION=$(grep '^spring.application.version=' "$PROP_FILE" | cut -d '=' -f2- | t
 VERSION=${VERSION:-1.0.0}
 
 header "A-Man WAR 빌드 스크립트 (버전: $VERSION)"
+info "최종 배포 대상 WAR 파일: ${BOLD}$TARGET_WAR_FILE${NC}"
+echo ""
 
-read -r -p "프론트엔드 및 백엔드 빌드를 진행하여 WAR 파일을 생성하시겠습니까? (y/N) " CONFIRM
+read -r -p "최종 생성/복사할 파일이 '${TARGET_WAR_NAME}' 맞습니까? 빌드를 진행하시겠습니까? (y/N) " CONFIRM
 if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
     info "빌드 작업이 취소되었습니다."
     exit 0
@@ -123,7 +131,7 @@ info "필요한 경우 해당 파일을 원격 서버의 Tomcat webapps 경로�
 info "WAR 파일 생성 성공: $WAR_FILE ($(du -h "$WAR_FILE" | cut -f1))"
 
 # ── 4. 타겟 디렉토리로 복사 ─────────────────────────────────────────────────
-header "Step 3: 도커 볼륨 경로로 aman.war 복사"
+header "Step 3: 도커 볼륨 경로로 $TARGET_WAR_NAME 복사"
 
 if [ ! -d "$TARGET_WEBAPPS_DIR" ]; then
     info "타겟 디렉토리가 존재하지 않아 생성합니다: $TARGET_WEBAPPS_DIR"
