@@ -165,13 +165,6 @@ if [ ! -d "$TARGET_WEBAPPS_DIR" ]; then
     mkdir -p "$TARGET_WEBAPPS_DIR"
 fi
 
-# 기존 WAR 백업 (덮어쓰기 전)
-if [ -f "$TARGET_WAR_FILE" ]; then
-    BACKUP_FILE="${TARGET_WAR_FILE}.bak"   # 직전 1개만 유지 (Tomcat은 .war만 배포)
-    info "기존 WAR 백업 -> $BACKUP_FILE"
-    mv -f "$TARGET_WAR_FILE" "$BACKUP_FILE"
-fi
-
 if [ "$DO_RESTART" = true ]; then
     # 중지 상태에서 기존 exploded 디렉토리 제거 → 시작 시 새 WAR로 깨끗하게 전개
     info "기존 exploded 디렉토리 제거: $TARGET_WEBAPPS_DIR/${TARGET_WAR_NAME%.war}"
