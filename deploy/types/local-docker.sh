@@ -8,13 +8,63 @@
 #   WEBAPPS_DIR          호스트의 WAR 복사 경로
 #   EXPECTED_HOSTNAME    이 PC의 호스트명 (다르면 경고 후 확인) - 선택
 #   COMPOSE_FILE         compose 파일 경로 - COMPOSE_MOUNT_CHECK=true 일 때 사용
-#   COMPOSE_MOUNT_CHECK  true: WAR를 개별 파일로 마운트하는 구성 (gxt-demo)
-#                        → compose 마운트 누락 경고, 대상 WAR 경로가 폴더인지 검사
+#   COMPOSE_MOUNT_CHECK  true: 마운트 검사 (gxt-demo)
+#                        → 실행 중인 컨테이너에 base-dir 마운트가 있는지 docker inspect 로 확인
+#                          (없으면 중단, compose 에만 있으면 --force-recreate 안내)
+#                        → 대상 WAR 경로가 폴더인지 검사
 #   PREPARE_DIRS         true: base-dir 하위 폴더를 호스트 사용자로 미리 생성
 #   ACCESS_URL           접속 주소 앞부분 (예: http://localhost:8081) - 선택
 #   SETENV_FILE          컨테이너 setenv.sh 경로 - 선택
 #   SETENV_PATTERN       setenv.sh에 있어야 할 프로필 설정 (grep -E 정규식). 없으면 경고 - 선택
 #============================================================================
+
+# 실행 중인 컨테이너에 base-dir 가 실제로 마운트되어 있는지 docker inspect 로 확인한다.
+#   compose 파일만 고치고 docker start/restart 하면 새 볼륨이 적용되지 않는다 (재생성 필요).
+#   마운트가 없으면 컨테이너 안에 base-dir 가 없어 logback 초기화에서 앱 기동이 실패한다.
+#   dry-run 은 경고만, 실제 배포는 중단.
+check_base_dir_mount() {
+    local dests dest mounted=false compose_has=false compose_dir
+    compose_dir="$(dirname "${COMPOSE_FILE:-.}")"
+    if [ -n "${COMPOSE_FILE:-}" ] && [ -f "$COMPOSE_FILE" ] && grep -Eq "^[[:space:]]*-[[:space:]]*[^#]*:${BASE_DIR}/?([[:space:]:]|$)" "$COMPOSE_FILE"; then
+        compose_has=true
+    fi
+
+    if ! dests="$(docker inspect "$CONTAINER" --format '{{range .Mounts}}{{.Destination}}{{"\n"}}{{end}}' 2>/dev/null)"; then
+        warn "컨테이너 ${CONTAINER} 를 찾을 수 없어 base-dir 마운트를 확인하지 못했습니다."
+        [ "$compose_has" = true ] || warn "  $COMPOSE_FILE 에도 ${BASE_DIR} 마운트가 없습니다. (docs/multi-instance-설계.md 3.5)"
+        return 0
+    fi
+
+    # base-dir 자체 또는 그 상위 경로가 마운트되어 있으면 OK
+    while IFS= read -r dest; do
+        [ -n "$dest" ] || continue
+        dest="${dest%/}"
+        if [[ "$BASE_DIR" == "$dest" || "$BASE_DIR" == "$dest"/* ]]; then
+            mounted=true
+            break
+        fi
+    done <<< "$dests"
+
+    if [ "$mounted" = true ]; then
+        info "컨테이너 마운트 확인: ${BASE_DIR} (${CONTAINER})"
+        return 0
+    fi
+
+    if [ "${DRY_RUN:-false}" = true ]; then
+        warn "실행 중인 ${CONTAINER} 컨테이너에 ${BASE_DIR} 마운트가 없습니다. ${BOLD}(dry-run이라 계속, 실제 배포는 중단됨)${NC}"
+    else
+        error "실행 중인 ${CONTAINER} 컨테이너에 ${BASE_DIR} 마운트가 없습니다."
+        warn "이대로 배포하면 컨테이너 안에 base-dir 가 없어 /${INSTANCE} 기동이 실패합니다 (404)."
+    fi
+    if [ "$compose_has" = true ]; then
+        warn "compose 파일에는 마운트가 있습니다. 컨테이너를 다시 만들어야 적용됩니다 (docker start/restart 로는 안 됨):"
+    else
+        warn "$COMPOSE_FILE 의 ${CONTAINER} volumes 에 아래 줄을 추가한 뒤 컨테이너를 다시 만드세요:"
+        echo -e "  ${BOLD}- ${BASE_DIR}:${BASE_DIR}${NC}"
+    fi
+    echo -e "  ${BOLD}cd ${compose_dir} && docker compose up -d --force-recreate ${CONTAINER}${NC}"
+    [ "${DRY_RUN:-false}" = true ] || exit 1
+}
 
 # 빌드 전 검사. 문제 있으면 중단.
 type_preflight() {
@@ -44,10 +94,7 @@ type_preflight() {
     fi
 
     if [ "${COMPOSE_MOUNT_CHECK:-false}" = true ]; then
-        if [[ "$INSTANCE" != "aman" ]] && [ -f "$COMPOSE_FILE" ] && ! grep -q "webapps/${INSTANCE}.war" "$COMPOSE_FILE"; then
-            warn "$COMPOSE_FILE 에 ${INSTANCE}.war 및 데이터 디렉터리 마운트가 없습니다. (docs/multi-instance-설계.md 3.5)"
-            warn "마운트 없이 배포하면 컨테이너가 WAR를 보지 못하거나, 데이터가 컨테이너 내부에만 저장됩니다."
-        fi
+        check_base_dir_mount
         # 호스트에 WAR 파일이 없는 상태로 컨테이너를 만들면 Docker가 같은 이름의 빈 폴더(root 소유)를 만든다.
         if [ -d "$TARGET_WAR_FILE" ]; then
             error "배포 대상이 파일이 아니라 폴더입니다: $TARGET_WAR_FILE"
