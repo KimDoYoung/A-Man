@@ -4,7 +4,7 @@ import { Menu, UserCheck, LogOut, Info, HelpCircle } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import ProfileEditModal from './ProfileEditModal'
 import RecentPagesModal from './RecentPagesModal'
-import { CONTEXT_PATH, storageKey } from '@/lib/instance'
+import { CONTEXT_PATH, INSTANCE, storageKey } from '@/lib/instance'
 
 interface DocUserTopBarProps {
   sidebarOpen: boolean;
@@ -44,6 +44,18 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
      !location.pathname.startsWith('/admin/logs') &&
      !location.pathname.startsWith('/admin/about'))
   const [version, setVersion] = useState('0.0.1')
+  const [instanceLabel, setInstanceLabel] = useState(INSTANCE === 'aman' ? 'A-Man' : INSTANCE)
+  const [topbarColor, setTopbarColor] = useState<string | null>(null)
+
+  // 브라우저 탭 제목에 인스턴스 이름 표시 (기본 인스턴스 aman 은 표시 안 함)
+  useEffect(() => {
+    if (INSTANCE === 'aman') return
+    const original = document.title
+    document.title = `[${INSTANCE}] ${original}`
+    return () => {
+      document.title = original
+    }
+  }, [])
 
   // Recent Pages Modal States
   const [isRecentPagesOpen, setIsRecentPagesOpen] = useState(false)
@@ -77,6 +89,13 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
         if (data && data.version) {
           setVersion(data.version)
         }
+        // 멀티 인스턴스 구분: 배지 문구와 상단바 색 (properties 의 aman.instances.<이름>.*)
+        if (data && data.instanceLabel) {
+          setInstanceLabel(data.instanceLabel)
+        }
+        if (data && data.topbarColor) {
+          setTopbarColor(data.topbarColor)
+        }
       })
       .catch(err => {
         console.error('버전 정보 조회 실패:', err)
@@ -101,7 +120,10 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   }
 
   return (
-    <header className="h-14 bg-gray-700 text-white px-6 flex items-center justify-between border-b border-gray-800 shrink-0 select-none">
+    <header
+      className={`h-14 ${topbarColor ? '' : 'bg-gray-700'} text-white px-6 flex items-center justify-between border-b border-gray-800 shrink-0 select-none`}
+      style={topbarColor ? { backgroundColor: topbarColor } : undefined}
+    >
       {/* 좌측 토글 및 로고 타이틀 */}
       <div className="flex items-center space-x-3">
         {!isAdminAssetsPage && !isAdminUsersPage && (
@@ -127,7 +149,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             }}
             title="문서 편집으로 이동"
           >
-            A-Man ({version})
+            {instanceLabel} ({version})
           </span>
           <button
             onClick={() => navigate('/docs')}
