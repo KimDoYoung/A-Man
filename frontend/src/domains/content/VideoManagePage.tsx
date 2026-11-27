@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react'
 import { Video, Trash2, Play, Download, UploadCloud, X } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
+import { CONTEXT_PATH } from '@/lib/instance'
 
 interface VideoItem {
   name: string
@@ -131,7 +132,7 @@ const VideoManagePage: React.FC = () => {
 
   const handleDownload = async (url: string, fileName: string) => {
     try {
-      const contextPath = window.location.pathname.startsWith('/aman') ? '/aman' : ''
+      const contextPath = CONTEXT_PATH
       const proxyUrl = `${contextPath}/videos/${fileName}`
       
       const response = await fetch(proxyUrl)

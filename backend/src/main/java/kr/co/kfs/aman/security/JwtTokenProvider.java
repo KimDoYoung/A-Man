@@ -24,11 +24,17 @@ public class JwtTokenProvider {
     @Value("${spring.security.jwt.refresh-expiration:1209600000}") // 14 days
     private long refreshExpirationTime;
 
+    // 멀티 인스턴스: 인스턴스별로 서명키를 달리하여 다른 인스턴스의 토큰을 거부한다. (docs/multi-instance-설계.md 3.2)
+    @Value("${aman.instance:aman}")
+    private String instance;
+
     private Key key;
 
     @PostConstruct
     protected void init() {
-        this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        // 기본 인스턴스(aman)는 기존 키를 그대로 사용하여 발급된 토큰과의 호환성을 유지
+        String keySource = "aman".equals(instance) ? secretKey : secretKey + ":" + instance;
+        this.key = Keys.hmacShaKeyFor(keySource.getBytes(StandardCharsets.UTF_8));
     }
 
     public String createAccessToken(String username, String role) {

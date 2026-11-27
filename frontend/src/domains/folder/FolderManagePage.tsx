@@ -6,6 +6,7 @@ import { AgGridReact } from 'ag-grid-react'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import DepthBadge from './components/DepthBadge'
+import { storageKey } from '@/lib/instance'
 
 interface FolderNode {
   id: number
@@ -35,7 +36,7 @@ const FolderManagePage: React.FC = () => {
 
   // Splitter Resizing
   const [treeWidth, setTreeWidth] = useState(() => {
-    const saved = localStorage.getItem('folder-tree-width')
+    const saved = localStorage.getItem(storageKey('folder-tree-width'))
     return saved ? parseInt(saved, 10) : 320
   })
   const isResizingRef = useRef(false)
@@ -57,7 +58,7 @@ const FolderManagePage: React.FC = () => {
       const newWidth = e.clientX - rect.left
       if (newWidth >= 240 && newWidth <= 600) {
         setTreeWidth(newWidth)
-        localStorage.setItem('folder-tree-width', newWidth.toString())
+        localStorage.setItem(storageKey('folder-tree-width'), newWidth.toString())
       }
     }
   }

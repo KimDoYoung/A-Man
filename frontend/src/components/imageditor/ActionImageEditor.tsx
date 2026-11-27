@@ -31,6 +31,7 @@ function getItemCenter(item: CanvasItem): { cx: number; cy: number } {
   }
 }
 import { SYSTEM_ITEM_DEFAULTS, StyleConfig, WorkStyleConfig } from './image_items_defaults'
+import { storageKey } from '@/lib/instance'
 
 
 const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
@@ -315,9 +316,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // activeHistoryId 상태가 변경되면 localStorage에 자동 보관
   useEffect(() => {
     if (activeHistoryId !== null) {
-      localStorage.setItem('aman_active_image_work_id', activeHistoryId.toString())
+      localStorage.setItem(storageKey('aman_active_image_work_id'), activeHistoryId.toString())
     } else {
-      localStorage.removeItem('aman_active_image_work_id')
+      localStorage.removeItem(storageKey('aman_active_image_work_id'))
     }
   }, [activeHistoryId])
 
@@ -346,7 +347,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       // 사용자 지정 기본 스타일 로드 시도
       fetchUserSettings()
 
-      const savedIdStr = localStorage.getItem('aman_active_image_work_id')
+      const savedIdStr = localStorage.getItem(storageKey('aman_active_image_work_id'))
       const savedId = savedIdStr ? parseInt(savedIdStr, 10) : null
       
       fetchHistory().then((data) => {
@@ -1152,7 +1153,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 사용자 속성조절기 로딩 시 기본값 적용
   const fetchUserSettings = async () => {
     try {
-      const userStr = localStorage.getItem('aman_user')
+      const userStr = localStorage.getItem(storageKey('aman_user'))
       const user = userStr ? JSON.parse(userStr) : null
       const userId = user?.id
       if (!userId) return
@@ -1497,7 +1498,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   // 사용자 지정 기본값 저장 (Post)
   const handleSaveUserSettings = async () => {
     try {
-      const userStr = localStorage.getItem('aman_user')
+      const userStr = localStorage.getItem(storageKey('aman_user'))
       const user = userStr ? JSON.parse(userStr) : null
       const userId = user?.id
       if (!userId) {
@@ -1629,7 +1630,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
 
       // 2순위: 이미지 없으면 복사된 아이템 붙여넣기 (Ctrl+C로 저장된 것)
       if (!bgImage) return
-      const copiedStr = localStorage.getItem('aman_copied_item')
+      const copiedStr = localStorage.getItem(storageKey('aman_copied_item'))
       if (!copiedStr) return
       try {
         const copiedItem: CanvasItem = JSON.parse(copiedStr)
@@ -2985,7 +2986,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (selectedItemId) {
           const targetItem = items.find(item => item.id === selectedItemId)
           if (targetItem) {
-            localStorage.setItem('aman_copied_item', JSON.stringify(targetItem))
+            localStorage.setItem(storageKey('aman_copied_item'), JSON.stringify(targetItem))
             // 시스템 클립보드를 텍스트 마커로 교체: 다음 Ctrl+V에서 이미지 판별을 막고
             // paste 핸들러가 localStorage item 경로로 진입하도록 유도
             copyTextToClipboard('__aman_item__').catch(() => {})

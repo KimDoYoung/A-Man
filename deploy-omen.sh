@@ -35,6 +35,9 @@ if [[ "$TARGET_WAR_NAME" != *.war ]]; then
     TARGET_WAR_NAME="${TARGET_WAR_NAME}.war"
 fi
 TARGET_WAR_FILE="$TARGET_WEBAPPS_DIR/$TARGET_WAR_NAME"
+# 멀티 인스턴스: WAR 이름(aman20.war)이 곧 컨텍스트 경로(/aman20) - docs/multi-instance-설계.md 3.5
+INSTANCE_NAME="${TARGET_WAR_NAME%.war}"
+VITE_BASE="/${INSTANCE_NAME}/"
 
 # ── Java 버전 체크 (Java 8 필수) ──────────────────────────────────────────
 check_java_version() {
@@ -87,6 +90,7 @@ VERSION=${VERSION:-1.0.0}
 
 header "A-Man WAR 빌드 스크립트 (버전: $VERSION)"
 info "최종 배포 대상 WAR 파일: ${BOLD}$TARGET_WAR_FILE${NC}"
+info "인스턴스: ${BOLD}${INSTANCE_NAME}${NC} (프론트 base: ${VITE_BASE})"
 echo ""
 
 read -r -p "최종 생성/복사할 파일이 '${TARGET_WAR_NAME}' 맞습니까? 빌드를 진행하시겠습니까? (y/N) " CONFIRM
@@ -115,7 +119,8 @@ if [ ! -d "node_modules" ]; then
 fi
 
 info "React 프로덕션 빌드 실행 중..."
-npm run build </dev/null
+info "VITE_BASE=${VITE_BASE} 로 빌드합니다."
+VITE_BASE="$VITE_BASE" npm run build </dev/null
 
 info "Spring Boot static 디렉토리 초기화 및 빌드 리소스 복사..."
 rm -rf "$STATIC_DIR"

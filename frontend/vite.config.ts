@@ -5,7 +5,8 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/aman/',
+  // 멀티 인스턴스: WAR 이름별 컨텍스트 경로 (예: VITE_BASE=/aman20/) - docs/multi-instance-설계.md 3.4
+  base: process.env.VITE_BASE || '/aman/',
   build: {
     assetsDir: 'static-assets',
   },

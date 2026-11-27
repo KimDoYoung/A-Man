@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserCheck } from 'lucide-react';
 import { apiClient } from '@/lib/apiClient';
+import { storageKey } from '@/lib/instance';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -83,11 +84,11 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose }) 
       const data = await apiClient.patch<any>(`/user/${profileData.id}`, payload);
       
       // Update localStorage to reflect email change
-      const userStr = localStorage.getItem('aman_user');
+      const userStr = localStorage.getItem(storageKey('aman_user'));
       if (userStr) {
         const user = JSON.parse(userStr);
         const updatedUser = { ...user, email: data.email };
-        localStorage.setItem('aman_user', JSON.stringify(updatedUser));
+        localStorage.setItem(storageKey('aman_user'), JSON.stringify(updatedUser));
       }
 
       setSuccessMsg('개인정보가 성공적으로 변경되었습니다.');

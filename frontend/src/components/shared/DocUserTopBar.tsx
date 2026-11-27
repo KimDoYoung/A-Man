@@ -4,6 +4,7 @@ import { Menu, UserCheck, LogOut, Info, HelpCircle } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import ProfileEditModal from './ProfileEditModal'
 import RecentPagesModal from './RecentPagesModal'
+import { CONTEXT_PATH, storageKey } from '@/lib/instance'
 
 interface DocUserTopBarProps {
   sidebarOpen: boolean;
@@ -83,7 +84,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
   }, [])
 
   // Get logged-in user information
-  const userStr = localStorage.getItem('aman_user')
+  const userStr = localStorage.getItem(storageKey('aman_user'))
   const user = userStr ? JSON.parse(userStr) : null
   const displayName = user ? `${user.name} (${user.username})` : '관리자'
 
@@ -94,7 +95,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
     } catch (error) {
       console.error('로그아웃 오류:', error)
     } finally {
-      localStorage.removeItem('aman_user')
+      localStorage.removeItem(storageKey('aman_user'))
       navigate('/login', { replace: true })
     }
   }
@@ -117,7 +118,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             className="text-sm font-semibold tracking-wider px-2 py-0.5 bg-indigo-600 rounded text-indigo-50 cursor-pointer"
             onClick={() => {
               if (onCloseImageEditor) onCloseImageEditor()
-              const lastFolderId = localStorage.getItem('aman_last_active_folder_id')
+              const lastFolderId = localStorage.getItem(storageKey('aman_last_active_folder_id'))
               if (lastFolderId) {
                 navigate(`/admin/folder/${lastFolderId}`)
               } else {
@@ -138,7 +139,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           <button
             onClick={() => {
               if (onCloseImageEditor) onCloseImageEditor()
-              const lastFolderId = localStorage.getItem('aman_last_active_folder_id')
+              const lastFolderId = localStorage.getItem(storageKey('aman_last_active_folder_id'))
               if (lastFolderId) {
                 navigate(`/admin/folder/${lastFolderId}`)
               } else {
@@ -297,7 +298,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
           <span>About</span>
         </button>
         <button
-          onClick={() => window.open('/aman/manual/help', '_blank')}
+          onClick={() => window.open(`${CONTEXT_PATH}/manual/help`, '_blank')}
           className="flex items-center space-x-1 px-2.5 py-1 bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20 rounded-md transition-all cursor-pointer text-xs font-bold"
           title="문서 작성자 도움말 (Help)"
         >

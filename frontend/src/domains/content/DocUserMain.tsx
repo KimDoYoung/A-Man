@@ -12,6 +12,7 @@ import { useRecentPagesStore } from '@/store/useRecentPagesStore'
 import ActionImageEditor from '@/components/imageditor/ActionImageEditor'
 import { measureLineTops } from '@/utils/textareaLinePositions'
 import VideoSelectorModal from '@/components/shared/VideoSelectorModal'
+import { storageKey } from '@/lib/instance'
 
 const copyTextToClipboard = async (text: string): Promise<boolean> => {
   if (navigator.clipboard && window.isSecureContext) {
@@ -85,7 +86,7 @@ const DocUserMain: React.FC = () => {
 
   // 사용자 정보 로드
   useEffect(() => {
-    const userStr = localStorage.getItem('aman_user')
+    const userStr = localStorage.getItem(storageKey('aman_user'))
     if (userStr) {
       try {
         const parsed = JSON.parse(userStr)

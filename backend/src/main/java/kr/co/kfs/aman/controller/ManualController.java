@@ -577,7 +577,9 @@ public class ManualController {
     }
 
     @GetMapping(value = "/{aka}", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
-    public ResponseEntity<String> getManualByAka(@PathVariable("aka") String aka) {
+    public ResponseEntity<String> getManualByAka(@PathVariable("aka") String aka, javax.servlet.http.HttpServletRequest request) {
+        // 멀티 인스턴스: 링크는 컨텍스트 경로(/aman, /aman20) 기준 (docs/multi-instance-설계.md 3.3)
+        String contextPath = request.getContextPath();
         Optional<Page> pageOpt = pageRepository.findByAka(aka);
         if (!pageOpt.isPresent() || !"PUBLISHED".equals(pageOpt.get().getStatus())) {
             return ResponseEntity.status(404).body(
@@ -603,7 +605,7 @@ public class ManualController {
 
         StringBuilder breadcrumbsHtml = new StringBuilder();
         breadcrumbsHtml.append("<div class=\"breadcrumbs\">\n");
-        breadcrumbsHtml.append("    <a href=\"/aman/docs\">Home</a>");
+        breadcrumbsHtml.append("    <a href=\"").append(contextPath).append("/docs\">Home</a>");
         for (Folder f : hierarchy) {
             breadcrumbsHtml.append("    <span class=\"separator\">&gt;</span>\n");
             // Check if this folder has a published page
@@ -620,7 +622,7 @@ public class ManualController {
                 displayName = f.getNums() + " " + displayName;
             }
             if (firstPublishedPage != null && firstPublishedPage.getAka() != null && !firstPublishedPage.getAka().isEmpty()) {
-                breadcrumbsHtml.append("    <a href=\"/aman/manual/")
+                breadcrumbsHtml.append("    <a href=\"").append(contextPath).append("/manual/")
                                .append(firstPublishedPage.getAka())
                                .append("\">")
                                .append(escapeHtml(displayName))
@@ -653,7 +655,7 @@ public class ManualController {
         footerHtml.append("<div class=\"navigation-footer\">\n");
         if (prevPage != null) {
             String prevTitle = prevPage.getTitle();
-            footerHtml.append("    <a href=\"/aman/manual/")
+            footerHtml.append("    <a href=\"").append(contextPath).append("/manual/")
                       .append(prevPage.getAka())
                       .append("\" class=\"nav-button prev\">\n")
                       .append("        <span class=\"arrow\">&lt;</span>\n")
@@ -666,7 +668,7 @@ public class ManualController {
         }
         if (nextPage != null) {
             String nextPageTitle = nextPage.getTitle();
-            footerHtml.append("    <a href=\"/aman/manual/")
+            footerHtml.append("    <a href=\"").append(contextPath).append("/manual/")
                       .append(nextPage.getAka())
                       .append("\" class=\"nav-button next\">\n")
                       .append("        <span class=\"nav-title\">")
@@ -888,7 +890,7 @@ public class ManualController {
             "<html lang=\"ko\">\n" +
             "<head>\n" +
             "    <meta charset=\"UTF-8\">\n" +
-            "    <link rel=\"icon\" type=\"image/png\" href=\"/aman/favicon.png\">\n" +
+            "    <link rel=\"icon\" type=\"image/png\" href=\"" + contextPath + "/favicon.png\">\n" +
             "    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css\" />\n" +
             "    <title>" + escapeHtml(title) + "</title>\n" +
             "    <style>\n" +
@@ -1520,7 +1522,7 @@ public class ManualController {
     }
 
     @GetMapping(value = "/help/icons", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
-    public ResponseEntity<String> getIconsPage() {
+    public ResponseEntity<String> getIconsPage(javax.servlet.http.HttpServletRequest request) {
         try (java.io.InputStream is = getClass().getResourceAsStream("/help/icons.html")) {
             if (is == null) {
                 return ResponseEntity.status(404).body("아이콘 찾기 페이지가 존재하지 않습니다.");
@@ -1531,14 +1533,14 @@ public class ManualController {
             while ((len = is.read(buffer)) != -1) {
                 bos.write(buffer, 0, len);
             }
-            return ResponseEntity.ok(bos.toString("UTF-8"));
+            return ResponseEntity.ok(bos.toString("UTF-8").replace("[contextPath]", request.getContextPath()));
         } catch (java.io.IOException e) {
             return ResponseEntity.status(500).body("오류가 발생했습니다.");
         }
     }
 
     @GetMapping(value = "/help/colors", produces = MediaType.TEXT_HTML_VALUE + ";charset=UTF-8")
-    public ResponseEntity<String> getColorsPage() {
+    public ResponseEntity<String> getColorsPage(javax.servlet.http.HttpServletRequest request) {
         try (java.io.InputStream is = getClass().getResourceAsStream("/help/colors.html")) {
             if (is == null) {
                 return ResponseEntity.status(404).body("색상 찾기 페이지가 존재하지 않습니다.");
@@ -1549,7 +1551,7 @@ public class ManualController {
             while ((len = is.read(buffer)) != -1) {
                 bos.write(buffer, 0, len);
             }
-            return ResponseEntity.ok(bos.toString("UTF-8"));
+            return ResponseEntity.ok(bos.toString("UTF-8").replace("[contextPath]", request.getContextPath()));
         } catch (java.io.IOException e) {
             return ResponseEntity.status(500).body("오류가 발생했습니다.");
         }

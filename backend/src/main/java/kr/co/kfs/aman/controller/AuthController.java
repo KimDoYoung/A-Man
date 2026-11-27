@@ -51,7 +51,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Transactional
-    public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest, HttpServletRequest request, HttpServletResponse response) {
         String username = loginRequest.get("username");
         String password = loginRequest.get("password");
 
@@ -83,8 +83,8 @@ public class AuthController {
         refreshTokenRepository.save(tokenEntity);
 
         // 5. 쿠키 설정 (HttpOnly 옵션을 주어 XSS 방어)
-        setCookie(response, "access_token", accessToken, (int) (accessExpirationTime / 1000));
-        setCookie(response, "refresh_token", refreshToken, (int) (refreshExpirationTime / 1000));
+        setCookie(request, response, "access_token", accessToken, (int) (accessExpirationTime / 1000));
+        setCookie(request, response, "refresh_token", refreshToken, (int) (refreshExpirationTime / 1000));
 
         Map<String, Object> responseBody = new HashMap<>();
         responseBody.put("id", user.getId());
@@ -139,8 +139,8 @@ public class AuthController {
         }
 
         // 3. 쿠키 파기 (MaxAge = 0)
-        setCookie(response, "access_token", "", 0);
-        setCookie(response, "refresh_token", "", 0);
+        setCookie(request, response, "access_token", "", 0);
+        setCookie(request, response, "refresh_token", "", 0);
 
         // 4. Tomcat HttpSession 무효화 (ERP SSO 세션 및 로컬 권한 초기화)
         javax.servlet.http.HttpSession session = request.getSession(false);
@@ -186,7 +186,7 @@ public class AuthController {
 
         // 2. 새로운 Access Token 재발급 및 쿠키 저장
         String newAccessToken = tokenProvider.createAccessToken(user.getUsername(), user.getRole());
-        setCookie(response, "access_token", newAccessToken, (int) (accessExpirationTime / 1000));
+        setCookie(request, response, "access_token", newAccessToken, (int) (accessExpirationTime / 1000));
 
         Map<String, String> responseBody = new HashMap<>();
         responseBody.put("message", "토큰 갱신 성공");
@@ -194,10 +194,21 @@ public class AuthController {
         return ResponseEntity.ok(responseBody);
     }
 
-    private void setCookie(HttpServletResponse response, String name, String value, int maxAge) {
+    // 쿠키 path를 컨텍스트 경로(/aman, /aman20)로 한정하여 인스턴스 간 쿠키 공유를 막는다. (docs/multi-instance-설계.md 3.2)
+    private void setCookie(HttpServletRequest request, HttpServletResponse response, String name, String value, int maxAge) {
+        String contextPath = request.getContextPath();
+        String path = (contextPath == null || contextPath.isEmpty()) ? "/" : contextPath;
+        addCookie(response, name, value, maxAge, path);
+        if (!"/".equals(path)) {
+            // 이전 버전이 path "/"로 발급한 쿠키 제거
+            addCookie(response, name, "", 0, "/");
+        }
+    }
+
+    private void addCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(true);
-        cookie.setPath("/");
+        cookie.setPath(path);
         cookie.setMaxAge(maxAge);
         response.addCookie(cookie);
     }

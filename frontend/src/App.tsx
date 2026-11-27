@@ -16,6 +16,7 @@ import AboutPage from '@/domains/system/AboutPage'
 import PageManagePage from '@/domains/content/PageManagePage'
 import VideoManagePage from '@/domains/content/VideoManagePage'
 import { apiClient } from '@/lib/apiClient'
+import { CONTEXT_PATH, storageKey } from '@/lib/instance'
 
 // JWT 토큰에서 만료 시각(ms)을 가져오는 헬퍼 함수
 function getJwtExpiry(token: string): number | null {
@@ -38,7 +39,7 @@ function getJwtExpiry(token: string): number | null {
 
 // 인증 가드 컴포넌트
 const ProtectedLayout = () => {
-  const isAuthenticated = !!localStorage.getItem('aman_user')
+  const isAuthenticated = !!localStorage.getItem(storageKey('aman_user'))
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />
 }
 
@@ -87,7 +88,7 @@ const router = createBrowserRouter([
     element: <Navigate to="/docs" replace />
   }
 ], {
-  basename: '/aman'
+  basename: CONTEXT_PATH
 })
 
 function App() {
@@ -96,7 +97,7 @@ function App() {
     let isRefreshing = false
 
     const checkAndRefresh = async () => {
-      const userStr = localStorage.getItem('aman_user')
+      const userStr = localStorage.getItem(storageKey('aman_user'))
       if (!userStr) return
 
       try {
@@ -120,7 +121,7 @@ function App() {
             const newAccessToken = data.accessToken
             if (newAccessToken) {
               const updatedUser = { ...user, accessToken: newAccessToken }
-              localStorage.setItem('aman_user', JSON.stringify(updatedUser))
+              localStorage.setItem(storageKey('aman_user'), JSON.stringify(updatedUser))
               console.log('Silent refresh successful. Access token updated.')
             }
           } catch (error) {

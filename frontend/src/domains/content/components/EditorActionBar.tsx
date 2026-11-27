@@ -1,6 +1,7 @@
 import React from 'react';
 import { Save, Trash2, Copy, ExternalLink } from 'lucide-react';
 import { PageData } from '@/types';
+import { CONTEXT_PATH } from '@/lib/instance';
 
 interface EditorActionBarProps {
   page: (PageData & { folder?: { id: number; name: string; nums?: string } }) | null;
@@ -75,11 +76,11 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
           <div className="flex items-center space-x-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-600">
             <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px] bg-slate-200 px-1.5 py-0.5 rounded mr-1">URL</span>
             <span className="font-mono text-slate-750 select-all">
-              {`${window.location.origin}/aman/manual/${page.aka}`}
+              {`${window.location.origin}${CONTEXT_PATH}/manual/${page.aka}`}
             </span>
             <button
               onClick={() => {
-                const fullUrl = `${window.location.origin}/aman/manual/${page.aka}`;
+                const fullUrl = `${window.location.origin}${CONTEXT_PATH}/manual/${page.aka}`;
                 copyTextToClipboard(fullUrl)
                   .then(() => {
                     setCopied(true)
@@ -94,7 +95,7 @@ const EditorActionBar: React.FC<EditorActionBarProps> = ({
             <button
               onClick={() => {
                 if (page.aka) {
-                  window.open(`/aman/manual/${page.aka}`, '_blank');
+                  window.open(`${CONTEXT_PATH}/manual/${page.aka}`, '_blank');
                 }
               }}
               disabled={pageStatus !== 'PUBLISHED'}
