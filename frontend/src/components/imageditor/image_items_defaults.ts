@@ -58,7 +58,12 @@ export const SYSTEM_ITEM_DEFAULTS = {
   calloutTextColor: '#3b82f6',
   calloutFontSize: 14,
 
-  // 9. 기타 공통 레이아웃 속성
+  // 9. 형광펜 (highlighter) 전용 속성 (docs/이미지편집-형광펜기능-설계.md)
+  highlighterColor: '#FFF200',
+  highlighterWidth: 20,
+  highlighterOpacity: 45,
+
+  // 10. 기타 공통 레이아웃 속성
   captionAlign: 'center' as 'left' | 'center',
   hasBorder: true,
   borderColor: '#808080',
@@ -88,3 +93,16 @@ export const CIRCLE_NUMBER_BORDER_COLORS = ['#ffffff', '#ef4444', '#f59e0b', '#3
 export const TEXT_COLOR_PALETTE = ['#ffffff', '#0f172a', '#ef4444', '#3b82f6', '#10b981','#ffff00']
 export const IMAGE_BORDER_COLORS = ['#cbd5e1', '#64748b', '#3b82f6', '#ef4444', '#808080','#ffff00']
 export const SYMBOL_EMOJI_OPTIONS = ['💡', '⚠️', '✅', '❌', 'ℹ️', '⭐', '🔥', '📌', '🚀', '🔍', '❓', '💬']
+
+// 형광펜: 노랑·분홍·연두·하늘·주황 / 두께 / 진하기(%)
+export const HIGHLIGHTER_COLORS = ['#FFF200', '#FF7EC7', '#B2FF59', '#7FD4FF', '#FFB347']
+export const HIGHLIGHTER_WIDTHS = [
+  { id: '12', label: '가늘게' },
+  { id: '20', label: '보통' },
+  { id: '30', label: '굵게' }
+]
+export const HIGHLIGHTER_OPACITIES = [
+  { id: '30', label: '연하게' },
+  { id: '45', label: '보통' },
+  { id: '60', label: '진하게' }
+]

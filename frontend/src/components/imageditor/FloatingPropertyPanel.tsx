@@ -16,7 +16,10 @@ import {
   CIRCLE_NUMBER_BORDER_COLORS,
   TEXT_COLOR_PALETTE,
   IMAGE_BORDER_COLORS,
-  SYMBOL_EMOJI_OPTIONS
+  SYMBOL_EMOJI_OPTIONS,
+  HIGHLIGHTER_COLORS,
+  HIGHLIGHTER_WIDTHS,
+  HIGHLIGHTER_OPACITIES
 } from './image_items_defaults'
 
 const STAMP_SHAPE_OPTIONS = ['arrow', 'hand', 'cursor'] as const
@@ -108,7 +111,7 @@ interface FloatingPropertyPanelProps {
   onSaveDefaults: () => Promise<void> | void
   onLoadDefaults: () => Promise<void> | void
   onDeleteDefaults: () => Promise<void> | void
-  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'
+  activeTool: 'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout' | 'highlighter'
   items: CanvasItem[]
   pushToUndo: (newItems: CanvasItem[]) => void
 
@@ -154,6 +157,12 @@ interface FloatingPropertyPanelProps {
   setCalloutTextColor: (color: string) => void
   calloutFontSize: number
   setCalloutFontSize: (size: number) => void
+  highlighterColor: string
+  setHighlighterColor: (color: string) => void
+  highlighterWidth: number
+  setHighlighterWidth: (val: number) => void
+  highlighterOpacity: number
+  setHighlighterOpacity: (val: number) => void
 }
 
 const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
@@ -254,7 +263,13 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
   calloutTextColor,
   setCalloutTextColor,
   calloutFontSize,
-  setCalloutFontSize
+  setCalloutFontSize,
+  highlighterColor,
+  setHighlighterColor,
+  highlighterWidth,
+  setHighlighterWidth,
+  highlighterOpacity,
+  setHighlighterOpacity
 }) => {
   // 초기 띄우는 위치 (부모 캔버스 위에 뜨도록 고정/절대 좌표 적용)
   const { data: dbEmojis } = useQuery<string[]>({
@@ -1272,6 +1287,65 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
               )}
 
               {/* image 타입 인스펙터 */}
+              {selectedItem.type === 'highlighter' && (
+                <div className="space-y-4 animate-in fade-in duration-150">
+                  <ColorPicker
+                    label="형광펜 색상"
+                    selectedColor={selectedItem.style.borderColor || highlighterColor}
+                    onChangeColor={(col) => {
+                      setHighlighterColor(col)
+                      const updated = items.map(item =>
+                        item.id === selectedItemId ? { ...item, style: { ...item.style, borderColor: col } } : item
+                      )
+                      pushToUndo(updated)
+                    }}
+                    colors={HIGHLIGHTER_COLORS}
+                  />
+                  <div className="space-y-1.5">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">두께</span>
+                    <SegmentedControl
+                      options={HIGHLIGHTER_WIDTHS}
+                      value={String(selectedItem.style.borderWidth || highlighterWidth)}
+                      onChange={(id) => {
+                        const w = Number(id)
+                        setHighlighterWidth(w)
+                        // 두께가 바뀌면 획을 감싸는 사각형(x, y, width, height)도 두께만큼 다시 맞춘다
+                        const updated = items.map(item => {
+                          if (item.id !== selectedItemId) return item
+                          const oldPad = (item.style.borderWidth || highlighterWidth) / 2
+                          const diff = w / 2 - oldPad
+                          return {
+                            ...item,
+                            x: item.x - diff,
+                            y: item.y - diff,
+                            width: (item.width || 0) + diff * 2,
+                            height: (item.height || 0) + diff * 2,
+                            points: (item.points || []).map(pt => ({ x: pt.x + diff, y: pt.y + diff })),
+                            style: { ...item.style, borderWidth: w }
+                          }
+                        })
+                        pushToUndo(updated)
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">진하기</span>
+                    <SegmentedControl
+                      options={HIGHLIGHTER_OPACITIES}
+                      value={String(Math.round((selectedItem.style.opacity ?? highlighterOpacity / 100) * 100))}
+                      onChange={(id) => {
+                        const o = Number(id)
+                        setHighlighterOpacity(o)
+                        const updated = items.map(item =>
+                          item.id === selectedItemId ? { ...item, style: { ...item.style, opacity: o / 100 } } : item
+                        )
+                        pushToUndo(updated)
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {selectedItem.type === 'image' && (
                 <div className="space-y-4 animate-in fade-in duration-150">
                   {/* 테두리선 사용 여부 */}
@@ -1909,6 +1983,37 @@ const FloatingPropertyPanel: React.FC<FloatingPropertyPanelProps> = ({
                           manual_input_type="number"
                           onChangeValue={setTextRotation}
                         />
+                      </>
+                    )}
+
+                    {activeTool === 'highlighter' && (
+                      <>
+                        <ColorPicker
+                          label="형광펜 색상"
+                          selectedColor={highlighterColor}
+                          onChangeColor={setHighlighterColor}
+                          colors={HIGHLIGHTER_COLORS}
+                        />
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">두께</span>
+                          <SegmentedControl
+                            options={HIGHLIGHTER_WIDTHS}
+                            value={String(highlighterWidth)}
+                            onChange={(id) => setHighlighterWidth(Number(id))}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <span className="block font-bold text-gray-700 dark:text-slate-300 mb-1 text-xs">진하기</span>
+                          <SegmentedControl
+                            options={HIGHLIGHTER_OPACITIES}
+                            value={String(highlighterOpacity)}
+                            onChange={(id) => setHighlighterOpacity(Number(id))}
+                          />
+                        </div>
+                        <p className="text-[11px] text-gray-500 dark:text-slate-400 leading-relaxed">
+                          마우스로 쭉 그으면 형광펜처럼 칠해집니다. <b>Shift</b>를 누른 채 그으면 수평 직선이 됩니다.
+                          그은 획은 선택 도구(ESC)로 골라 옮기거나 Delete로 지울 수 있습니다.
+                        </p>
                       </>
                     )}
 

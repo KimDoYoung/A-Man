@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Undo, Redo, Type, Square, CircleDot, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, Magnet } from 'lucide-react'
+import { Undo, Redo, Type, Square, CircleDot, MousePointer, Crop, MoveUpRight, Smile, CornerDownRight, Stamp, MessageSquare, Magnet, Highlighter } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import { drawStamp, STAMP_ANGLES } from './arrowStamp'
 import { drawCallout, getCalloutTailPoint } from './calloutStamp'
@@ -7,6 +7,7 @@ import TextItemInput from './TextItemInput'
 import { getDistanceToSegment, getTextBounds, drawArrow, drawOrthogonalArrow, drawSelectionHandles, createRoundedRectPath } from './canvasDrawHelpers'
 import { copyTextToClipboard, loadImageFromFile } from './fileHelpers'
 import { getItemEdgeBounds, shiftItemX, shiftItemY, offsetItemForCrop, isItemWithinCropBounds } from './itemGeometry'
+import { addHighlighterPoint, buildHighlighterItem, drawHighlighter, drawHighlighterPath, hitTestHighlighter } from './highlighter'
 
 // wYYMMDD 형태의 기본 타이틀을 생성하는 헬퍼 함수
 function getDefaultEditorTitle(): string {
@@ -41,7 +42,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // 에디터 상태
-  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout'>('pointer')
+  const [activeTool, setActiveTool] = useState<'pointer' | 'circle-number' | 'box' | 'text' | 'crop' | 'arrow' | 'orthogonal-arrow' | 'symbol' | 'block-arrow-stamp' | 'callout' | 'highlighter'>('pointer')
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null)
   const [bgImageSrc, setBgImageSrc] = useState<string>('')
   const [canvasExpandBottom, setCanvasExpandBottom] = useState<number>(0)
@@ -121,6 +122,13 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
   const [calloutTextColor, setCalloutTextColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.calloutTextColor)
   const [calloutFontSize, setCalloutFontSize] = useState<number>(SYSTEM_ITEM_DEFAULTS.calloutFontSize)
 
+  // 8. 형광펜 (highlighter) 관련 속성 (docs/이미지편집-형광펜기능-설계.md)
+  const [highlighterColor, setHighlighterColor] = useState<string>(SYSTEM_ITEM_DEFAULTS.highlighterColor)
+  const [highlighterWidth, setHighlighterWidth] = useState<number>(SYSTEM_ITEM_DEFAULTS.highlighterWidth)
+  const [highlighterOpacity, setHighlighterOpacity] = useState<number>(SYSTEM_ITEM_DEFAULTS.highlighterOpacity)
+  // 그리는 중인 형광펜 획의 점들 (캔버스 절대좌표)
+  const highlighterPointsRef = useRef<{ x: number; y: number }[]>([])
+
   // 속성 패널 리셋 트리거 상태
   const [resetPanelTrigger, setResetPanelTrigger] = useState<number>(0)
   
@@ -198,6 +206,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     calloutBorderRadius: number
     calloutTextColor: string
     calloutFontSize: number
+    highlighterColor: string
+    highlighterWidth: number
+    highlighterOpacity: number
   }>({
     title: '',
     bgImageSrc: '',
@@ -253,7 +264,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     calloutOpacity: SYSTEM_ITEM_DEFAULTS.calloutOpacity,
     calloutBorderRadius: SYSTEM_ITEM_DEFAULTS.calloutBorderRadius,
     calloutTextColor: SYSTEM_ITEM_DEFAULTS.calloutTextColor,
-    calloutFontSize: SYSTEM_ITEM_DEFAULTS.calloutFontSize
+    calloutFontSize: SYSTEM_ITEM_DEFAULTS.calloutFontSize,
+    highlighterColor: SYSTEM_ITEM_DEFAULTS.highlighterColor,
+    highlighterWidth: SYSTEM_ITEM_DEFAULTS.highlighterWidth,
+    highlighterOpacity: SYSTEM_ITEM_DEFAULTS.highlighterOpacity
   })
   
   // 컨트롤 그룹 보이기/숨기기 상태
@@ -419,7 +433,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     calloutOpacity !== lastSavedState.calloutOpacity ||
     calloutBorderRadius !== lastSavedState.calloutBorderRadius ||
     calloutTextColor !== lastSavedState.calloutTextColor ||
-    calloutFontSize !== lastSavedState.calloutFontSize
+    calloutFontSize !== lastSavedState.calloutFontSize ||
+    highlighterColor !== lastSavedState.highlighterColor ||
+    highlighterWidth !== lastSavedState.highlighterWidth ||
+    highlighterOpacity !== lastSavedState.highlighterOpacity
   )
 
   // items 나 bgImageSrc, 설정이 달라지면 이미 생성한 url은 무효가 되므로 비워줍니다.
@@ -431,7 +448,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, textBgColor, textFontStyle, textTextDecoration, textRotation, symbolEmoji, symbolScale,
     imageSrcBorderColor, imageSrcBorderWidth, imageSrcBorderStyle, imageSrcHasBorder, imageSrcCaptionText, imageSrcHasCaption,
-    calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize
+    calloutShape, calloutBgColor, calloutBorderColor, calloutBorderWidth, calloutLineStyle, calloutOpacity, calloutBorderRadius, calloutTextColor, calloutFontSize,
+    highlighterColor, highlighterWidth, highlighterOpacity
   ])
 
   // 3초간 헤더에 메시지 표시 헬퍼
@@ -630,7 +648,14 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       return
     }
 
-    // 3. 아이템들 그리기 (원숫자, 사각형, 텍스트)
+    // 3-0. 형광펜은 항상 다른 도형 아래에 그린다 (화살표·글자가 형광색에 물들지 않도록)
+    items.forEach((item) => {
+      if (item.type === 'highlighter') {
+        drawHighlighter(ctx, item, item.id === selectedItemId)
+      }
+    })
+
+    // 3. 아이템들 그리기 (원숫자, 사각형, 텍스트) - 형광펜은 위(3-0)에서 이미 그림
     items.forEach((item) => {
       const isSelected = item.id === selectedItemId
       ctx.save()
@@ -1026,7 +1051,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     // 4. 임시 드로잉 가이드 피드백 (사각형 그리기 도중 또는 크롭 점선)
     if (isDrawing && dragStart && dragCurrent) {
       ctx.save()
-      if (activeTool === 'callout') {
+      if (activeTool === 'highlighter') {
+        drawHighlighterPath(ctx, highlighterPointsRef.current, highlighterColor, highlighterWidth, highlighterOpacity / 100)
+      } else if (activeTool === 'callout') {
         ctx.strokeStyle = calloutBorderColor
         ctx.lineWidth = calloutBorderWidth
         ctx.setLineDash([4, 4])
@@ -1147,7 +1174,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     boxBorderColor, boxLineWidth, boxLineStyle, boxBgColor, boxOpacity, boxBorderRadius, boxShape,
     arrowColor, arrowLineWidth, arrowLineStyle, textTextColor, textFontSize, symbolEmoji, symbolScale,
     cacheTrigger, canvasExpandBottom, canvasExpandRight, canvasExpandTop, canvasExpandLeft,
-    smartAlignEnabled, alignGuides
+    smartAlignEnabled, alignGuides,
+    highlighterColor, highlighterWidth, highlighterOpacity
   ])
 
   // 사용자 속성조절기 로딩 시 기본값 적용
@@ -1216,6 +1244,11 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         if (config.calloutTextColor !== undefined) setCalloutTextColor(config.calloutTextColor)
         if (config.calloutFontSize !== undefined) setCalloutFontSize(config.calloutFontSize)
 
+        // 형광펜
+        if (config.highlighterColor !== undefined) setHighlighterColor(config.highlighterColor)
+        if (config.highlighterWidth !== undefined) setHighlighterWidth(config.highlighterWidth)
+        if (config.highlighterOpacity !== undefined) setHighlighterOpacity(config.highlighterOpacity)
+
         if (config.captionAlign !== undefined) setCaptionAlign(config.captionAlign)
         if (config.stampScale !== undefined) setStampScale(config.stampScale)
         if (config.stampDirection !== undefined) setStampDirection(config.stampDirection)
@@ -1279,6 +1312,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     calloutBorderRadius,
     calloutTextColor,
     calloutFontSize,
+    highlighterColor,
+    highlighterWidth,
+    highlighterOpacity,
     hasBorder,
     borderColor,
     borderWidth,
@@ -1341,6 +1377,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     setCalloutBorderRadius(cfg.calloutBorderRadius !== undefined ? cfg.calloutBorderRadius : SYSTEM_ITEM_DEFAULTS.calloutBorderRadius)
     setCalloutTextColor(cfg.calloutTextColor || SYSTEM_ITEM_DEFAULTS.calloutTextColor)
     setCalloutFontSize(cfg.calloutFontSize !== undefined ? cfg.calloutFontSize : SYSTEM_ITEM_DEFAULTS.calloutFontSize)
+    setHighlighterColor(cfg.highlighterColor || SYSTEM_ITEM_DEFAULTS.highlighterColor)
+    setHighlighterWidth(cfg.highlighterWidth !== undefined ? cfg.highlighterWidth : SYSTEM_ITEM_DEFAULTS.highlighterWidth)
+    setHighlighterOpacity(cfg.highlighterOpacity !== undefined ? cfg.highlighterOpacity : SYSTEM_ITEM_DEFAULTS.highlighterOpacity)
     setHasBorder(cfg.hasBorder)
     setBorderColor(cfg.borderColor)
     setBorderWidth(cfg.borderWidth)
@@ -1402,6 +1441,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
           borderRadius: cfg.calloutBorderRadius,
           textColor: cfg.calloutTextColor,
           fontSize: cfg.calloutFontSize
+        }
+      case 'highlighter':
+        return {
+          borderColor: cfg.highlighterColor,
+          borderWidth: cfg.highlighterWidth,
+          opacity: cfg.highlighterOpacity / 100
         }
       case 'image':
         return {
@@ -1474,6 +1519,9 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     calloutBorderRadius: data.calloutBorderRadius ?? SYSTEM_ITEM_DEFAULTS.calloutBorderRadius,
     calloutTextColor: data.calloutTextColor ?? SYSTEM_ITEM_DEFAULTS.calloutTextColor,
     calloutFontSize: data.calloutFontSize ?? SYSTEM_ITEM_DEFAULTS.calloutFontSize,
+    highlighterColor: data.highlighterColor ?? SYSTEM_ITEM_DEFAULTS.highlighterColor,
+    highlighterWidth: data.highlighterWidth ?? SYSTEM_ITEM_DEFAULTS.highlighterWidth,
+    highlighterOpacity: data.highlighterOpacity ?? SYSTEM_ITEM_DEFAULTS.highlighterOpacity,
     hasBorder: data.hasBorder ?? SYSTEM_ITEM_DEFAULTS.hasBorder,
     borderColor: data.borderColor ?? SYSTEM_ITEM_DEFAULTS.borderColor,
     borderWidth: data.borderWidth ?? SYSTEM_ITEM_DEFAULTS.borderWidth,
@@ -2136,10 +2184,29 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
         }
       }
 
+      // 형광펜은 다른 도형 아래에 그려지므로, 다른 도형이 잡히지 않았을 때만 판정 (나중에 그은 획 우선)
+      if (!found) {
+        for (let i = items.length - 1; i >= 0; i--) {
+          const item = items[i]
+          if (item.type === 'highlighter' && hitTestHighlighter(item, x, y)) {
+            setSelectedItemId(item.id)
+            setDraggedItemOffset({ x: x - item.x, y: y - item.y })
+            found = true
+            break
+          }
+        }
+      }
+
       if (!found) {
         setSelectedItemId(null)
       }
     } 
+    else if (activeTool === 'highlighter') {
+      highlighterPointsRef.current = [{ x, y }]
+      setIsDrawing(true)
+      setDragStart({ x, y })
+      setDragCurrent({ x, y })
+    }
     else if (activeTool === 'block-arrow-stamp') {
       const scaleMapping = [32, 48, 64, 80, 96]
       const size = scaleMapping[stampScale - 1] || 64
@@ -2220,6 +2287,10 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     const { x, y } = getCanvasCoords(e)
 
     if (isDrawing && dragStart) {
+      // 형광펜: 지나간 점 추가 (Shift 누르면 시작 높이의 수평 직선)
+      if (activeTool === 'highlighter') {
+        highlighterPointsRef.current = addHighlighterPoint(highlighterPointsRef.current, { x, y }, e.shiftKey)
+      }
       setDragCurrent({ x, y })
     }
 
@@ -2412,7 +2483,16 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       const w = x - dragStart.x
       const h = y - dragStart.y
 
-      if (activeTool === 'callout') {
+      if (activeTool === 'highlighter') {
+        const points = addHighlighterPoint(highlighterPointsRef.current, { x, y }, e.shiftKey)
+        highlighterPointsRef.current = []
+        const newItem = buildHighlighterItem(points, highlighterColor, highlighterWidth, highlighterOpacity)
+        // 여러 줄을 연달아 칠할 수 있도록 도구는 유지하고 새 획은 선택하지 않음
+        if (newItem) {
+          pushToUndo([...items, newItem])
+        }
+      }
+      else if (activeTool === 'callout') {
         if (Math.abs(w) > 10 && Math.abs(h) > 10) {
           const newItem: CanvasItem = {
             id: `item-${Date.now()}`,
@@ -2658,7 +2738,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
     '6': 'callout',
     '7': 'symbol',
     '8': 'text',
-    '9': 'crop'
+    '9': 'crop',
+    '0': 'highlighter'
   }
 
   // 키보드로 지우기 감지 및 ESC/복제(Ctrl+D) 핸들링
@@ -3563,6 +3644,7 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
       if (item.style.calloutTailY !== undefined) newItem.style.calloutTailY = item.style.calloutTailY * ratio
       if (item.style.fontSize !== undefined) newItem.style.fontSize = Math.round(item.style.fontSize * ratio)
       if (item.style.borderWidth !== undefined) newItem.style.borderWidth = Math.round(item.style.borderWidth * ratio)
+      if (item.points) newItem.points = item.points.map((p) => ({ x: p.x * ratio, y: p.y * ratio }))
 
       return newItem
     })
@@ -3761,7 +3843,8 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
               { id: 'callout', label: '6:말풍선 / 설명선', icon: <MessageSquare className="w-4 h-4 text-sky-500" /> },
               { id: 'symbol', label: '7:이모지 심볼 스탬프', icon: <Smile className="w-4 h-4 text-pink-500" /> },
               { id: 'text', label: '8:글씨 텍스트 캡션', icon: <Type className="w-4 h-4" /> },
-              { id: 'crop', label: '9:잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> }
+              { id: 'crop', label: '9:잘라내어 새로운 이미지', icon: <Crop className="w-4 h-4" /> },
+              { id: 'highlighter', label: '0:형광펜 (Shift: 수평선)', icon: <Highlighter className="w-4 h-4 text-yellow-500" /> }
             ].map((tool) => (
               <button
                 key={tool.id}
@@ -4000,6 +4083,12 @@ const ActionImageEditor: React.FC<ActionImageEditorProps> = ({
                 setCalloutTextColor={setCalloutTextColor}
                 calloutFontSize={calloutFontSize}
                 setCalloutFontSize={setCalloutFontSize}
+                highlighterColor={highlighterColor}
+                setHighlighterColor={setHighlighterColor}
+                highlighterWidth={highlighterWidth}
+                setHighlighterWidth={setHighlighterWidth}
+                highlighterOpacity={highlighterOpacity}
+                setHighlighterOpacity={setHighlighterOpacity}
               />
             )}
           </main>
