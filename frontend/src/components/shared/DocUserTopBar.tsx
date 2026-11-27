@@ -149,7 +149,7 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
             }}
             title="문서 편집으로 이동"
           >
-            {instanceLabel} ({version})
+            A-Man (v{version})
           </span>
           <button
             onClick={() => navigate('/docs')}
@@ -307,6 +307,15 @@ const DocUserTopBar: React.FC<DocUserTopBarProps> = ({
       
       {/* 우측 로그인 사용자 정보 및 로그아웃 */}
       <div className="flex items-center space-x-4 text-xs font-semibold">
+        {/* 멀티 인스턴스 배지 (aman20 등). 기본 인스턴스 aman 은 표시 안 함 */}
+        {INSTANCE !== 'aman' && (
+          <span
+            className="px-2 py-0.5 rounded bg-amber-300 text-amber-950 text-xs font-bold tracking-wider select-none"
+            title={`인스턴스: ${INSTANCE} (접속 경로 ${CONTEXT_PATH})`}
+          >
+            {instanceLabel}
+          </span>
+        )}
         <button
           onClick={() => navigate('/admin/about')}
           className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-all cursor-pointer text-xs font-bold border ${

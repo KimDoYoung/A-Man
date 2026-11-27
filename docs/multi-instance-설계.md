@@ -126,13 +126,14 @@ Tomcat 배포 시 컨텍스트 경로는 WAR 파일명으로 결정되므로
 
 | 표시 | 설정 (`application-<프로필>.properties`) | 기본값 |
 |---|---|---|
-| 상단바 배지 `aman20 (1.5.9)` | `aman.instances.<이름>.label` | aman → `A-Man`, 그 외 → 인스턴스 이름 |
+| 왼쪽 `A-Man (v1.5.9)` | (설정 없음, 모든 인스턴스 동일) | — |
+| 오른쪽(About 앞) 배지 `aman20` | `aman.instances.<이름>.label` | 인스턴스 이름. **aman 은 배지 없음** |
 | 상단바 배경색 | `aman.instances.<이름>.topbar-color` (`#RGB`/`#RRGGBB`/`#RRGGBBAA`만 허용) | 없음 → 회색(`bg-gray-700`) |
 | 브라우저 탭 제목 `[aman20] …` | (설정 없음) | aman 은 표시 안 함 |
 
 - 서버: `/health` 응답에 `instance`, `instanceLabel`, `topbarColor` 추가 (`SystemController`)
 - 화면: `DocUserTopBar.tsx`
-- t3600, test(119), omen, dell6820 프로필: `aman20` = 라벨 `aman20`, 색 `#9a3412`
+- t3600, test(119), omen, dell6820 프로필: `aman20` = 라벨 `aman20`, 색 `#3D582F`
 
 ### 3.6 신규 인스턴스 초기 DB
 
