@@ -1,12 +1,14 @@
 export interface CanvasItem {
   id: string
-  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'image' | 'block-arrow-stamp' | 'callout'
+  type: 'circle-number' | 'box' | 'text' | 'arrow' | 'orthogonal-arrow' | 'bracket-arrow' | 'symbol' | 'image' | 'block-arrow-stamp' | 'callout' | 'highlighter'
   x: number
   y: number
   width?: number
   height?: number
   text?: string
   imageSrc?: string
+  // 형광펜(highlighter) 획의 점들. x, y 기준 상대좌표 (이동·자르기는 x, y만 바꾸면 따라감)
+  points?: { x: number; y: number }[]
   style: {
     borderColor?: string
     borderWidth?: number

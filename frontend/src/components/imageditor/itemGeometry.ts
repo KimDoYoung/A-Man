@@ -24,7 +24,7 @@ export function getItemEdgeBounds(
     bottom = item.y + r
     left = item.x - r
     right = item.x + r
-  } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp') {
+  } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'highlighter') {
     bottom = item.y + (item.height || 0)
     right = item.x + (item.width || 0)
   } else if (item.type === 'callout') {
@@ -108,7 +108,7 @@ export function isItemWithinCropBounds(item: CanvasItem, cW: number, cH: number)
   if (item.type === 'circle-number') {
     const r = (item.style.fontSize || 13) * 1.05
     return item.x >= -r && item.x <= cW + r && item.y >= -r && item.y <= cH + r
-  } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'callout') {
+  } else if (item.type === 'box' || item.type === 'image' || item.type === 'block-arrow-stamp' || item.type === 'callout' || item.type === 'highlighter') {
     return item.x >= -(item.width || 0) && item.x <= cW && item.y >= -(item.height || 0) && item.y <= cH
   } else if (item.type === 'text') {
     return item.x >= -50 && item.x <= cW && item.y >= -15 && item.y <= cH
