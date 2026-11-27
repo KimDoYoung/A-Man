@@ -87,6 +87,16 @@ if [[ "$INSTANCE_NAME" != "aman" ]] && [ -f "$COMPOSE_FILE" ] && ! grep -q "weba
     warn "docker-compose.yml에 ${TARGET_WAR_NAME} 및 데이터 디렉터리 마운트가 없습니다. (docs/multi-instance-설계.md 3.5)"
     warn "마운트 없이 배포하면 컨테이너가 WAR를 보지 못하거나, 데이터가 컨테이너 내부에만 저장됩니다."
 fi
+# 호스트에 WAR 파일이 없는 상태로 컨테이너를 만들면 Docker가 같은 이름의 빈 폴더(root 소유)를 만든다.
+if [ -d "$TARGET_WAR_FILE" ]; then
+    error "배포 대상이 파일이 아니라 폴더입니다: $TARGET_WAR_FILE"
+    warn "WAR 파일이 없는 상태에서 컨테이너가 생성되어 Docker가 빈 폴더를 만든 것입니다. 아래 순서로 복구하세요."
+    echo -e "  ${BOLD}cd /data/docker && docker compose stop ${CONTAINER_NAME}${NC}"
+    echo -e "  ${BOLD}sudo rmdir ${TARGET_WAR_FILE}${NC}"
+    echo -e "  ${BOLD}$0 ${INSTANCE_NAME}${NC}"
+    echo -e "  ${BOLD}cd /data/docker && docker compose up -d --force-recreate ${CONTAINER_NAME}${NC}"
+    exit 1
+fi
 echo ""
 
 read -r -p "최종 생성/복사할 파일이 '${TARGET_WAR_NAME}' 맞습니까? 빌드를 진행하시겠습니까? (y/N) " CONFIRM

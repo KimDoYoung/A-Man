@@ -119,7 +119,8 @@ Tomcat 배포 시 컨텍스트 경로는 WAR 파일명으로 결정되므로
 ### 3.6 신규 인스턴스 초기 DB
 
 빈 DB로 기동하면 `ddl-auto=update`로 테이블은 생기지만 **사용자가 없어 로그인 불가**.
-→ 최초 1회 `admin` 계정이 필요하다. (결정 사항 5.1 참조)
+→ **`InitialAdminRunner`**: 기동 시 `users`가 비어 있으면 1회 `admin` / `1111` 계정을 만든다.
+  (`aman.init.admin-username`, `aman.init.admin-password`, `aman.init.admin-email`로 변경 가능. 로그인 후 비밀번호 변경 필수)
 
 ---
 
@@ -145,7 +146,7 @@ Tomcat 배포 시 컨텍스트 경로는 WAR 파일명으로 결정되므로
 | 3 | 완료 | 컴파일 (help html은 `[contextPath]` 치환) |
 | 4 | 완료 | `fm.sh lint` 통과, `VITE_BASE=/aman20/` 빌드 결과에 `/aman/` 잔여 없음 |
 | 5 | 완료 | `bash -n`. t3600은 compose 마운트 누락 시 경고 출력 |
-| 6 | **미완** | docker-compose 수동 반영, 초기 admin 방식 결정 필요 |
+| 6 | 완료 | t3600 compose 반영·aman20 기동 확인 (`instance=aman20` 로그). 초기 admin 자동 생성. 배포 대상이 폴더면 스크립트가 빌드 전 중단 |
 
 참고: `frontend/vite.config.js`가 git에 포함되어 있고 Vite는 `.ts`보다 `.js`를 먼저 읽으므로
 `vite.config.ts`와 **두 파일을 함께** 수정해야 한다.
@@ -154,7 +155,7 @@ Tomcat 배포 시 컨텍스트 경로는 WAR 파일명으로 결정되므로
 
 ## 5. 결정 사항 / 남은 과제
 
-1. **초기 admin 계정 생성 방식** (미결정)
+1. **초기 admin 계정 생성 방식** → (b) 채택, `InitialAdminRunner` 구현
    - (a) 배포 스크립트가 base-dir에 DB가 없을 때 `sqls/aman_ddl.sql` + admin 1건으로 DB 생성
    - (b) 앱 기동 시 `users`가 비어 있으면 admin 생성 (비밀번호는 프로퍼티)
    - (c) 기존 `aman.db`를 복사 후 정리 — 이미지 URL이 절대경로(`http://host:port/aman/images/...`)로 저장되어 있어 **비추천**
