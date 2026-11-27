@@ -1,4 +1,13 @@
 -- -------------------------------------------------------------
+-- sqlite_sequence 보장
+--   Hibernate가 만든 새 DB(AUTOINCREMENT 없음)에는 sqlite_sequence 가 없어
+--   아래 DELETE FROM sqlite_sequence 가 "no such table" 오류를 낸다.
+--   AUTOINCREMENT 테이블을 만들었다 지우면 sqlite_sequence 가 생성되어 남는다.
+-- -------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS _aman_seq_init (id INTEGER PRIMARY KEY AUTOINCREMENT);
+DROP TABLE _aman_seq_init;
+
+-- -------------------------------------------------------------
 -- 사용자
 -- -------------------------------------------------------------
 DELETE FROM users;
