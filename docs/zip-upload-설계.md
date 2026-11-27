@@ -32,6 +32,10 @@ Content-Type: multipart/form-data
 curl -F "file=@1234.zip" http://localhost:8686/aman/zip-upload
 ```
 
+시험 스크립트: `./zip-upload-test.sh <base-url> <zip파일> [-k]` (자세한 설명 `--help`)
+- ZIP 내용 미리보기(md·이미지 개수) → 업로드 → HTTP 코드·JSON 출력 → 코드별 해석과 조치 안내
+- 종료 코드: 200이면 0, 그 외 1
+
 ### 2.1 ZIP 구조 ('내보내기' 결과와 같음)
 
 ```
