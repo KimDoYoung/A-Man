@@ -278,3 +278,9 @@ mv -f /data/asseterp/tomcat/webapps/.aman20.war.tmp /data/asseterp/tomcat/webapp
 - [ ] `./deploy.sh 119 aman` (같은 버전 재배포로 검증)
 - [ ] 앞단 프록시 `/aman20/` 전달 설정 확인
 - [ ] `./deploy.sh 119 aman20` → admin 비밀번호 변경 → 초기 데이터 투입 방법 결정 (원격 sqlite3)
+
+### 6단계 (2026-11-27) — 옛 스크립트 정리 (일부)
+
+- 삭제: `deploy-t3600.sh`, `deploy-omen.sh`, `deploy-dell6820.sh`, `deploy-jskn.sh` (git 기록에 남아 있음)
+- **유지: `deploy-119.sh`** — git 밖의 유일한 사본이고, `./deploy.sh 119`로 실배포 검증 전이므로.
+  5단계(119 실배포) 성공 후 삭제한다.
