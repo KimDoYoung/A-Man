@@ -120,6 +120,20 @@ Tomcat 배포 시 컨텍스트 경로는 WAR 파일명으로 결정되므로
     **호스트 사용자로 미리 생성**한다. 이미 root 소유인 폴더가 있으면 `chown` 명령을 안내한다.
   - 컨테이너가 새로 만드는 파일까지 읽으려면 `setenv.sh`에 `export UMASK="0022"` 추가 (수동).
 
+### 3.7 인스턴스 구분 표시 (문서편집 화면)
+
+브라우저에서 aman / aman20 을 헷갈리지 않도록 **문서편집(/admin) 상단바**만 다르게 보인다. (일반 사용자 화면은 그대로)
+
+| 표시 | 설정 (`application-<프로필>.properties`) | 기본값 |
+|---|---|---|
+| 상단바 배지 `aman20 (1.5.9)` | `aman.instances.<이름>.label` | aman → `A-Man`, 그 외 → 인스턴스 이름 |
+| 상단바 배경색 | `aman.instances.<이름>.topbar-color` (`#RGB`/`#RRGGBB`/`#RRGGBBAA`만 허용) | 없음 → 회색(`bg-gray-700`) |
+| 브라우저 탭 제목 `[aman20] …` | (설정 없음) | aman 은 표시 안 함 |
+
+- 서버: `/health` 응답에 `instance`, `instanceLabel`, `topbarColor` 추가 (`SystemController`)
+- 화면: `DocUserTopBar.tsx`
+- t3600, test(119), omen, dell6820 프로필: `aman20` = 라벨 `aman20`, 색 `#9a3412`
+
 ### 3.6 신규 인스턴스 초기 DB
 
 빈 DB로 기동하면 `ddl-auto=update`로 테이블은 생기지만 **사용자가 없어 로그인 불가**.
