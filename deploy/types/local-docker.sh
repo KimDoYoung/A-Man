@@ -25,7 +25,9 @@ type_preflight() {
         current="$(hostname)"
         if [[ "${current,,}" != "${EXPECTED_HOSTNAME,,}" ]]; then
             warn "이 PC의 호스트명(${BOLD}${current}${NC})이 ${HOST} 설정(${EXPECTED_HOSTNAME})과 다릅니다."
-            ask_yes "그래도 이 PC의 ${WEBAPPS_DIR} 에 배포하시겠습니까?" || { info "취소되었습니다."; exit 0; }
+            if [ "${DRY_RUN:-false}" != true ]; then
+                ask_yes "그래도 이 PC의 ${WEBAPPS_DIR} 에 배포하시겠습니까?" || { info "취소되었습니다."; exit 0; }
+            fi
         fi
     fi
 
@@ -44,6 +46,16 @@ type_preflight() {
             echo -e "  ${BOLD}cd $(dirname "$COMPOSE_FILE") && docker compose up -d --force-recreate ${CONTAINER}${NC}"
             exit 1
         fi
+    fi
+}
+
+# --dry-run 시 실행 계획 출력 (변경 없음)
+type_plan() {
+    echo "  1. (재시작 선택 시) docker stop ${CONTAINER}, ${WEBAPPS_DIR}/${INSTANCE} 삭제"
+    echo "  2. 복사: $(basename "$WAR_FILE") → ${TARGET_WAR_FILE}"
+    echo "  3. (재시작 선택 시) docker start ${CONTAINER}, 기동 로그 대기"
+    if [ "${PREPARE_DIRS:-false}" = true ]; then
+        echo "  ※ 빌드 전 ${BASE_DIR} 하위 폴더(db, logs, data/images, data/video, backup) 생성"
     fi
 }
 

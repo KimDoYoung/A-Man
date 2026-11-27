@@ -44,3 +44,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# === deploy.sh 빌드 결과물 ===
+deploy/artifacts/

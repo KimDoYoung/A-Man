@@ -111,13 +111,15 @@ WEBAPPS_DIR="/data/docker/gxt-demo/webapps"
 빌드 결과를 이름 붙여 보관하고 배포는 그 파일로 한다.
 
 ```
-build/dist/aman20-1.5.9-<커밋7자리>.war
-build/dist/aman20-1.5.9-<커밋7자리>.info    # 커밋, 브랜치, VITE_BASE, 빌드 시각, 빌드 PC
+deploy/artifacts/aman20-1.5.9-<커밋7자리>.war
+deploy/artifacts/aman20-1.5.9-<커밋7자리>.info    # 커밋, 브랜치, VITE_BASE, 빌드 시각, 빌드 PC, sha256
+deploy/artifacts/deploy-history.log              # 배포 기록
 ```
+(`backend/build`는 `gradlew clean`으로 지워지므로 별도 폴더. `.gitignore` 대상. 인스턴스별 최근 5개 보관)
 
-- 같은 커밋·같은 인스턴스의 산출물이 이미 있으면 **재빌드하지 않고 재사용**한다.
+- 같은 커밋·같은 인스턴스의 산출물이 있고 sha256이 일치하면 **재빌드하지 않고 재사용**한다. (`--rebuild`로 강제 빌드)
   → t3600에 올려 확인한 바로 그 파일이 119에 올라간다.
-- 미커밋 변경이 있는 상태의 빌드는 `-dirty`가 붙고, 운영 서버에는 배포할 수 없다.
+- `frontend/`, `backend/`에 미커밋 변경이 있으면 `-dirty`가 붙고 항상 새로 빌드한다. 운영 서버에는 배포할 수 없다.
 
 ### 3.4 WAR 검증 (배포 전, 공통)
 
@@ -141,7 +143,7 @@ build/dist/aman20-1.5.9-<커밋7자리>.info    # 커밋, 브랜치, VITE_BASE, 
 | 5 | 입력 확인 강화 | y/N 대신 **서버 이름 `119`와 WAR 이름을 직접 입력**해야 진행 |
 | 6 | `--dry-run` | 업로드·교체 없이 대상 서버, 경로, WAR, 버전, 커밋만 출력 |
 | 7 | 덮어쓰기 경고 | 서버에 같은 버전 파일(`aman20-1.5.9.war`)이 있으면 경고 후 재확인 |
-| 8 | 배포 기록 | 로컬 `build/dist/deploy-history.log`에 일시, 서버, WAR, 버전, 커밋 기록 |
+| 8 | 배포 기록 | 로컬 `deploy/artifacts/deploy-history.log`에 일시, 서버, WAR, 버전, 커밋 기록 |
 
 ### 4.1 119 배포 절차 (remote-tomcat)
 
@@ -218,3 +220,13 @@ mv -f /data/asseterp/tomcat/webapps/.aman20.war.tmp /data/asseterp/tomcat/webapp
 - 검증: 문법, `--list`, 허용 외 WAR 거부, 확인 단계까지 실제 실행, `build_war aman20` 실제 빌드(WAR 내 `/aman20/` 경로 확인),
   임시 경로 + 가짜 docker로 복사·재시작 경로 확인
 - 기존 `deploy-t3600.sh`, `deploy-omen.sh`는 유지 (6단계에서 제거)
+
+### 2단계 (2026-11-27) — 결과물 보관·WAR 검증·dry-run
+
+- 옵션: `--dry-run`(검사·계획만, 변경 없음), `--rebuild`(보관 결과물 무시)
+- 결과물 보관/재사용(3.3), WAR 검증(3.4), 배포 기록, 인스턴스별 5개 보관
+- 운영(`PRODUCTION=true`) 제한 선반영: main 브랜치 + 미커밋 변경 없음
+- 검증 실패 시 해당 결과물 삭제 (잘못된 WAR 재사용 방지)
+- 검증: 임시 경로 시험용 서버 설정 + 가짜 docker로
+  dry-run(변경 없음) / 실제 빌드→보관→검증→배포 / 2회차 재사용 / 변조 결과물 재빌드 /
+  aman20 WAR를 aman으로 둔갑 시 검증 실패 / 운영 설정에서 비 main 거부 / dirty 처리 / 보관 개수 정리
