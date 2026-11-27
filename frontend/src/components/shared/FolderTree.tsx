@@ -5,6 +5,7 @@ import { apiClient } from '@/lib/apiClient'
 import { FolderNode } from '@/types'
 import FolderTreeContextMenu from '@/components/shared/FolderTreeContextMenu'
 import FilterInput from '@/components/shared/FilterInput'
+import { storageKey } from '@/lib/instance'
 
 interface FolderTreeProps {
   contextMenuEnable?: boolean;
@@ -98,7 +99,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({ contextMenuEnable = true, isDoc
   useEffect(() => {
     const match = location.pathname.match(/\/admin\/folder\/(\d+)/)
     if (match) {
-      localStorage.setItem('aman_last_active_folder_id', match[1])
+      localStorage.setItem(storageKey('aman_last_active_folder_id'), match[1])
     }
   }, [location.pathname])
 

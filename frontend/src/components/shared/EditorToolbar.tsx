@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Eye, EyeOff, Bold, Italic, Strikethrough, List, ListOrdered, Link, Image, Video, Smile, Type, FileText, Layout, Download, Upload, Palette, Highlighter, HelpCircle, X, Quote, Copy, Check } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
+import { CONTEXT_PATH } from '@/lib/instance'
 
 const TEXT_COLORS = [
   { name: '회색', value: '#9B9A97' },
@@ -678,7 +679,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           onChange={(e) => onAkaChange(e.target.value)}
           placeholder="예: 1110"
           className="w-20 px-1.5 py-0.5 text-xs bg-white border border-gray-200 rounded focus:outline-hidden focus:border-indigo-500 font-mono text-gray-800"
-          title="이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 /aman/manual/1110 으로 접근 가능)"
+          title={`이 페이지의 별칭을 지정합니다 (예: 1110 입력 시 ${CONTEXT_PATH}/manual/1110 으로 접근 가능)`}
         />
       </div>
 

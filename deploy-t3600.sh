@@ -32,6 +32,9 @@ if [[ "$TARGET_WAR_NAME" != *.war ]]; then
     TARGET_WAR_NAME="${TARGET_WAR_NAME}.war"
 fi
 TARGET_WAR_FILE="$TARGET_WEBAPPS_DIR/$TARGET_WAR_NAME"
+# 멀티 인스턴스: WAR 이름(aman20.war)이 곧 컨텍스트 경로(/aman20) - docs/multi-instance-설계.md 3.5
+INSTANCE_NAME="${TARGET_WAR_NAME%.war}"
+VITE_BASE="/${INSTANCE_NAME}/"
 
 # ── Java 버전 체크 (Java 8 필수) ──────────────────────────────────────────
 check_java_version() {
@@ -78,12 +81,67 @@ VERSION=${VERSION:-1.0.0}
 
 header "A-Man WAR 빌드 스크립트 (버전: $VERSION)"
 info "최종 배포 대상 WAR 파일: ${BOLD}$TARGET_WAR_FILE${NC}"
+info "인스턴스: ${BOLD}${INSTANCE_NAME}${NC} (프론트 base: ${VITE_BASE})"
+
+# 인스턴스 base-dir 계산 (InstanceEnvironmentListener와 같은 규칙, docs/multi-instance-설계.md 3.1)
+#  - aman: application-t3600.properties의 aman.base-dir 그대로
+#  - 그 외: aman.instances.<이름>.base-dir 이 있으면 그 값, 없으면 aman.base-dir의 형제 폴더
+T3600_PROP_FILE="$BACKEND_DIR/src/main/resources/application-t3600.properties"
+read_prop() { { grep "^$1=" "$T3600_PROP_FILE" 2>/dev/null || true; } | head -n 1 | cut -d '=' -f2- | tr -d '\r' | xargs; }
+DEFAULT_BASE_DIR="$(read_prop 'aman.base-dir')"
+DEFAULT_BASE_DIR="${DEFAULT_BASE_DIR:-/data/asseterp/aman}"
+if [[ "$INSTANCE_NAME" == "aman" ]]; then
+    INSTANCE_BASE_DIR="$DEFAULT_BASE_DIR"
+else
+    INSTANCE_BASE_DIR="$(read_prop "aman.instances.${INSTANCE_NAME}.base-dir")"
+    INSTANCE_BASE_DIR="${INSTANCE_BASE_DIR:-$(dirname "$DEFAULT_BASE_DIR")/${INSTANCE_NAME}}"
+fi
+info "base-dir: ${BOLD}${INSTANCE_BASE_DIR}${NC}"
+
+COMPOSE_FILE="/data/docker/docker-compose.yml"
+if [[ "$INSTANCE_NAME" != "aman" ]] && [ -f "$COMPOSE_FILE" ] && ! grep -q "webapps/${TARGET_WAR_NAME}" "$COMPOSE_FILE"; then
+    warn "docker-compose.yml에 ${TARGET_WAR_NAME} 및 데이터 디렉터리 마운트가 없습니다. (docs/multi-instance-설계.md 3.5)"
+    warn "마운트 없이 배포하면 컨테이너가 WAR를 보지 못하거나, 데이터가 컨테이너 내부에만 저장됩니다."
+fi
+# 호스트에 WAR 파일이 없는 상태로 컨테이너를 만들면 Docker가 같은 이름의 빈 폴더(root 소유)를 만든다.
+if [ -d "$TARGET_WAR_FILE" ]; then
+    error "배포 대상이 파일이 아니라 폴더입니다: $TARGET_WAR_FILE"
+    warn "WAR 파일이 없는 상태에서 컨테이너가 생성되어 Docker가 빈 폴더를 만든 것입니다. 아래 순서로 복구하세요."
+    echo -e "  ${BOLD}cd /data/docker && docker compose stop ${CONTAINER_NAME}${NC}"
+    echo -e "  ${BOLD}sudo rmdir ${TARGET_WAR_FILE}${NC}"
+    echo -e "  ${BOLD}$0 ${INSTANCE_NAME}${NC}"
+    echo -e "  ${BOLD}cd /data/docker && docker compose up -d --force-recreate ${CONTAINER_NAME}${NC}"
+    exit 1
+fi
 echo ""
 
 read -r -p "최종 생성/복사할 파일이 '${TARGET_WAR_NAME}' 맞습니까? 빌드를 진행하시겠습니까? (y/N) " CONFIRM
 if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
     info "빌드 작업이 취소되었습니다."
     exit 0
+fi
+
+# base-dir 하위 폴더를 호스트 사용자로 미리 생성한다.
+# 컨테이너(root, umask 0027)가 먼저 만들면 root 소유 750이 되어 호스트에서 접근할 수 없다.
+info "base-dir 하위 폴더 준비: $INSTANCE_BASE_DIR"
+NOT_OWNED=()
+for sub in db logs data/images data/video backup; do
+    dir="$INSTANCE_BASE_DIR/$sub"
+    if [ ! -d "$dir" ]; then
+        if mkdir -p "$dir"; then
+            info "  생성: $dir"
+        else
+            error "폴더를 생성할 수 없습니다: $dir"
+            exit 1
+        fi
+    elif [ ! -O "$dir" ]; then
+        NOT_OWNED+=("$dir")
+    fi
+done
+if [ ${#NOT_OWNED[@]} -gt 0 ]; then
+    warn "현재 사용자($(id -un)) 소유가 아닌 폴더가 있습니다 (컨테이너가 root로 생성):"
+    for dir in "${NOT_OWNED[@]}"; do warn "  $dir"; done
+    warn "호스트에서 접근하려면: ${BOLD}sudo chown -R $(id -un):$(id -gn) ${INSTANCE_BASE_DIR}${NC}"
 fi
 
 # 재시작 여부는 빌드 전에 미리 묻는다 (빌드 도중 npm/gradle이 표준입력을 소비하는 문제 방지)
@@ -106,7 +164,8 @@ if [ ! -d "node_modules" ]; then
 fi
 
 info "React 프로덕션 빌드 실행 중..."
-npm run build </dev/null
+info "VITE_BASE=${VITE_BASE} 로 빌드합니다."
+VITE_BASE="$VITE_BASE" npm run build </dev/null
 
 info "Spring Boot static 디렉토리 초기화 및 빌드 리소스 복사..."
 rm -rf "$STATIC_DIR"

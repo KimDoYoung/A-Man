@@ -44,3 +44,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+
+# === deploy.sh 빌드 결과물 ===
+deploy/artifacts/
+
+# 119 운영 서버 접속 정보
+deploy/hosts/119.conf

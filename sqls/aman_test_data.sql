@@ -3,7 +3,7 @@
 -- -------------------------------------------------------------
 DELETE FROM users;
 DELETE FROM sqlite_sequence WHERE name='users';
-INSERT INTO users (username, password, email, name, role) VALUES ('admin', '1111', 'kdy987@gmail.com', '관리자', 'admin');
+INSERT INTO users (username, password, email, name, role, is_active) VALUES ('admin', '1111', 'kdy987@gmail.com', '관리자', 'admin', 1);
 
 -- -------------------------------------------------------------
 -- pages

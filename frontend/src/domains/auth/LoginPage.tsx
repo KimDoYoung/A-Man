@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Lock, User, AlertCircle } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import favicon from '@/assets/aman-favicon.png'
+import { storageKey } from '@/lib/instance'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
@@ -28,7 +29,7 @@ const LoginPage: React.FC = () => {
       })
 
       // 로그인 성공 시 사용자 정보 저장
-      localStorage.setItem('aman_user', JSON.stringify(data))
+      localStorage.setItem(storageKey('aman_user'), JSON.stringify(data))
       
       // 관리자 메인 화면으로 이동
       navigate('/admin', { replace: true })

@@ -1,10 +1,11 @@
 import axios from 'axios'
 import { decryptPayload, STATIC_CLIENT_KEY } from '@/utils/crypto'
+import { CONTEXT_PATH, storageKey } from '@/lib/instance'
 
 // 개발/배포 공통: Vite proxy 설정에 의해 브라우저와 동일한 origin인 /aman으로 요청합니다.
 // 개발 환경(http://localhost:5173)에서는 vite.config.ts의 proxy 설정이 http://localhost:8686으로 프록시합니다.
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/aman',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? CONTEXT_PATH,
   withCredentials: true,
 })
 
@@ -26,7 +27,7 @@ async function getOrFetchHandshake(): Promise<{ key: string; block: number }> {
     return handshakePromise;
   }
   
-  const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/aman';
+  const baseURL = import.meta.env.VITE_API_BASE_URL ?? CONTEXT_PATH;
   handshakePromise = (async () => {
     try {
       const resp = await axios.get<any>(`${baseURL}/docs/security/handshake`, { withCredentials: true });
@@ -50,7 +51,7 @@ async function getOrFetchHandshake(): Promise<{ key: string; block: number }> {
 }
 
 instance.interceptors.request.use(async (config) => {
-  const userStr = localStorage.getItem('aman_user')
+  const userStr = localStorage.getItem(storageKey('aman_user'))
   if (userStr) {
     try {
       const user = JSON.parse(userStr)
@@ -183,11 +184,11 @@ instance.interceptors.response.use(
         const newAccessToken = responseData.accessToken
 
         if (newAccessToken) {
-          const userStr = localStorage.getItem('aman_user')
+          const userStr = localStorage.getItem(storageKey('aman_user'))
           if (userStr) {
             const user = JSON.parse(userStr)
             localStorage.setItem(
-              'aman_user',
+              storageKey('aman_user'),
               JSON.stringify({ ...user, accessToken: newAccessToken })
             )
           }
@@ -199,13 +200,13 @@ instance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null)
         // 리프레시 실패 시 로그아웃 및 경로별 강제 리다이렉트
-        localStorage.removeItem('aman_user')
+        localStorage.removeItem(storageKey('aman_user'))
         const isAdminPath = window.location.pathname.includes('/admin')
         if (isAdminPath) {
           alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
-          window.location.href = '/aman/login'
+          window.location.href = `${CONTEXT_PATH}/login`
         } else {
-          window.location.href = '/aman/expired'
+          window.location.href = `${CONTEXT_PATH}/expired`
         }
         return Promise.reject(refreshError)
       } finally {

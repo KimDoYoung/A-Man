@@ -5,6 +5,7 @@ import DocUserTopBar from '@/components/shared/DocUserTopBar'
 import { AgGridReact } from 'ag-grid-react'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
+import { CONTEXT_PATH } from '@/lib/instance'
 
 interface BackupFile {
   name: string
@@ -83,7 +84,7 @@ const BackupPages: React.FC = () => {
   }
 
   const handleDownload = (fileName: string) => {
-    window.open(`/aman/admin/backup/download/${fileName}`, '_blank')
+    window.open(`${CONTEXT_PATH}/admin/backup/download/${fileName}`, '_blank')
     showStatus('success', `${fileName} 다운로드가 요청되었습니다.`)
   }
 

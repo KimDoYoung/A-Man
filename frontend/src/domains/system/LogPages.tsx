@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Download, RefreshCw, Search, Terminal, FileText, Eye, EyeOff, X, Trash2 } from 'lucide-react'
 import { apiClient } from '@/lib/apiClient'
 import DocUserTopBar from '@/components/shared/DocUserTopBar'
+import { CONTEXT_PATH } from '@/lib/instance'
 
 interface LogFile {
   name: string
@@ -80,7 +81,7 @@ const LogPages: React.FC = () => {
   }, [logText, autoScroll])
 
   const handleDownload = (fileName: string) => {
-    window.open(`/aman/admin/logs/download/${fileName}`, '_blank')
+    window.open(`${CONTEXT_PATH}/admin/logs/download/${fileName}`, '_blank')
     showStatus('success', `${fileName} 다운로드가 요청되었습니다.`)
   }
 

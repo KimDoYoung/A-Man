@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { storageKey } from '@/lib/instance'
 
 export type FontSize = 'sm' | 'base' | 'lg' | 'xl'
 export type ContentWidth = 'normal' | 'wide' | 'full'
@@ -25,7 +26,7 @@ export const useUserLocalSettingStore = create<UserLocalSettingState>()(
       setTheme: (theme) => set({ theme }),
     }),
     {
-      name: 'userLocalSetting', // 로컬 스토리지 저장 키 이름
+      name: storageKey('userLocalSetting'), // 로컬 스토리지 저장 키 이름
     }
   )
 )
