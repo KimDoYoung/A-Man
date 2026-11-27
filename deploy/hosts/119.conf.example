@@ -1,0 +1,16 @@
+# 119 - 운영 서버, Tomcat 8.5 직접 설치 (기존 deploy-119.sh)
+#   ※ 견본 파일. 119.conf 로 복사한 뒤 접속 정보를 채우세요 (119.conf 는 git 제외)
+#   Tomcat 위치 /data/asseterp/tomcat, Java 1.8.0_171, 프로필 test (application-test.properties)
+#   aman   base-dir: /data/asseterp/aman     → 업로드 /data/asseterp/aman/aman-<버전>.war
+#   aman20 base-dir: /data/asseterp/aman20   → 업로드 /data/asseterp/aman20/aman20-<버전>.war
+HOST_LABEL="119 운영 (Tomcat 8.5)"
+DEPLOY_TYPE="remote-tomcat"
+PROFILE="test"
+PRODUCTION=true
+ALLOWED_WARS="aman aman20"
+
+REMOTE_USER="<ssh 계정>"
+REMOTE_HOST="<서버 IP 또는 호스트>"
+REMOTE_WEBAPPS="/data/asseterp/tomcat/webapps"
+REMOTE_CATALINA_OUT="/data/asseterp/tomcat/logs/catalina.out"
+ACCESS_URL=""   # 외부 접속 주소를 알면 입력 (예: https://도메인:포트)

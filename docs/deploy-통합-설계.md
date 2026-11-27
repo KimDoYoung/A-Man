@@ -243,3 +243,38 @@ mv -f /data/asseterp/tomcat/webapps/.aman20.war.tmp /data/asseterp/tomcat/webapp
 - 동작 차이: dell6820 재시작이 `docker compose restart` → 중지→복사→시작(t3600과 동일)으로 바뀜
 - 검증: 문법, `--list`, dell6820 dry-run(T3600에서 호스트명·setenv 경고 확인), jskn dry-run(실제 원격 접속 확인, 변경 없음),
   가짜 ssh/sftp로 업로드·재빌드 순서와 업로드 실패 시 중단 확인
+
+### 4단계 (2026-11-27) — 119 (remote-tomcat), 실배포 없음
+
+- `deploy/types/remote-tomcat.sh`, `deploy/hosts/119.conf`(git 제외), `119.conf.example`(견본)
+- 기존 `deploy-119.sh`와 경로·절차 대조
+
+| 항목 | 기존 `deploy-119.sh` | `./deploy.sh 119 aman` | `./deploy.sh 119 aman20` |
+|---|---|---|---|
+| 프론트 base | `/aman/` (고정) | `/aman/` | `/aman20/` |
+| 업로드 | `/data/asseterp/aman/aman-<버전>.war` | **동일** | `/data/asseterp/aman20/aman20-<버전>.war` |
+| 반영 | `webapps/.aman.war.tmp` → `mv` → `aman.war` | **동일** | `.aman20.war.tmp` → `aman20.war` |
+| 반영 전 확인 | y/N | y/N | y/N |
+| ssh 연결 공유 | O | O | O |
+
+- 추가된 안전장치
+  - 업로드는 `.part` 이름으로 → sha256 대조 → 정식 이름으로 변경
+    (전송이 깨져도 서버의 같은 이름 정상 WAR를 덮어쓰지 않음, 손상 파일 삭제, webapps 미반영)
+  - 서버에 같은 버전 파일이 있으면 경고 후 덮어쓰기 재확인
+  - 원격 상태 조회(읽기만): 현재 배포 WAR, base-dir·DB 존재, ssh 계정과 webapps 소유자 비교
+  - 첫 배포(원격 DB 없음) 감지 → admin/1111, 초기 데이터, 프록시 확인 안내
+  - 반영 후 catalina.out 에서 `/<인스턴스>.war] has finished` 대기 (최대 180초)
+  - main 브랜치·미커밋 변경 없음 강제 (dry-run은 경고만 하고 계속)
+  - 반영을 건너뛰면 기록에 `status=uploaded-only`
+- 검증 (119 접속 없음): 가짜 ssh(명령을 임시 폴더에서 로컬 실행)·가짜 sftp로
+  첫 배포 / 같은 버전 재배포 / 덮어쓰기 거절 / 전송 손상(정상 파일 보존 확인) / 업로드만,
+  119와 같은 설정으로 deploy.sh dry-run(aman, aman20) 및 feature 브랜치 실배포 거부
+
+### 5단계 전 체크리스트 (119 실배포)
+
+- [ ] t3600 aman에서 기존 로그인 세션 유지·로그인·로그아웃 확인 (쿠키 path 변경 영향)
+- [ ] feat/multi-instance, feat/deploy-unify 를 main 에 병합
+- [ ] `./deploy.sh 119 aman --dry-run` → 업로드·반영 경로가 위 표와 같은지, "같은 버전 파일 있음" 경고 확인
+- [ ] `./deploy.sh 119 aman` (같은 버전 재배포로 검증)
+- [ ] 앞단 프록시 `/aman20/` 전달 설정 확인
+- [ ] `./deploy.sh 119 aman20` → admin 비밀번호 변경 → 초기 데이터 투입 방법 결정 (원격 sqlite3)

@@ -107,6 +107,17 @@ ${BOLD}배포 방식 (서버 설정의 DEPLOY_TYPE)${NC}
   local-docker   이 PC의 docker 볼륨에 WAR 복사 → (선택) 컨테이너 중지·시작
                  → 반드시 그 서버 PC에서 실행 (호스트명이 다르면 경고)
   remote-docker  원격에 WAR·Dockerfile 업로드 → 원격에서 docker compose up -d --build
+  remote-tomcat  (119 운영) 원격 <base-dir>/<WAR이름>-<버전>.war 로 업로드 → sha256 대조
+                 → 확인 질문 → webapps 에 임시 파일 복사 후 mv 로 교체 → catalina.out 완료 로그 대기
+                 → 서버에 버전별 WAR가 남으므로 사고 시 손으로 이전 버전 복구 가능:
+                   cp <base-dir>/<WAR이름>-<이전버전>.war <webapps>/.<WAR이름>.war.tmp
+                   mv -f <webapps>/.<WAR이름>.war.tmp <webapps>/<WAR이름>.war
+
+${BOLD}119 (운영) 배포 순서 권장${NC}
+  1. 개발 서버(t3600)에 같은 커밋으로 배포해서 확인
+  2. main 브랜치에 병합, 커밋 안 된 변경이 없는 상태
+  3. ./deploy.sh 119 <WAR이름> --dry-run   (비밀번호 입력, 서버 상태와 계획 확인)
+  4. ./deploy.sh 119 <WAR이름>             (서버 이름 119 와 WAR 이름을 직접 입력)
 EOF
 }
 
@@ -150,6 +161,9 @@ INSTANCE="$(normalize_instance "${POSITIONAL[1]:-aman}")"
 HOST_CONF="$HOSTS_DIR/${HOST}.conf"
 if [ ! -f "$HOST_CONF" ]; then
     error "알 수 없는 서버입니다: ${HOST} ($HOST_CONF 없음)"
+    if [ -f "$HOST_CONF.example" ]; then
+        warn "견본이 있습니다. 복사한 뒤 접속 정보를 채우세요: cp $HOST_CONF.example $HOST_CONF"
+    fi
     echo ""
     list_hosts
     exit 1
@@ -176,9 +190,17 @@ BASE_DIR="$(resolve_base_dir "$PROFILE" "$INSTANCE")"
 load_git_info
 
 # 운영 서버: main 브랜치의 커밋된 소스만 배포 (docs/deploy-통합-설계.md 4장)
+#   dry-run 은 확인 목적이므로 경고만 하고 계속 진행한다.
 if [ "$PRODUCTION" = true ]; then
-    [ "$GIT_BRANCH" = "main" ] || die "운영 서버(${HOST})는 main 브랜치에서만 배포할 수 있습니다. (현재: ${GIT_BRANCH})"
-    [ "$GIT_DIRTY" = false ] || die "운영 서버(${HOST})는 커밋되지 않은 변경(frontend/, backend/)이 있으면 배포할 수 없습니다."
+    PROD_PROBLEMS=()
+    [ "$GIT_BRANCH" = "main" ] || PROD_PROBLEMS+=("운영 서버(${HOST})는 main 브랜치에서만 배포할 수 있습니다. (현재: ${GIT_BRANCH})")
+    [ "$GIT_DIRTY" = false ] || PROD_PROBLEMS+=("운영 서버(${HOST})는 커밋되지 않은 변경(frontend/, backend/)이 있으면 배포할 수 없습니다.")
+    if [ ${#PROD_PROBLEMS[@]} -gt 0 ]; then
+        for p in "${PROD_PROBLEMS[@]}"; do
+            if [ "$DRY_RUN" = true ]; then warn "$p ${BOLD}(dry-run이라 계속, 실제 배포는 거부됨)${NC}"; else error "$p"; fi
+        done
+        [ "$DRY_RUN" = true ] || exit 1
+    fi
 fi
 
 ARTIFACT="$(artifact_path "$INSTANCE" "$VERSION" "$GIT_COMMIT" "$GIT_DIRTY")"

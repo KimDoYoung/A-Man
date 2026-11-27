@@ -263,7 +263,7 @@ verify_war() {
 # record_deploy <host> <인스턴스> <WAR>
 record_deploy() {
     mkdir -p "$ARTIFACT_DIR"
-    echo "$(date '+%Y-%m-%d %H:%M:%S')  host=$1  war=$2.war  version=$VERSION  commit=$GIT_COMMIT  dirty=$GIT_DIRTY  file=$(basename "$3")  by=$(id -un)@$(hostname)" \
+    echo "$(date '+%Y-%m-%d %H:%M:%S')  host=$1  war=$2.war  status=${DEPLOY_STATUS:-deployed}  version=$VERSION  commit=$GIT_COMMIT  dirty=$GIT_DIRTY  file=$(basename "$3")  by=$(id -un)@$(hostname)" \
         >> "$ARTIFACT_DIR/deploy-history.log"
 }
 
