@@ -230,3 +230,16 @@ mv -f /data/asseterp/tomcat/webapps/.aman20.war.tmp /data/asseterp/tomcat/webapp
 - 검증: 임시 경로 시험용 서버 설정 + 가짜 docker로
   dry-run(변경 없음) / 실제 빌드→보관→검증→배포 / 2회차 재사용 / 변조 결과물 재빌드 /
   aman20 WAR를 aman으로 둔갑 시 검증 실패 / 운영 설정에서 비 main 거부 / dirty 처리 / 보관 개수 정리
+
+### 3단계 (2026-11-27) — jskn, dell6820
+
+- `deploy/types/remote-docker.sh` (jskn): 원격 폴더 준비 → WAR·Dockerfile 업로드 → `docker compose up -d --build`
+  - Dockerfile 이 `COPY aman.war` 고정 → jskn 허용 WAR는 `aman` 하나. Dockerfile에 해당 COPY가 없으면 중단
+  - dry-run에서도 원격 접속(`ssh <서버> true`)까지 확인
+- `deploy/hosts/dell6820.conf`: local-docker 재사용 (t3600과 같은 gxt-demo 구성)
+- local-docker: `SETENV_FILE`/`SETENV_PATTERN`으로 컨테이너 프로필 설정 확인 (t3600, dell6820)
+- `lib.sh`: 원격 공통 함수 `ssh_init`/`remote_ssh`/`remote_put` (ControlMaster 연결 공유, 4단계 119에서도 사용)
+- **`--init-db`는 옮기지 않음**: 배포와 DB 초기화를 분리. DB 초기화는 `db.sh runfile` 사용
+- 동작 차이: dell6820 재시작이 `docker compose restart` → 중지→복사→시작(t3600과 동일)으로 바뀜
+- 검증: 문법, `--list`, dell6820 dry-run(T3600에서 호스트명·setenv 경고 확인), jskn dry-run(실제 원격 접속 확인, 변경 없음),
+  가짜 ssh/sftp로 업로드·재빌드 순서와 업로드 실패 시 중단 확인

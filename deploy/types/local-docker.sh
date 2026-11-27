@@ -12,6 +12,8 @@
 #                        → compose 마운트 누락 경고, 대상 WAR 경로가 폴더인지 검사
 #   PREPARE_DIRS         true: base-dir 하위 폴더를 호스트 사용자로 미리 생성
 #   ACCESS_URL           접속 주소 앞부분 (예: http://localhost:8081) - 선택
+#   SETENV_FILE          컨테이너 setenv.sh 경로 - 선택
+#   SETENV_PATTERN       setenv.sh에 있어야 할 프로필 설정 (grep -E 정규식). 없으면 경고 - 선택
 #============================================================================
 
 # 빌드 전 검사. 문제 있으면 중단.
@@ -28,6 +30,16 @@ type_preflight() {
             if [ "${DRY_RUN:-false}" != true ]; then
                 ask_yes "그래도 이 PC의 ${WEBAPPS_DIR} 에 배포하시겠습니까?" || { info "취소되었습니다."; exit 0; }
             fi
+        fi
+    fi
+
+    # 컨테이너가 이 서버의 프로필로 기동되는지 확인 (경고만)
+    if [ -n "${SETENV_FILE:-}" ] && [ -n "${SETENV_PATTERN:-}" ]; then
+        if [ -f "$SETENV_FILE" ] && grep -Eq "$SETENV_PATTERN" "$SETENV_FILE"; then
+            info "setenv.sh 프로필 설정 확인: ${SETENV_PATTERN}"
+        else
+            warn "$SETENV_FILE 에 프로필 설정(${SETENV_PATTERN})이 없습니다."
+            warn "  → 다른 프로필로 기동되어 base-dir 등이 달라질 수 있습니다."
         fi
     fi
 

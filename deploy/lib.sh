@@ -266,3 +266,35 @@ record_deploy() {
     echo "$(date '+%Y-%m-%d %H:%M:%S')  host=$1  war=$2.war  version=$VERSION  commit=$GIT_COMMIT  dirty=$GIT_DIRTY  file=$(basename "$3")  by=$(id -un)@$(hostname)" \
         >> "$ARTIFACT_DIR/deploy-history.log"
 }
+
+# ── 원격 접속 (ssh/sftp 연결 공유) ────────────────────────────────────────
+# 비밀번호 방식 서버도 비밀번호를 1회만 입력하도록 ControlMaster로 연결을 공유한다.
+#   ssh_init <user@host 또는 ssh 별칭>  → 이후 remote_ssh, remote_put 사용
+#   종료 시 자동으로 연결을 닫는다 (trap EXIT)
+ssh_init() {
+    SSH_TARGET="$1"
+    SSH_CTL_DIR="$(mktemp -d)"
+    SSH_OPTS=(-o ControlMaster=auto -o "ControlPath=$SSH_CTL_DIR/%r@%h:%p" -o ControlPersist=300)
+    trap ssh_cleanup EXIT
+}
+
+ssh_cleanup() {
+    if [ -n "${SSH_CTL_DIR:-}" ]; then
+        ssh "${SSH_OPTS[@]}" -O exit "$SSH_TARGET" &>/dev/null || true
+        rm -rf "$SSH_CTL_DIR"
+    fi
+}
+
+# remote_ssh "<원격 명령>" : 원격 명령 실행 (실패 시 0이 아닌 값 반환)
+remote_ssh() {
+    ssh "${SSH_OPTS[@]}" "$SSH_TARGET" "$1"
+}
+
+# remote_put <로컬 파일> <원격 경로> : sftp 업로드. 실패 시 0이 아닌 값 반환
+#   -b - : 배치 모드에서 put 실패를 종료 코드로 알림
+#   BatchMode=no : 배치 모드에서도 비밀번호 프롬프트 유지
+remote_put() {
+    sftp "${SSH_OPTS[@]}" -o BatchMode=no -b - "$SSH_TARGET" <<SFTP_EOF
+put "$1" "$2"
+SFTP_EOF
+}

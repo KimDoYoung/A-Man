@@ -100,6 +100,13 @@ ${BOLD}관련 파일·명령${NC}
   새 인스턴스(예: aman20)에 초기 데이터(메뉴·admin·자산) 넣기:
     AMAN_MODE=<프로필> AMAN_INSTANCE=aman20 ./db.sh runfile sqls/aman_test_data.sql
     (실행 전 자동 백업. 기존 사용자·문서·자산·메뉴는 지워지고 초기 데이터로 바뀜)
+    ※ 예전 deploy-jskn.sh / deploy-dell6820.sh 의 --init-db 는 deploy.sh 에 없습니다.
+      배포와 DB 초기화를 섞지 않기 위해서이며, DB 초기화는 위 db.sh 명령으로 따로 합니다.
+
+${BOLD}배포 방식 (서버 설정의 DEPLOY_TYPE)${NC}
+  local-docker   이 PC의 docker 볼륨에 WAR 복사 → (선택) 컨테이너 중지·시작
+                 → 반드시 그 서버 PC에서 실행 (호스트명이 다르면 경고)
+  remote-docker  원격에 WAR·Dockerfile 업로드 → 원격에서 docker compose up -d --build
 EOF
 }
 
