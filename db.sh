@@ -20,6 +20,18 @@ fi
 
 # 여전히 정의되지 않은 경우 기본값 설정
 BASE_DIR=${BASE_DIR:-$SCRIPT_DIR/aman-base-dir}
+
+# 멀티 인스턴스: AMAN_INSTANCE(기본 aman)로 aman20 등의 DB 선택 (docs/multi-instance-설계.md 3.1과 같은 규칙)
+#  - aman.instances.<이름>.base-dir 이 있으면 그 값, 없으면 aman base-dir의 형제 폴더
+INSTANCE=${AMAN_INSTANCE:-aman}
+INSTANCE=${INSTANCE%.war}
+if [ "$INSTANCE" != "aman" ]; then
+    INSTANCE_BASE_DIR=""
+    if [ -f "$PROP_FILE" ]; then
+        INSTANCE_BASE_DIR=$(grep "^aman.instances.${INSTANCE}.base-dir=" "$PROP_FILE" | cut -d '=' -f2- | sed "s/['\"]//g" || true)
+    fi
+    BASE_DIR=${INSTANCE_BASE_DIR:-$(dirname "$BASE_DIR")/$INSTANCE}
+fi
 DB_FILE="$BASE_DIR/db/aman.db"
 
 #----------------------------------------------------
@@ -29,6 +41,7 @@ DB_FILE="$BASE_DIR/db/aman.db"
 show_header() {
     echo "---------------------------------------------"
     echo "profile : $PROFILE"
+    echo "instance: $INSTANCE"
     echo "db-file : $DB_FILE"
     echo "---------------------------------------------"
 }
@@ -133,6 +146,40 @@ run_sql() {
     sqlite3 -header -column "$DB_FILE" "$sql"
 }
 
+# SQL 파일 실행 (실행 전 자동 백업). 오류가 난 문장은 건너뛰고 나머지를 계속 실행한다.
+run_sql_file() {
+    local sql_file="$1"
+    if [ ! -f "$DB_FILE" ]; then
+        echo "오류: DB 파일이 존재하지 않습니다 ($DB_FILE)"
+        return 1
+    fi
+    if [ -z "$sql_file" ]; then
+        read -p "수행할 SQL 파일 경로를 입력하세요: " sql_file
+    fi
+    if [ ! -f "$sql_file" ]; then
+        echo "오류: SQL 파일이 존재하지 않습니다 ($sql_file)"
+        return 1
+    fi
+
+    show_header
+    echo "sql-file: $sql_file"
+    read -p "위 DB에 SQL 파일을 실행하시겠습니까? (y/N): " confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "취소되었습니다."
+        return 0
+    fi
+
+    backup_db || { echo "오류: 백업에 실패하여 실행을 중단합니다."; return 1; }
+
+    echo ""
+    echo "[SQL 파일 수행 결과]"
+    if sqlite3 "$DB_FILE" < "$sql_file"; then
+        echo "SQL 파일 실행 완료."
+    else
+        echo "경고: 일부 문장에서 오류가 발생했습니다. 위 메시지를 확인하세요. (나머지 문장은 실행됨)"
+    fi
+}
+
 delete_db() {
     if [ ! -f "$DB_FILE" ]; then
         echo "오류: 삭제할 DB 파일이 없습니다 ($DB_FILE)"
@@ -232,6 +279,10 @@ init_db() {
 }
 
 fetch_server_db() {
+    if [ "$INSTANCE" != "aman" ]; then
+        echo "오류: fetch는 jskn 서버의 aman DB를 가져옵니다. AMAN_INSTANCE=$INSTANCE 에서는 사용할 수 없습니다."
+        return 1
+    fi
     local remote_host="jskn"
     local remote_db="/data/docker/apps/aman/db/aman.db"
     local local_tmp="/tmp/aman.db"
@@ -311,12 +362,13 @@ if [ $# -gt 0 ]; then
         desc)   desc_table "$2" ;;
         select) select_table "$2" ;;
         run)    run_sql "$2" ;;
+        runfile) run_sql_file "$2" ;;
         delete) delete_db ;;
         backup) backup_db ;;
         init)   init_db ;;
         fetch)  fetch_server_db ;;
         logs)   fetch_server_logs ;;
-        *)      echo "사용법: $0 {list|desc|select|run|delete|backup|init|fetch|logs}" ;;
+        *)      echo "사용법: [AMAN_MODE=<profile>] [AMAN_INSTANCE=<aman|aman20>] $0 {list|desc|select|run|runfile|delete|backup|init|fetch|logs}" ;;
     esac
     exit 0
 fi
@@ -327,6 +379,7 @@ echo "1. 테이블 목록 (db.sh list)"
 echo "2. 테이블 desc (db.sh desc)"
 echo "3. 테이블 select (db.sh select)"
 echo "4. sql 실행 (db.sh run)"
+echo "9. sql 파일 실행 (db.sh runfile)"
 echo "5. 서버 DB 가져오기 (db.sh fetch)"
 echo "6. 서버 logs 가져오기 (db.sh logs)"
 echo "7. 데이터베이스 초기화 및 생성 (db.sh init)"
@@ -346,6 +399,7 @@ case "$choice" in
     6) fetch_server_logs ;;
     7) init_db ;;
     8) backup_db ;;
+    9) run_sql_file ;;
     99) delete_db ;;
     q|Q) exit 0 ;;
     *) echo "잘못된 선택입니다." ;;
