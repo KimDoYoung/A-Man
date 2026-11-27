@@ -115,6 +115,10 @@ Tomcat 배포 시 컨텍스트 경로는 WAR 파일명으로 결정되므로
   - 대안: `/data/asseterp`와 webapps 디렉터리 전체 마운트. 단, gxt-demo는 `ROOT.war` 등
     다른 앱이 개별 마운트되어 있어 webapps 전체 마운트는 충돌 가능 → 개별 마운트 유지 권장.
 - 힙 메모리: Spring Boot 앱이 2개가 되므로 `setenv.sh`의 `-Xmx` 확인.
+- 폴더 권한: 컨테이너는 root·umask `0027`로 동작하여 앱이 만든 폴더/파일이 `root 750/640`이 된다.
+  - `deploy-t3600.sh`가 빌드 전에 base-dir 하위 폴더(`db`, `logs`, `data/images`, `data/video`, `backup`)를
+    **호스트 사용자로 미리 생성**한다. 이미 root 소유인 폴더가 있으면 `chown` 명령을 안내한다.
+  - 컨테이너가 새로 만드는 파일까지 읽으려면 `setenv.sh`에 `export UMASK="0022"` 추가 (수동).
 
 ### 3.6 신규 인스턴스 초기 DB
 
