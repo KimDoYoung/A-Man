@@ -4,6 +4,7 @@ import kr.co.kfs.aman.model.Folder;
 import kr.co.kfs.aman.model.Page;
 import kr.co.kfs.aman.repository.FolderRepository;
 import kr.co.kfs.aman.repository.PageRepository;
+import kr.co.kfs.aman.service.ZipImportService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
@@ -34,13 +35,16 @@ public class ContentController {
 
     private final PageRepository pageRepository;
     private final FolderRepository folderRepository;
+    private final ZipImportService zipImportService;
 
     @Value("${aman.base-dir:/home/kdy987/work/aman/aman-base-dir}")
     private String baseDir;
 
-    public ContentController(PageRepository pageRepository, FolderRepository folderRepository) {
+    public ContentController(PageRepository pageRepository, FolderRepository folderRepository,
+                             ZipImportService zipImportService) {
         this.pageRepository = pageRepository;
         this.folderRepository = folderRepository;
+        this.zipImportService = zipImportService;
     }
 
     @PostMapping
@@ -444,176 +448,23 @@ public class ContentController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("존재하지 않는 폴더 ID입니다.");
         }
 
-        // 1. Create temporary directory
-        String tempDirPath = "/tmp/aman/import_" + UUID.randomUUID().toString().replace("-", "");
-        File tempDir = new File(tempDirPath);
-        if (!tempDir.exists() && !tempDir.mkdirs()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("임시 디렉토리를 생성할 수 없습니다.");
-        }
-
-        File zipFile = new File(tempDir, "temp.zip");
+        // 1~8. ZIP 해석 (압축 해제, md 탐색, 이미지 저장·경로 변경, 제목 추출) - ZipImportService
+        //      이미지 URL은 기존대로 절대 URL (예: http://localhost:8686/aman/images/2026/06/23/uuid.png)
+        String imageUrlBase = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
+                + request.getContextPath() + "/images/";
+        ZipImportService.ImportResult imported;
         try {
-            file.transferTo(zipFile);
-        } catch (IOException e) {
-            deleteDirectory(tempDir);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("임시 파일 저장에 실패했습니다.");
+            imported = zipImportService.importZip(file, imageUrlBase);
+        } catch (ZipImportService.ZipImportException e) {
+            return ResponseEntity.status(e.getStatus()).body(e.getMessage());
         }
-
-        String markdownContent = "";
-        String pageTitle = "";
-        Map<String, String> imagePathMapping = new HashMap<>();
-
-        // 2. Unzip and search for markdown file & images
-        try {
-            unzip(zipFile, tempDir);
-
-            // Notion 등에서 생성된 중첩 ZIP 파일이 있다면 재귀적으로 압축 해제
-            boolean foundNestedZip = true;
-            int maxDepth = 5; // 무한 루프 방지용 최대 깊이
-            while (foundNestedZip && maxDepth > 0) {
-                foundNestedZip = false;
-                java.util.List<File> nestedZips = findZipFilesRecursively(tempDir, zipFile);
-                if (!nestedZips.isEmpty()) {
-                    foundNestedZip = true;
-                    maxDepth--;
-                    for (File nz : nestedZips) {
-                        unzip(nz, nz.getParentFile());
-                        if (!nz.delete()) {
-                            nz.deleteOnExit();
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            deleteDirectory(tempDir);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ZIP 파일 압축 해제에 실패했습니다: " + e.getMessage());
-        }
-
-        // 3. Find Markdown file (.md) in tempDir
-        File[] mdFiles = tempDir.listFiles(new java.io.FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".md");
-            }
-        });
-
-        File mdFile = null;
-        if (mdFiles != null && mdFiles.length > 0) {
-            mdFile = mdFiles[0];
-        } else {
-            mdFile = findFileRecursively(tempDir, ".md");
-        }
-
-        if (mdFile == null) {
-            deleteDirectory(tempDir);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("ZIP 파일 안에 마크다운(.md) 파일이 존재하지 않습니다.");
-        }
-
-        // Read Markdown content
-        try {
-            byte[] bytes = java.nio.file.Files.readAllBytes(mdFile.toPath());
-            markdownContent = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-            pageTitle = mdFile.getName();
-            if (pageTitle.toLowerCase().endsWith(".md")) {
-                pageTitle = pageTitle.substring(0, pageTitle.length() - 3);
-            }
-        } catch (IOException e) {
-            deleteDirectory(tempDir);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("마크다운 파일을 읽는 데 실패했습니다.");
-        }
-
-        // 4. Parse markdown content to extract image references
-        java.util.List<String> imageRefs = new java.util.ArrayList<>();
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("!\\[.*?\\]\\((.*?)\\)");
-        java.util.regex.Matcher matcher = pattern.matcher(markdownContent);
-        while (matcher.find()) {
-            String imgUrl = matcher.group(1);
-            if (!imgUrl.startsWith("http://") && !imgUrl.startsWith("https://") && !imgUrl.startsWith("//")) {
-                imageRefs.add(imgUrl);
-            }
-        }
-
-        // 5. Save referenced images into A-Man storage and build mapping
-        LocalDateTime now = LocalDateTime.now();
-        String year = String.format("%04d", now.getYear());
-        String month = String.format("%02d", now.getMonthValue());
-        String day = String.format("%02d", now.getDayOfMonth());
-        String datePath = year + "/" + month + "/" + day;
-        String saveDirPath = baseDir + "/data/images/" + datePath;
-        File saveDir = new File(saveDirPath);
-
-        String contextPath = request.getContextPath();
-        String scheme = request.getScheme();
-        String serverName = request.getServerName();
-        int serverPort = request.getServerPort();
-        String serverPrefix = scheme + "://" + serverName + ":" + serverPort + contextPath + "/images/" + datePath + "/";
-
-        for (String ref : imageRefs) {
-            String decodedRef = ref;
-            try {
-                decodedRef = java.net.URLDecoder.decode(ref, "UTF-8");
-            } catch (Exception ignored) {}
-            
-            String cleanRef = decodedRef;
-            if (cleanRef.startsWith("./")) {
-                cleanRef = cleanRef.substring(2);
-            } else if (cleanRef.startsWith("/")) {
-                cleanRef = cleanRef.substring(1);
-            }
-
-            File imgFile = new File(tempDir, cleanRef);
-            if (!imgFile.exists()) {
-                String filename = cleanRef;
-                if (filename.contains("/")) {
-                    filename = filename.substring(filename.lastIndexOf("/") + 1);
-                }
-                imgFile = findFileRecursivelyByName(tempDir, filename);
-            }
-
-            if (imgFile != null && imgFile.exists() && imgFile.isFile()) {
-                String ext = "png";
-                String filename = imgFile.getName();
-                if (filename.contains(".")) {
-                    ext = filename.substring(filename.lastIndexOf(".") + 1);
-                }
-                String uuidName = UUID.randomUUID().toString().replace("-", "") + "." + ext;
-                
-                if (!saveDir.exists() && !saveDir.mkdirs()) {
-                    System.err.println("Failed to create directory: " + saveDir.getAbsolutePath());
-                }
-                File destFile = new File(saveDir, uuidName);
-                try {
-                    shutilCopy(imgFile, destFile);
-                    String newUrl = serverPrefix + uuidName;
-                    imagePathMapping.put(ref, newUrl);
-                } catch (IOException e) {
-                    System.err.println("Failed to copy image: " + imgFile.getAbsolutePath() + " to " + destFile.getAbsolutePath());
-                }
-            }
-        }
-
-        // 6. Rewrite markdown content URLs
-        String rewrittenContent = markdownContent;
-        for (Map.Entry<String, String> entry : imagePathMapping.entrySet()) {
-            rewrittenContent = rewrittenContent.replace(entry.getKey(), entry.getValue());
-        }
-
-        // 7. Auto extract title if H1 exists in markdown
-        java.util.regex.Pattern h1Pattern = java.util.regex.Pattern.compile("^#\\s+(.+)$", java.util.regex.Pattern.MULTILINE);
-        java.util.regex.Matcher h1Matcher = h1Pattern.matcher(markdownContent);
-        if (h1Matcher.find()) {
-            pageTitle = h1Matcher.group(1).trim();
-        }
-
-        // 8. Delete temp directory
-        deleteDirectory(tempDir);
 
         // 9. Save page to DB as DRAFT
         String generatedAka = "page-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         Page page = Page.builder()
                 .folder(folderOpt.get())
-                .title(pageTitle)
-                .content(rewrittenContent)
+                .title(imported.getTitle())
+                .content(imported.getContent())
                 .aka(generatedAka)
                 .status("DRAFT")
                 .sortOrder(0)
@@ -621,122 +472,5 @@ public class ContentController {
 
         Page savedPage = pageRepository.save(page);
         return ResponseEntity.ok(savedPage);
-    }
-
-    private File findFileRecursively(File dir, String ext) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    File res = findFileRecursively(f, ext);
-                    if (res != null) {
-                        return res;
-                    }
-                } else if (f.getName().toLowerCase().endsWith(ext)) {
-                    return f;
-                }
-            }
-        }
-        return null;
-    }
-
-    private File findFileRecursivelyByName(File dir, String filename) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    File res = findFileRecursivelyByName(f, filename);
-                    if (res != null) {
-                        return res;
-                    }
-                } else if (f.getName().equalsIgnoreCase(filename)) {
-                    return f;
-                }
-            }
-        }
-        return null;
-    }
-
-    private void deleteDirectory(File dir) {
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    deleteDirectory(f);
-                } else {
-                    if (!f.delete()) {
-                        System.err.println("Failed to delete file: " + f.getAbsolutePath());
-                    }
-                }
-            }
-        }
-        if (!dir.delete()) {
-            System.err.println("Failed to delete directory: " + dir.getAbsolutePath());
-        }
-    }
-
-    private void shutilCopy(File source, File dest) throws IOException {
-        try (java.io.FileInputStream fis = new java.io.FileInputStream(source);
-             java.io.FileOutputStream fos = new java.io.FileOutputStream(dest)) {
-            byte[] buffer = new byte[4096];
-            int len;
-            while ((len = fis.read(buffer)) > 0) {
-                fos.write(buffer, 0, len);
-            }
-        }
-    }
-
-    private void unzip(File zipFile, File destDir) throws IOException {
-        try (java.util.zip.ZipFile zFile = new java.util.zip.ZipFile(zipFile)) {
-            java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zFile.entries();
-            
-            while (entries.hasMoreElements()) {
-                java.util.zip.ZipEntry entry = entries.nextElement();
-                File destFile = new File(destDir, entry.getName());
-                
-                // Security check (Zip Slip Prevention)
-                String canonicalDirPath = destDir.getCanonicalPath();
-                String canonicalDestPath = destFile.getCanonicalPath();
-                if (!canonicalDestPath.startsWith(canonicalDirPath + File.separator) && !canonicalDestPath.equals(canonicalDirPath)) {
-                    throw new IOException("ZIP 파일에 올바르지 않은 경로가 포함되어 있습니다: " + entry.getName());
-                }
-
-                if (entry.isDirectory()) {
-                    if (!destFile.exists() && !destFile.mkdirs()) {
-                        throw new IOException("Failed to create directory: " + destFile.getAbsolutePath());
-                    }
-                } else {
-                    File parent = destFile.getParentFile();
-                    if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                        throw new IOException("Failed to create parent directory: " + parent.getAbsolutePath());
-                    }
-                    try (java.io.InputStream is = zFile.getInputStream(entry);
-                         java.io.FileOutputStream fos = new java.io.FileOutputStream(destFile)) {
-                        byte[] buffer = new byte[4096];
-                        int len;
-                        while ((len = is.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private java.util.List<File> findZipFilesRecursively(File dir, File mainZipFile) throws IOException {
-        java.util.List<File> zips = new java.util.ArrayList<>();
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    zips.addAll(findZipFilesRecursively(f, mainZipFile));
-                } else if (f.getName().toLowerCase().endsWith(".zip")) {
-                    if (!f.getCanonicalPath().equals(mainZipFile.getCanonicalPath())) {
-                        zips.add(f);
-                    }
-                }
-            }
-        }
-        return zips;
     }
 }
