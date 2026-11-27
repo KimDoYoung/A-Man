@@ -1,5 +1,12 @@
 [
     {
+        "version": "1.5.9",
+        "date": "2026-11-27",
+        "description": [
+            "zip-upload 기능추가, context-path 여러개 지원"
+        ]
+    },
+    {
         "version": "1.5.8",
         "date": "2026-11-05",
         "description": [
