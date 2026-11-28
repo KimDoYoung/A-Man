@@ -1,5 +1,7 @@
 package kr.co.kfs.aman.util;
 
+import kr.co.kfs.aman.config.ZipUploadIpFilter;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -8,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
 
 public class SecurityUtil {
 
@@ -17,22 +21,18 @@ public class SecurityUtil {
     // 이 키는 프론트엔드 빌드 시 난독화되어 내장될 것입니다.
     public static final String STATIC_CLIENT_KEY = "A-Man-Static-Client-Key-2026!";
 
+    // 신뢰 프록시 목록 (aman.security.trusted-proxies). 기동 시 SecurityConfig 에서 설정한다.
+    private static volatile List<String> trustedProxies = Collections.emptyList();
+
+    public static void setTrustedProxies(String csv) {
+        trustedProxies = ZipUploadIpFilter.parseList(csv);
+    }
+
     // 클라이언트 IP 구하기 (프록시 고려)
+    // X-Forwarded-For 는 remoteAddr 가 신뢰 프록시일 때만 그 마지막 값을 사용한다.
+    // (헤더를 그대로 믿으면 "X-Forwarded-For: 127.0.0.1" 위조로 내부 IP 판정을 우회할 수 있음)
     public static String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        if (ip != null && ip.contains(",")) {
-            ip = ip.split(",")[0].trim();
-        }
-        return ip;
+        return ZipUploadIpFilter.resolveClientIp(request.getRemoteAddr(), request.getHeader("X-Forwarded-For"), trustedProxies);
     }
 
     // SHA-256 해시를 이용한 256비트(32바이트) 키 생성

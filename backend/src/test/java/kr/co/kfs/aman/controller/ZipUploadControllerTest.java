@@ -183,6 +183,7 @@ class ZipUploadControllerTest {
 
     /** 회귀: 서비스로 옮긴 기존 '가져오기'는 새 DRAFT 문서 + 절대 URL 동작 그대로 */
     @Test
+    @org.springframework.security.test.context.support.WithMockUser(username = "admin")
     void legacyImportStillCreatesDraftWithAbsoluteImageUrl() throws Exception {
         MockMultipartHttpServletRequestBuilder b = multipart("/aman/content/import");
         b.file(new MockMultipartFile("file", "any.zip", "application/zip", docZip("# 가져온 문서\n![그림](images/a.png)")))
@@ -194,6 +195,15 @@ class ZipUploadControllerTest {
                 .andExpect(jsonPath("$.aka", containsString("page-")))
                 .andExpect(jsonPath("$.content", containsString("](http://localhost:80/aman/images/")));
         assertEquals(2, pageRepository.count()); // 기존 문서는 그대로, 새 문서 추가
+    }
+
+    @Test
+    void legacyImportRequiresLogin() throws Exception {
+        MockMultipartHttpServletRequestBuilder b = multipart("/aman/content/import");
+        b.file(new MockMultipartFile("file", "any.zip", "application/zip", docZip("# 가져온 문서")))
+                .param("folderId", String.valueOf(page.getFolder().getId())).contextPath("/aman");
+        mockMvc.perform(b).andExpect(status().isForbidden());
+        assertEquals(1, pageRepository.count());
     }
 
     @Test
