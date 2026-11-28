@@ -70,7 +70,14 @@ URI 에 "/admin/" 포함                                   → 인증 필요 (�
 - 성공 시 `ROLE_<role 대문자>` 권한으로 SecurityContext 설정 (`ROLE_ADMIN` 등).
 
 ### 3.3 서명 키 `JwtTokenProvider`
-- 키: 프로퍼티 `spring.security.jwt.secret`. **현재 모든 환경 프로퍼티에 이 값이 없어 소스에 박힌 기본값을 사용 중.**
+- 키 결정 순서 (2026-11-28 변경, 소스 기본키 삭제):
+  1. 환경변수 `AMAN_JWT_SECRET` (예: Tomcat `setenv.sh`)
+  2. 프로퍼티 `spring.security.jwt.secret` (git 에 들어가는 파일에는 넣지 않는다)
+  3. `BASE_DIR/db/jwt.key` — 없으면 첫 기동 시 무작위 256비트 키를 생성, 권한 600
+- 키가 32바이트 미만이거나 키 파일을 만들 수 없으면 기동 실패.
+- 현재 모든 환경은 3번(키 파일)을 사용한다. 서버(BASE_DIR)마다 키가 다르다.
+- 키 파일을 지우거나 바꾸면 기존 로그인 토큰이 모두 무효화된다(재로그인 필요). 매뉴얼 열람자는 영향 없음.
+- docker 환경은 BASE_DIR 이 호스트 볼륨이어야 컨테이너 재생성 후에도 키가 유지된다.
 - 멀티 인스턴스: 인스턴스명이 `aman` 이 아니면 키에 `:<instance>` 를 붙여 다른 인스턴스 토큰을 거부.
 
 ### 3.4 갱신 / 로그아웃
@@ -170,7 +177,7 @@ Base64URL( userId | timestamp(ms) | clientIp | HMAC-SHA256(userId|timestamp|clie
 | 1 | `X-Forwarded-For` 위조로 내부 IP 판정 우회 | 높음 | **[수정됨]** 5.5 참조 |
 | 2 | `/folder` 쓰기 API, `/content/image`, `/content/import` 에 인증 검사 없음 | 높음 | **[수정됨]** `/folder/**`, `/content/**` 의 쓰기 메서드 전부 인증 필요 (2장) |
 | 3 | `/admin/**` 규칙이 `Accept: text/html` 헤더로 우회됨 | 높음 | **[수정됨]** 예외 제거, 비로그인 HTML 새로고침은 index.html 로 forward (2장) |
-| 4 | JWT 서명키가 소스 기본값 사용 | 높음 – 소스 열람자가 관리자 토큰 위조 가능 | 환경별 `spring.security.jwt.secret` 지정 (저장소 밖에서 주입) |
+| 4 | JWT 서명키가 소스 기본값 사용 | 높음 | **[수정됨]** 환경변수 > 프로퍼티 > `BASE_DIR/db/jwt.key` 자동 생성 (3.3) |
 | 5 | ERP HMAC 키 / 암호화 salt / 클라이언트 키가 소스·프로퍼티에 평문 | 높음 | ERP 와 키 교체 후 외부 주입 (환경변수 등) |
 | 6 | 비밀번호 평문 저장·비교 (`NoOpPasswordEncoder`) | 높음 – DB 파일 유출 시 계정 노출 | BCrypt 전환 + 기존 비밀번호 마이그레이션 |
 | 7 | CSRF 비활성 + 쿠키 인증 + SameSite 미지정 | 중간 | 쿠키 `SameSite=Lax/Strict`, 운영은 `Secure` |
@@ -188,3 +195,4 @@ Base64URL( userId | timestamp(ms) | clientIp | HMAC-SHA256(userId|timestamp|clie
 | 2026-11-28 | `SecurityUtil.getClientIp` 신뢰 프록시 기반으로 변경, `aman.security.trusted-proxies` 추가 (전 환경) |
 | 2026-11-28 | `aman.security.erp-check.enabled` 추가, jskn 은 `false` (매뉴얼 열람 무검사), jskn `trusted-proxies=172.18.` |
 | 2026-11-28 | `/admin/**` 의 `Accept: text/html` 우회 제거, `/folder`·`/content` 쓰기 API 인증 필수화, `SecurityConfigTest` 추가 |
+| 2026-11-28 | JWT 서명키 소스 기본값 제거, `AMAN_JWT_SECRET` / `BASE_DIR/db/jwt.key` 자동 생성, `JwtTokenProviderTest` 추가 |
