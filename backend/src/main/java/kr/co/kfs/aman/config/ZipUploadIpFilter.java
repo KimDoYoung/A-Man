@@ -76,7 +76,7 @@ public class ZipUploadIpFilter extends OncePerRequestFilter {
      * 클라이언트 IP 판정.
      * remoteAddr 가 신뢰 프록시이고 X-Forwarded-For 가 있으면 그 마지막 값(프록시가 직접 본 IP), 아니면 remoteAddr.
      */
-    static String resolveClientIp(String remoteAddr, String forwardedFor, List<String> trustedProxies) {
+    public static String resolveClientIp(String remoteAddr, String forwardedFor, List<String> trustedProxies) {
         if (remoteAddr != null && forwardedFor != null && !forwardedFor.trim().isEmpty()
                 && matches(remoteAddr, trustedProxies)) {
             String[] parts = forwardedFor.split(",");
@@ -89,7 +89,7 @@ public class ZipUploadIpFilter extends OncePerRequestFilter {
     }
 
     /** ip 가 목록과 일치하는지. '.' 또는 ':' 로 끝나는 항목은 접두어 일치. */
-    static boolean matches(String ip, List<String> list) {
+    public static boolean matches(String ip, List<String> list) {
         if (ip == null || list == null) {
             return false;
         }
@@ -102,7 +102,7 @@ public class ZipUploadIpFilter extends OncePerRequestFilter {
         return false;
     }
 
-    static List<String> parseList(String csv) {
+    public static List<String> parseList(String csv) {
         if (csv == null || csv.trim().isEmpty()) {
             return Collections.emptyList();
         }

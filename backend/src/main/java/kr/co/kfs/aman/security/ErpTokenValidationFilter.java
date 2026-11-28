@@ -20,10 +20,12 @@ public class ErpTokenValidationFilter extends OncePerRequestFilter {
     private final String secretKey = "A-Man-Shared-Secret-Key-Custom-Value-Here!";
     private final long tokenExpiryMs = 15000; // 토큰 만료 기한 (15초)
 
+    private final boolean enabled;
     private final boolean internalIpEnabled;
     private final String internalIps;
 
-    public ErpTokenValidationFilter(boolean internalIpEnabled, String internalIps) {
+    public ErpTokenValidationFilter(boolean enabled, boolean internalIpEnabled, String internalIps) {
+        this.enabled = enabled;
         this.internalIpEnabled = internalIpEnabled;
         this.internalIps = internalIps;
     }
@@ -39,7 +41,8 @@ public class ErpTokenValidationFilter extends OncePerRequestFilter {
         boolean isSecurityUtil = uri.contains("/security/");
 
         // 매뉴얼 조회(/docs 또는 /manual)가 아니거나, 보안 유틸리티(/security/) 요청인 경우 필터를 거치지 않고 패스
-        if (!(isDocsRequest || isManualRequest) || isSecurityUtil) {
+        // aman.security.erp-check.enabled=false 이면 모든 요청 패스 (개인 서버 jskn 등)
+        if (!enabled || !(isDocsRequest || isManualRequest) || isSecurityUtil) {
             filterChain.doFilter(request, response);
             return;
         }
